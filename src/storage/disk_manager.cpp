@@ -57,7 +57,7 @@ void DiskManager::read_page(int fd, page_id_t page_no, char *offset, int num_byt
         throw UnixError();
     }
     size_t read_size = read(fd, offset, num_bytes);
-    if (read_size != num_bytes) {
+    if (read_size != static_cast<size_t>(num_bytes)) {
         throw InternalError("DiskManager::read_page Error");
     }
 }

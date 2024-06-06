@@ -193,7 +193,7 @@ bool BufferPoolManager::delete_page(PageId page_id) {
  */
 void BufferPoolManager::flush_all_pages(int fd) {
     std::scoped_lock lock{latch_};
-    for (int i = 0; i < pool_size_; i++) {
+    for (size_t i = 0; i < pool_size_; i++) {
         Page *page = pages_ + i;
         if (page->id_.fd == fd && page->id_.page_no != INVALID_PAGE_ID) {
             disk_manager_->write_page(fd, page->id_.page_no, page->data_, PAGE_SIZE);

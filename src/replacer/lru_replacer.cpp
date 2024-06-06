@@ -46,7 +46,6 @@ void LRUReplacer::pin(frame_id_t frame_id) {
     // Todo:
     // 固定指定id的frame
     // 在数据结构中移除该frame
-    std::scoped_lock lock{latch_};
     if (LRUhash_.count(frame_id)) {
         LRUlist_.erase(LRUhash_[frame_id]);
         LRUhash_.erase(frame_id);
