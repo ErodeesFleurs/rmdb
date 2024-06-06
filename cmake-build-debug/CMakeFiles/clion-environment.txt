@@ -1,0 +1,5 @@
+ToolSet: 11.0 w64 (local)@D:\C++\mingw64
+Ninja: 1.11.1@D:\CLion-2022.3\CLion 2022.3\bin\ninja\win\x64\ninja.exe
+Options: 
+
+Options:-DCMAKE_MAKE_PROGRAM=D:/CLion-2022.3/CLion 2022.3/bin/ninja/win/x64/ninja.exe

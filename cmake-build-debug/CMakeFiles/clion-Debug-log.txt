@@ -1,0 +1,22 @@
+"D:\CLion-2022.3\CLion 2022.3\bin\cmake\win\x64\bin\cmake.exe" -DCMAKE_BUILD_TYPE=Debug "-DCMAKE_MAKE_PROGRAM=D:/CLion-2022.3/CLion 2022.3/bin/ninja/win/x64/ninja.exe" -G Ninja -S E:\DB\db2024-main\rmdb -B E:\DB\db2024-main\rmdb\cmake-build-debug
+-- The C compiler identification is GNU 12.2.0
+-- The CXX compiler identification is GNU 12.2.0
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Check for working C compiler: D:/C++/mingw64/bin/gcc.exe - skipped
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: D:/C++/mingw64/bin/c++.exe - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+CMake Error at D:/CLion-2022.3/CLion 2022.3/bin/cmake/win/x64/share/cmake-3.28/Modules/FindPackageHandleStandardArgs.cmake:230 (message):
+  Could NOT find BISON (missing: BISON_EXECUTABLE)
+Call Stack (most recent call first):
+  D:/CLion-2022.3/CLion 2022.3/bin/cmake/win/x64/share/cmake-3.28/Modules/FindPackageHandleStandardArgs.cmake:600 (_FPHSA_FAILURE_MESSAGE)
+  D:/CLion-2022.3/CLion 2022.3/bin/cmake/win/x64/share/cmake-3.28/Modules/FindBISON.cmake:306 (FIND_PACKAGE_HANDLE_STANDARD_ARGS)
+  src/parser/CMakeLists.txt:1 (find_package)
+
+
+-- Configuring incomplete, errors occurred!
