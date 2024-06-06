@@ -117,7 +117,7 @@ void DiskManager::create_file(const std::string &path) {
     // 注意不能重复创建相同文件
     int fd = open(path.c_str(), O_CREAT | O_EXCL | O_RDWR, S_IRUSR | S_IWUSR);
     if (fd == -1) {
-        throw FileExistsError("DiskManager::create_file Error")
+        throw FileExistsError("DiskManager::create_file Error");
     }
     close(fd);
 }
