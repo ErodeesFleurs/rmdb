@@ -102,7 +102,7 @@ void DiskManager::destroy_dir(const std::string &path) {
  */
 bool DiskManager::is_file(const std::string &path) {
     // 用struct stat获取文件信息
-    struct stat st;
+    struct stat st = {0};
     return stat(path.c_str(), &st) == 0 && S_ISREG(st.st_mode);
 }
 
@@ -115,6 +115,11 @@ void DiskManager::create_file(const std::string &path) {
     // Todo:
     // 调用open()函数，使用O_CREAT模式
     // 注意不能重复创建相同文件
+    int fd = open(path.c_str(), O_CREAT | O_EXCL | O_RDWR, S_IRUSR | S_IWUSR);
+    if (fd == -1) {
+        throw FileExistsError("DiskManager::create_file Error")
+    }
+    close(fd);
 }
 
 /**
