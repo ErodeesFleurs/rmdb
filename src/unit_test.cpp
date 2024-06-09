@@ -574,7 +574,6 @@ TEST(RecordManagerTest, SimpleTest) {
     auto disk_manager = std::make_unique<DiskManager>();
     auto buffer_pool_manager = std::make_unique<BufferPoolManager>(BUFFER_POOL_SIZE, disk_manager.get());
     auto rm_manager = std::make_unique<RmManager>(disk_manager.get(), buffer_pool_manager.get());
-
     std::unordered_map<Rid, std::string, rid_hash_t, rid_equal_t> mock;
 
     std::string filename = "abc.txt";
