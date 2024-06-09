@@ -12,6 +12,7 @@ See the Mulan PSL v2 for more details. */
 
 #include <atomic>
 #include <chrono>
+#include <string>
 #include <cstdint>
 
 #define BUFFER_LENGTH 8192
