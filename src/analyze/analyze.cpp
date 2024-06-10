@@ -23,6 +23,11 @@ std::shared_ptr<Query> Analyze::do_analyze(std::shared_ptr<ast::TreeNode> parse)
         // 处理表名
         query->tables = std::move(x->tabs);
         /** TODO: 检查表是否存在 */
+        for(const auto& table : query->tables){
+            if(!sm_manager_->db_.is_table(table)){
+                throw TableNotFoundError(table);
+            }
+        }
 
         // 处理target list，再target list中添加上表名，例如 a.id
         for (auto &sv_sel_col : x->cols) {
@@ -49,6 +54,10 @@ std::shared_ptr<Query> Analyze::do_analyze(std::shared_ptr<ast::TreeNode> parse)
         check_clause(query->tables, query->conds);
     } else if (auto x = std::dynamic_pointer_cast<ast::UpdateStmt>(parse)) {
         /** TODO: */
+        query->set_clauses.clear();
+        for (auto &sv_set : x->set_clauses) {
+            SetClause set_clause;
+        }
 
     } else if (auto x = std::dynamic_pointer_cast<ast::DeleteStmt>(parse)) {
         //处理where条件
@@ -85,6 +94,18 @@ TabCol Analyze::check_column(const std::vector<ColMeta> &all_cols, TabCol target
         target.tab_name = tab_name;
     } else {
         /** TODO: Make sure target column exists */
+        int count = 0;
+        for (auto &col : all_cols) { // 遍历查找是否存在以及是否重复
+            if (col.name == target.col_name && col.tab_name == target.tab_name) {
+                count++;
+                if (count > 1) {
+                    throw AmbiguousColumnError(target.col_name);
+                }
+            }
+        }
+        if (count == 0) { // 如果未能找到
+            throw ColumnNotFoundError(target.col_name);
+        }
         
     }
     return target;

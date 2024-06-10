@@ -188,7 +188,25 @@ void SmManager::create_table(const std::string& tab_name, const std::vector<ColD
  * @param {Context*} context
  */
 void SmManager::drop_table(const std::string& tab_name, Context* context) {
-    
+    if (!db_.is_table(tab_name)) { // 如果表不存在
+        throw TableNotFoundError(tab_name);
+    }
+    TabMeta &tab = db_.get_table(tab_name); // 获取表的元数据
+    for (const auto &index: tab.indexes) { // 删除表的索引
+        std::vector<std::string> col_names;
+        for (const auto &name: index.cols) {
+            col_names.push_back(name.name);
+        }
+        drop_index(tab_name, col_names, context);
+    }
+    if (fhs_.count(tab_name)) { // 如果表的文件句柄存在
+        rm_manager_->close_file(fhs_[tab_name].get());
+        fhs_.erase(tab_name);
+    }
+    rm_manager_->destroy_file(tab_name);
+    db_.tabs_.erase(tab_name);
+
+    flush_meta();
 }
 
 /**

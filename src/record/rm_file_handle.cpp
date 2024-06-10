@@ -111,7 +111,7 @@ void RmFileHandle::update_record(const Rid& rid, char* buf, Context* context) {
     // 2. 更新记录
     if(context != nullptr) context->lock_mgr_->lock_exclusive_on_record(context->txn_, rid, fd_);
     if (rid.page_no >= file_hdr_.num_pages) {
-        throw PageNotExistError(" RmFileHandle::update_record", rid.page_no);
+        throw PageNotExistError("RmFileHandle::update_record", rid.page_no);
     }
     RmPageHandle rm_page_handle = fetch_page_handle(rid.page_no);
     memcpy(rm_page_handle.get_slot(rid.slot_no), buf, rm_page_handle.file_hdr->record_size);
