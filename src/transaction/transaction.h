@@ -62,6 +62,13 @@ class Transaction {
 
     inline std::shared_ptr<std::unordered_set<LockDataId>> get_lock_set() { return lock_set_; }
 
+    inline void clear() {
+        write_set_->clear();
+        lock_set_->clear();
+        index_latch_page_set_->clear();
+        index_deleted_page_set_->clear();
+    }
+
    private:
     bool txn_mode_;                   // 用于标识当前事务为显式事务还是单条SQL语句的隐式事务
     TransactionState state_;          // 事务状态
