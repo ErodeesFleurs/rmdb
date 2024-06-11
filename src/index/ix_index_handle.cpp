@@ -24,7 +24,7 @@ int IxNodeHandle::lower_bound(const char *target) const {
     // 提示: 可以采用多种查找方式，如顺序遍历、二分查找等；使用ix_compare()函数进行比较
     int key_idx = 0, num_key = get_size() - 1;
     while (key_idx <= num_key) { // 二分查找
-        int now_idx = key_idx + num_key >> 1;
+        int now_idx = (key_idx + num_key) >> 1;
         if (ix_compare(target, get_key(now_idx), file_hdr->col_types_, file_hdr->col_lens_) <= 0) { // 如果target小于等于now_idx
             num_key = now_idx - 1;
         }
@@ -47,7 +47,7 @@ int IxNodeHandle::upper_bound(const char *target) const {
     // 提示: 可以采用多种查找方式：顺序遍历、二分查找等；使用ix_compare()函数进行比较
     int key_idx = 0, num_key = get_size() - 1;
     while (key_idx <= num_key) { // 二分查找
-        int now_idx = key_idx + num_key >> 1;
+        int now_idx = (key_idx + num_key) >> 1;
         if (ix_compare(target, get_key(now_idx), file_hdr->col_types_, file_hdr->col_lens_) < 0) { // 如果target小于now_idx
             num_key = now_idx - 1;
         }
@@ -76,8 +76,14 @@ bool IxNodeHandle::leaf_lookup(const char *key, Rid **value) {
         throw std::runtime_error("Error: leaf_lookup() is called on a non-leaf node");
     }
     int key_idx = lower_bound(key);
-    if (key_idx == get_size())
-    return false;
+    if (key_idx == get_size()) { // key不存在
+        return false;
+    }
+    if (ix_compare(key, get_key(key_idx), file_hdr->col_types_, file_hdr->col_lens_) != 0) { // key不存在
+        return false;
+    }
+    *value = get_rid(key_idx);
+    return true;
 }
 
 /**
@@ -90,8 +96,8 @@ page_id_t IxNodeHandle::internal_lookup(const char *key) {
     // 1. 查找当前非叶子节点中目标key所在孩子节点（子树）的位置
     // 2. 获取该孩子节点（子树）所在页面的编号
     // 3. 返回页面编号
-
-    return -1;
+    int key_idx = std::max(upper_bound(key) - 1, 0);
+    return value_at(key_idx);
 }
 
 /**
