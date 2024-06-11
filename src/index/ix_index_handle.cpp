@@ -22,7 +22,7 @@ int IxNodeHandle::lower_bound(const char *target) const {
     // Todo:
     // 查找当前节点中第一个大于等于target的key，并返回key的位置给上层
     // 提示: 可以采用多种查找方式，如顺序遍历、二分查找等；使用ix_compare()函数进行比较
-    int key_idx = 0, num_key = page_hdr->num_key - 1;
+    int key_idx = 0, num_key = get_size() - 1;
     while (key_idx <= num_key) { // 二分查找
         int now_idx = key_idx + num_key >> 1;
         if (ix_compare(target, get_key(now_idx), file_hdr->col_types_, file_hdr->col_lens_) <= 0) { // 如果target小于等于now_idx
@@ -45,7 +45,7 @@ int IxNodeHandle::upper_bound(const char *target) const {
     // Todo:
     // 查找当前节点中第一个大于target的key，并返回key的位置给上层
     // 提示: 可以采用多种查找方式：顺序遍历、二分查找等；使用ix_compare()函数进行比较
-    int key_idx = 0, num_key = page_hdr->num_key - 1;
+    int key_idx = 0, num_key = get_size() - 1;
     while (key_idx <= num_key) { // 二分查找
         int now_idx = key_idx + num_key >> 1;
         if (ix_compare(target, get_key(now_idx), file_hdr->col_types_, file_hdr->col_lens_) < 0) { // 如果target小于now_idx
@@ -72,7 +72,11 @@ bool IxNodeHandle::leaf_lookup(const char *key, Rid **value) {
     // 2. 判断目标key是否存在
     // 3. 如果存在，获取key对应的Rid，并赋值给传出参数value
     // 提示：可以调用lower_bound()和get_rid()函数。
-
+    if (!is_leaf_page()) {
+        throw std::runtime_error("Error: leaf_lookup() is called on a non-leaf node");
+    }
+    int key_idx = lower_bound(key);
+    if (key_idx == get_size())
     return false;
 }
 

@@ -67,7 +67,7 @@ class IxNodeHandle {
         rids = reinterpret_cast<Rid *>(keys + file_hdr->keys_size_);
     }
 
-    int get_size() { return page_hdr->num_key; }
+    int get_size() const { return page_hdr->num_key; }
 
     void set_size(int size) { page_hdr->num_key = size; }
 
