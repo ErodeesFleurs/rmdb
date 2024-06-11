@@ -85,7 +85,21 @@ void SmManager::drop_db(const std::string& db_name) {
  * @param {string&} db_name 数据库名称，与文件夹同名
  */
 void SmManager::open_db(const std::string& db_name) {
-    
+    if (!is_dir(db_name)) {
+        throw DatabaseNotFoundError(db_name);
+    }
+    if (chdir(db_name.c_str()) < 0) {
+        throw UnixError();
+    }
+    std::ifstream ofs(DB_META_NAME);
+    ofs >> db_;
+    for (auto &[tab_name, tab_info]: db_.tabs_) {
+        fhs_.emplace(tab_name, rm_manager_->open_file(tab_name));
+        for (const auto &index: tab_info.indexes) {
+            std::string ix_name = get_ix_manager()->get_index_name(tab_name, index.cols);
+            ihs_.emplace(ix_name, get_ix_manager()->open_index(tab_name, index.cols));
+        }
+    }
 }
 
 /**
@@ -101,7 +115,17 @@ void SmManager::flush_meta() {
  * @description: 关闭数据库并把数据落盘
  */
 void SmManager::close_db() {
-    
+    flush_meta();
+    for (auto &fh: fhs_) { // 关闭所有的文件句柄
+        rm_manager_->close_file(fh.second.get());
+    }
+    db_.name_.clear();
+    db_.tabs_.clear();
+    fhs_.clear();
+
+    if (chdir("..") < 0) {
+        throw UnixError();
+    }
 }
 
 /**
