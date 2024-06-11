@@ -22,8 +22,17 @@ int IxNodeHandle::lower_bound(const char *target) const {
     // Todo:
     // 查找当前节点中第一个大于等于target的key，并返回key的位置给上层
     // 提示: 可以采用多种查找方式，如顺序遍历、二分查找等；使用ix_compare()函数进行比较
-
-    return -1;
+    int key_idx = 0, num_key = page_hdr->num_key - 1;
+    while (key_idx <= num_key) { // 二分查找
+        int now_idx = key_idx + num_key >> 1;
+        if (ix_compare(target, get_key(now_idx), file_hdr->col_types_, file_hdr->col_lens_) <= 0) { // 如果target小于等于now_idx
+            num_key = now_idx - 1;
+        }
+        else {
+            key_idx = now_idx + 1;
+        }
+    }
+    return key_idx;
 }
 
 /**
@@ -36,8 +45,17 @@ int IxNodeHandle::upper_bound(const char *target) const {
     // Todo:
     // 查找当前节点中第一个大于target的key，并返回key的位置给上层
     // 提示: 可以采用多种查找方式：顺序遍历、二分查找等；使用ix_compare()函数进行比较
-
-    return -1;
+    int key_idx = 0, num_key = page_hdr->num_key - 1;
+    while (key_idx <= num_key) { // 二分查找
+        int now_idx = key_idx + num_key >> 1;
+        if (ix_compare(target, get_key(now_idx), file_hdr->col_types_, file_hdr->col_lens_) < 0) { // 如果target小于now_idx
+            num_key = now_idx - 1;
+        }
+        else {
+            key_idx = now_idx + 1;
+        }
+    }
+    return key_idx;
 }
 
 /**
