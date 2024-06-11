@@ -45,6 +45,10 @@ class SeqScanExecutor : public AbstractExecutor {
         fed_conds_ = conds_;
     }
 
+    const std::vector<ColMeta> &cols() const override {
+        return cols_;
+    }
+
     void beginTuple() override {
         
     }
