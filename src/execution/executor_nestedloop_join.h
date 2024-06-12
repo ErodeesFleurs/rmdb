@@ -23,7 +23,7 @@ class NestedLoopJoinExecutor : public AbstractExecutor {
     std::vector<ColMeta> cols_;                 // join后获得的记录的字段
 
     std::vector<Condition> fed_conds_;          // join条件
-    bool isend;
+    bool is_end_;
 
    public:
     NestedLoopJoinExecutor(std::unique_ptr<AbstractExecutor> left, std::unique_ptr<AbstractExecutor> right, 
@@ -38,22 +38,67 @@ class NestedLoopJoinExecutor : public AbstractExecutor {
         }
 
         cols_.insert(cols_.end(), right_cols.begin(), right_cols.end());
-        isend = false;
+        is_end_ = false;
         fed_conds_ = std::move(conds);
 
     }
 
-    void beginTuple() override {
+    const std::vector<ColMeta> &cols() const override {
+        return cols_;
+    }
 
+    void beginTuple() override {
+        std::cerr << "beginTuple" << std::endl;
+        left_->beginTuple();
+        right_->beginTuple();
+        if (left_->is_end() || right_->is_end()) {
+            is_end_ = true;
+            return ;
+        }
+        find_record();
     }
 
     void nextTuple() override {
-        
+        if (is_end()) return;
+        left_->nextTuple();
+        if (left_->is_end()) {
+            right_->nextTuple();
+            left_->beginTuple();
+        }
+        find_record();
     }
 
     std::unique_ptr<RmRecord> Next() override {
-        return nullptr;
+        auto record = std::make_unique<RmRecord>(len_);
+        auto left_record = left_->Next();
+        auto right_record = right_->Next();
+        memcpy(record->data, left_record->data, left_->tupleLen());
+        memcpy(record->data + left_->tupleLen(), right_record->data, right_->tupleLen());
+        return record;
+    }
+
+    bool is_end() const override {
+        return is_end_;
     }
 
     Rid &rid() override { return _abstract_rid; }
+
+    void find_record(){
+        while(!right_->is_end()){
+            auto record = std::make_unique<RmRecord>(len_);
+            auto left_record = left_->Next();
+            auto right_record = right_->Next();
+            memcpy(record->data, left_record->data, left_->tupleLen());
+            memcpy(record->data + left_->tupleLen(), right_record->data, right_->tupleLen());
+            if(fed_conds_.empty() || eval_conds(cols_, fed_conds_, record.get())) {
+                return;
+            }
+            left_->nextTuple();
+            if(left_->is_end()){
+                right_->nextTuple();
+                left_->beginTuple();
+            }
+        }
+        is_end_ = true;
+    }
 };
