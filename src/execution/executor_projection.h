@@ -45,9 +45,6 @@ class ProjectionExecutor : public AbstractExecutor {
 
     void beginTuple() override {
         prev_->beginTuple(); // 调用子节点的beginTuple
-        if (!prev_->is_end()) {
-            prev_->nextTuple();
-        }
     }
 
     void nextTuple() override {
@@ -58,10 +55,13 @@ class ProjectionExecutor : public AbstractExecutor {
         auto rec = std::make_unique<RmRecord>(len_);
         auto& prev_cols = prev_->cols();
         auto prev_rec = prev_->Next();
-        for (size_t i = 0; i < sel_idxs_.size(); i++) {
+        for (size_t i = 0; i < sel_idxs_.size(); i++) { // 从prev_rec中取出需要的字段
             auto idx = sel_idxs_[i];
             auto col = cols_[i];
-            memcmp(rec->data + col.offset, prev_rec->data + prev_cols[idx].offset, col.len);
+            auto prev_col = prev_cols[idx];
+            auto prev_val = prev_rec->data + prev_col.offset;
+            auto val = rec->data + col.offset;
+            memcpy(val, prev_val, col.len);
         }
         return rec;
     }
