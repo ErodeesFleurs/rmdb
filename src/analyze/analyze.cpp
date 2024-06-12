@@ -15,16 +15,14 @@ See the Mulan PSL v2 for more details. */
  * @param {shared_ptr<ast::TreeNode>} parse parser生成的结果集
  * @return {shared_ptr<Query>} Query 
  */
-std::shared_ptr<Query> Analyze::do_analyze(std::shared_ptr<ast::TreeNode> parse)
-{
+std::shared_ptr<Query> Analyze::do_analyze(std::shared_ptr<ast::TreeNode> parse) {
     std::shared_ptr<Query> query = std::make_shared<Query>();
-    if (auto x = std::dynamic_pointer_cast<ast::SelectStmt>(parse))
-    {
+    if (auto x = std::dynamic_pointer_cast<ast::SelectStmt>(parse)) {
         // 处理表名
         query->tables = std::move(x->tabs);
         /** TODO: 检查表是否存在 */
-        for(const auto& table : query->tables){
-            if(!sm_manager_->db_.is_table(table)){
+        for (const auto& table : query->tables) {
+            if (!sm_manager_->db_.is_table(table)) {
                 throw TableNotFoundError(table);
             }
         }
@@ -54,11 +52,15 @@ std::shared_ptr<Query> Analyze::do_analyze(std::shared_ptr<ast::TreeNode> parse)
         check_clause(query->tables, query->conds);
     } else if (auto x = std::dynamic_pointer_cast<ast::UpdateStmt>(parse)) {
         /** TODO: */
-        // query->set_clauses.clear();
-        // for (auto &sv_set : x->set_clauses) {
-        //     SetClause set_clause;
-        // }
-
+        query->set_clauses.clear();
+        for (const auto &sv_set : x->set_clauses) { // 处理set子句
+            TabCol lhs_col = {x->tab_name, sv_set->col_name};
+            Value rhs_val = convert_sv_value(sv_set->val);
+            SetClause set_clause = {std::move(lhs_col), std::move(rhs_val)};
+            query->set_clauses.push_back(set_clause);
+        }
+        get_clause(x->conds, query->conds);
+        check_clause({x->tab_name}, query->conds);
     } else if (auto x = std::dynamic_pointer_cast<ast::DeleteStmt>(parse)) {
         //处理where条件
         get_clause(x->conds, query->conds);

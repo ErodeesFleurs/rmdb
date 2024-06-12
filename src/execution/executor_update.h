@@ -38,7 +38,20 @@ class UpdateExecutor : public AbstractExecutor {
         context_ = context;
     }
     std::unique_ptr<RmRecord> Next() override {
-        
+        std::unordered_map<TabCol, ColMeta, std::hash<TabCol>, std::equal_to<TabCol>, std::allocator<std::pair<const TabCol, ColMeta>>> col_metas(0);
+        for (const auto &set_clause : set_clauses_) {
+            col_metas[set_clause.lhs] = *get_col(tab_.cols, set_clause.lhs);
+        }
+        for (const auto &rid : rids_) {
+            std::unique_ptr<RmRecord> record = fh_->get_record(rid, context_);
+            for (const auto &set_clause : set_clauses_) {
+                auto &col_meta = col_metas[set_clause.lhs];
+                auto value = set_clause.rhs;
+                value.init_raw(col_meta.len);
+                memcmp(record->data + col_meta.offset, value.raw->data, col_meta.len);
+            }
+            fh_->update_record(rid, record->data, context_);
+        }
         return nullptr;
     }
 
