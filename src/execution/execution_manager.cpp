@@ -127,18 +127,18 @@ void QlManager::run_cmd_utility(std::shared_ptr<Plan> plan, txn_id_t *txn_id, Co
     } else if(auto x = std::dynamic_pointer_cast<SetKnobPlan>(plan)) {
         switch (x->set_knob_type_)
         {
-        case ast::SetKnobType::EnableNestLoop: {
-            planner_->set_enable_nestedloop_join(x->bool_value_);
-            break;
-        }
-        case ast::SetKnobType::EnableSortMerge: {
-            planner_->set_enable_sortmerge_join(x->bool_value_);
-            break;
-        }
-        default: {
-            throw RMDBError("Not implemented!\n");
-            break;
-        }
+            case ast::SetKnobType::EnableNestLoop: {
+                planner_->set_enable_nestedloop_join(x->bool_value_);
+                break;
+            }
+            case ast::SetKnobType::EnableSortMerge: {
+                planner_->set_enable_sortmerge_join(x->bool_value_);
+                break;
+            }
+            default: {
+                throw RMDBError("Not implemented!\n");
+                break;
+            }
         }
     }
 }
