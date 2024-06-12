@@ -120,7 +120,16 @@ void IxNodeHandle::insert_pairs(int pos, const char *key, const Rid *rid, int n)
     // 2. 通过key获取n个连续键值对的key值，并把n个key值插入到pos位置
     // 3. 通过rid获取n个连续键值对的rid值，并把n个rid值插入到pos位置
     // 4. 更新当前节点的键数量
-
+    if (pos < 0 || pos > get_size()) {
+        throw std::runtime_error("Error: insert_pairs() pos is out of range");
+    }
+    auto pos_key = get_key(pos);
+    memmove(pos_key + n * file_hdr->col_tot_len_, pos_key, (get_size() - pos) * file_hdr->col_tot_len_);
+    memcpy(pos_key, key, n * file_hdr->col_tot_len_);
+    auto pos_rid = get_rid(pos);
+    memmove(pos_rid + n, pos_rid, (get_size() - pos) * sizeof(Rid));
+    memcpy(pos_rid, rid, n * sizeof(Rid));
+    set_size(get_size() + n);
 }
 
 /**
@@ -136,8 +145,14 @@ int IxNodeHandle::insert(const char *key, const Rid &value) {
     // 2. 如果key重复则不插入
     // 3. 如果key不重复则插入键值对
     // 4. 返回完成插入操作之后的键值对数量
-
-    return -1;
+    int pos = lower_bound(key);
+    if (pos < get_size()) { // key重复
+        if (ix_compare(key, get_key(pos), file_hdr->col_types_, file_hdr->col_lens_) == 0) {
+            return get_size();
+        }
+    }
+    insert_pairs(pos, key, &value, 1);
+    return get_size();
 }
 
 /**
@@ -150,7 +165,14 @@ void IxNodeHandle::erase_pair(int pos) {
     // 1. 删除该位置的key
     // 2. 删除该位置的rid
     // 3. 更新结点的键值对数量
-
+    if (pos < 0 || pos >= get_size()) {
+        throw std::runtime_error("Error: erase_pair() pos is out of range");
+    }
+    auto pos_key = get_key(pos);
+    memmove(pos_key, pos_key + file_hdr->col_tot_len_, (get_size() - pos - 1) * file_hdr->col_tot_len_);
+    auto pos_rid = get_rid(pos);
+    memmove(pos_rid, pos_rid + 1, (get_size() - pos - 1) * sizeof(Rid));
+    set_size(get_size() - 1);
 }
 
 /**
@@ -164,8 +186,15 @@ int IxNodeHandle::remove(const char *key) {
     // 1. 查找要删除键值对的位置
     // 2. 如果要删除的键值对存在，删除键值对
     // 3. 返回完成删除操作后的键值对数量
-
-    return -1;
+    int pos = lower_bound(key);
+    if (pos >= get_size()) { // key不存在
+        return get_size();
+    }
+    if (ix_compare(key, get_key(pos), file_hdr->col_types_, file_hdr->col_lens_) != 0) { // key不存在
+        return get_size();
+    }
+    erase_pair(pos);
+    return get_size();
 }
 
 IxIndexHandle::IxIndexHandle(DiskManager *disk_manager, BufferPoolManager *buffer_pool_manager, int fd)
