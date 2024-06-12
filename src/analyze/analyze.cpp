@@ -54,10 +54,10 @@ std::shared_ptr<Query> Analyze::do_analyze(std::shared_ptr<ast::TreeNode> parse)
         check_clause(query->tables, query->conds);
     } else if (auto x = std::dynamic_pointer_cast<ast::UpdateStmt>(parse)) {
         /** TODO: */
-        query->set_clauses.clear();
-        for (auto &sv_set : x->set_clauses) {
-            SetClause set_clause;
-        }
+        // query->set_clauses.clear();
+        // for (auto &sv_set : x->set_clauses) {
+        //     SetClause set_clause;
+        // }
 
     } else if (auto x = std::dynamic_pointer_cast<ast::DeleteStmt>(parse)) {
         //处理where条件

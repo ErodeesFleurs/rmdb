@@ -63,7 +63,7 @@ class AbstractExecutor {
                 break;
             }
             case TYPE_FLOAT: {
-                double fa = *(double *) a;
+                float fa = *(float *) a;
                 res.set_float(fa);
                 break;
             }
@@ -94,7 +94,7 @@ class AbstractExecutor {
         throw InternalError("convert::Unexpected value type");
     }
 
-    static inline int val_compare(Value &pa, Value &pb, int len) {
+    static inline int val_compare(Value &pa, Value &pb, int len = 0) {
         convert(pa, pb);
         switch (pa.type) {
             case TYPE_FLOAT:{
