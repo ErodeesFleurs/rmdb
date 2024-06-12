@@ -44,7 +44,7 @@ class AbstractExecutor {
 
     virtual ColMeta get_col_offset(const TabCol &target) { return ColMeta();};
 
-    std::vector<ColMeta>::const_iterator get_col(const std::vector<ColMeta> &rec_cols, const TabCol &target) {
+    static std::vector<ColMeta>::const_iterator get_col(const std::vector<ColMeta> &rec_cols, const TabCol &target) {
         auto pos = std::find_if(rec_cols.begin(), rec_cols.end(), [&](const ColMeta &col) {
             return col.tab_name == target.tab_name && col.name == target.col_name;
         });
@@ -52,5 +52,110 @@ class AbstractExecutor {
             throw ColumnNotFoundError(target.tab_name + '.' + target.col_name);
         }
         return pos;
+    }
+
+    static Value get_value(ColType p, const char *a) {
+        Value res;
+        switch (p) {
+            case TYPE_INT: {
+                int ia = *(int *) a;
+                res.set_int(ia);
+                break;
+            }
+            case TYPE_FLOAT: {
+                double fa = *(double *) a;
+                res.set_float(fa);
+                break;
+            }
+            case TYPE_STRING:
+                std::string str = a;
+                res.set_str(str);
+                break;
+        }
+        return res;
+    }
+
+    static void convert(Value &a, Value &b) {
+        // 数值类型的转化(int, float)
+        // int -> float
+        if (a.type == b.type) return;
+        if (a.type == TYPE_FLOAT) {
+            if (b.type == TYPE_INT) {
+                b.set_float((double) b.int_val);
+                return;
+            }
+        }
+        else if (a.type == TYPE_INT) {
+            if (b.type == TYPE_FLOAT) {
+                a.set_float((double) a.int_val);
+                return;
+            }
+        }
+        throw InternalError("convert::Unexpected value type");
+    }
+
+    static inline int val_compare(Value &pa, Value &pb, int len) {
+        convert(pa, pb);
+        switch (pa.type) {
+            case TYPE_FLOAT:{
+                double va = pa.float_val;
+                double vb = pb.float_val;
+                return (va < vb) ? -1 : ((va > vb) ? 1 : 0);
+            }
+            case TYPE_INT: {
+                int va = pa.int_val;
+                int vb = pb.int_val;
+                return (va < vb) ? -1 : ((va > vb) ? 1 : 0);
+            }
+            case TYPE_STRING: {
+                std::string va = pa.str_val.substr(0, len);
+                std::string vb = pb.str_val.substr(0, len);
+                return (va < vb) ? -1 : ((va > vb) ? 1 : 0);
+            }
+        }
+        return 0;
+    }
+
+    static bool eval_cond(const std::vector<ColMeta> &rec_cols, const Condition &cond, const RmRecord *rec) {
+        auto lhs_col = get_col(rec_cols, cond.lhs_col);
+        char *lhs = rec->data + lhs_col->offset;
+        char *rhs;
+        ColType rhs_type, lhs_type = lhs_col->type;
+        if (cond.is_rhs_val) {
+            rhs_type = cond.rhs_val.type;
+            rhs = cond.rhs_val.raw->data;
+        } else {
+            auto rhs_col = get_col(rec_cols, cond.rhs_col);
+            rhs_type = rhs_col->type;
+            rhs = rec->data + rhs_col->offset;
+        }
+        int cmp;
+        if (rhs_type != lhs_type) {
+            Value ls = get_value(lhs_type, lhs);
+            Value rs = get_value(rhs_type, rhs);
+            cmp = val_compare(ls, rs, lhs_col->len);
+        } else {
+            cmp = ix_compare(lhs, rhs, rhs_type, lhs_col->len);
+        }
+        if (cond.op == OP_EQ) {
+            return cmp == 0;
+        } else if (cond.op == OP_NE) {
+            return cmp != 0;
+        } else if (cond.op == OP_LT) {
+            return cmp < 0;
+        } else if (cond.op == OP_GT) {
+            return cmp > 0;
+        } else if (cond.op == OP_LE) {
+            return cmp <= 0;
+        } else if (cond.op == OP_GE) {
+            return cmp >= 0;
+        } else {
+            throw InternalError("eval_cond::Unexpected op type");
+        }
+    }
+
+    bool eval_conds(const std::vector<ColMeta> &rec_cols, const std::vector<Condition> &conds, const RmRecord *rec) {
+        return std::all_of(conds.begin(), conds.end(),
+                           [&](const Condition &cond) { return eval_cond(rec_cols, cond, rec); });
     }
 };
