@@ -43,12 +43,14 @@ class UpdateExecutor : public AbstractExecutor {
             col_metas[set_clause.lhs] = *get_col(tab_.cols, set_clause.lhs);
         }
         for (const auto &rid : rids_) {
-            std::unique_ptr<RmRecord> record = fh_->get_record(rid, context_);
-            for (const auto &set_clause : set_clauses_) {
+            std::unique_ptr<RmRecord> record = fh_->get_record(rid, context_); // 获取记录
+            for (const auto &set_clause : set_clauses_) { // 遍历set子句
                 auto &col_meta = col_metas[set_clause.lhs];
                 auto value = set_clause.rhs;
+                auto old_value = get_value(col_meta.type, record->data + col_meta.offset);
+                convert(value, old_value); // 转换数据类型
                 value.init_raw(col_meta.len);
-                memcmp(record->data + col_meta.offset, value.raw->data, col_meta.len);
+                memcpy(record->data + col_meta.offset, value.raw->data, col_meta.len); // 覆写数据
             }
             fh_->update_record(rid, record->data, context_);
         }
