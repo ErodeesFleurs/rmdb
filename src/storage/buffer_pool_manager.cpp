@@ -109,7 +109,6 @@ bool BufferPoolManager::unpin_page(PageId page_id, bool is_dirty) {
     Page *P = pages_ + frame_id;
     if (P->pin_count_ <= 0) return false;
     P->pin_count_--;
-    // 只能是 false -> true，不能是 true -> false
     P->is_dirty_ |= is_dirty;
     if (P->pin_count_ == 0) {
         replacer_->unpin(frame_id);

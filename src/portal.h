@@ -154,17 +154,22 @@ class Portal
 
 
     std::unique_ptr<AbstractExecutor> convert_plan_executor(std::shared_ptr<Plan> plan, Context *context) {
+        // std::cerr << "convert_plan_executor" << std::endl;
         if(auto x = std::dynamic_pointer_cast<ProjectionPlan>(plan)) {
+            // std::cerr << "ProjectionPlan" << std::endl;
             return std::make_unique<ProjectionExecutor>(convert_plan_executor(x->subplan_, context), 
                                                         x->sel_cols_);
         } else if(auto x = std::dynamic_pointer_cast<ScanPlan>(plan)) {
             if(x->tag == T_SeqScan) {
+                // std::cerr << "SeqScan" << std::endl;
                 return std::make_unique<SeqScanExecutor>(sm_manager_, x->tab_name_, x->conds_, context);
             }
             else {
+                // std::cerr << "IndexScan" << std::endl;
                 return std::make_unique<IndexScanExecutor>(sm_manager_, x->tab_name_, x->conds_, x->index_col_names_, context);
             } 
         } else if(auto x = std::dynamic_pointer_cast<JoinPlan>(plan)) {
+            // std::cerr << "JoinPlan" << std::endl;
             std::unique_ptr<AbstractExecutor> left = convert_plan_executor(x->left_, context);
             std::unique_ptr<AbstractExecutor> right = convert_plan_executor(x->right_, context);
             std::unique_ptr<AbstractExecutor> join = std::make_unique<NestedLoopJoinExecutor>(
@@ -172,6 +177,7 @@ class Portal
                                 std::move(right), std::move(x->conds_));
             return join;
         } else if(auto x = std::dynamic_pointer_cast<SortPlan>(plan)) {
+            // std::cerr << "SortPlan" << std::endl;
             return std::make_unique<SortExecutor>(convert_plan_executor(x->subplan_, context), 
                                             x->sel_col_, x->is_desc_);
         }

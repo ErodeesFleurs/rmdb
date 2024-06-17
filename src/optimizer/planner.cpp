@@ -22,16 +22,57 @@ See the Mulan PSL v2 for more details. */
 #include "index/ix.h"
 #include "record_printer.h"
 
-// 目前的索引匹配规则为：完全匹配索引字段，且全部为单点查询，不会自动调整where条件的顺序
+// 目前的索引匹配规则为：完全匹配索引字段，且全部为单点查询，会自动调整where条件的顺序
 bool Planner::get_index_cols(std::string tab_name, std::vector<Condition> curr_conds, std::vector<std::string>& index_col_names) {
     index_col_names.clear();
-    for(auto& cond: curr_conds) {
-        if(cond.is_rhs_val && cond.op == OP_EQ && cond.lhs_col.tab_name.compare(tab_name) == 0)
-            index_col_names.push_back(cond.lhs_col.col_name);
+    std::map<std::string, std::pair<int, int>> mp; // 存储列名 -> 比较方法、curr_conds中所在下标
+    for(int i = 0; i < curr_conds.size(); i++){
+        auto cond = curr_conds[i];
+        if(cond.lhs_col.tab_name != tab_name || !cond.is_rhs_val) continue;
+        int op = -1;
+        if(cond.op == OP_EQ) op = 1;
+        else if(cond.op == OP_GT || cond.op == OP_GE) op = 0;
+        else if(cond.op == OP_LE || cond.op == OP_LT) op = 2;
+        if(op == -1) continue;
+        if(mp.count(cond.lhs_col.col_name) && op == 2) continue;
+        mp[cond.lhs_col.col_name] = {op, i};
     }
     TabMeta& tab = sm_manager_->db_.get_table(tab_name);
-    if(tab.is_index(index_col_names)) return true;
-    return false;
+    int mx = 0;//最左匹配中最多匹配数
+    std::vector<Condition> res;//最左匹配时条件顺序
+    std::vector<int> ids;//最左匹配时下标顺序
+    std::vector<ColMeta> cols;//最左匹配时index列
+    for(const auto& index : tab.indexes){
+        int cnt = 0;
+        std::vector<int> tmp;
+        for(const auto& col : index.cols){
+            if(!mp.count(col.name)) break;
+            std::pair<int, int> val = mp[col.name];
+            cnt++;
+            tmp.push_back(val.second);
+            if(!val.first) break;// 说明是范围查询
+        }
+        if(cnt > mx){// 匹配数更多
+            mx = cnt;
+            ids = tmp;
+            cols = index.cols;
+        }
+    }
+    if(!mx) return false;
+    std::unordered_map<int, bool> vis;
+    for(int i : ids){
+        res.push_back(curr_conds[i]);
+        vis[i] = true;
+    }
+    for(int i = 0; i < curr_conds.size(); i++){
+        if(vis.count(i)) continue;
+        res.push_back(curr_conds[i]);
+    }
+    curr_conds = res;
+    for(const auto& col : cols){
+        index_col_names.push_back(col.name);
+    }
+    return true;
 }
 
 /**

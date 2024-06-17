@@ -373,11 +373,11 @@ page_id_t IxIndexHandle::insert_entry(const char *key, const Rid &value, Transac
     int old_count = leaf_node->get_size();
     int count = leaf_node->insert(key, value);
     if (old_count == count) {
-        return -1;
+        return INVALID_PAGE_ID;
     }
     maintain_parent(leaf_node);
     int pos = leaf_node->lower_bound(key);
-    int ret = -1;
+    int ret = INVALID_PAGE_ID;
     if (count == leaf_node->get_max_size()) {
         auto new_node = split(leaf_node);
         insert_into_parent(leaf_node, new_node->get_key(0), new_node, transaction);
@@ -689,7 +689,7 @@ Iid IxIndexHandle::upper_bound(const char *key) {
  */
 Iid IxIndexHandle::leaf_end() const {
     IxNodeHandle *node = fetch_node(file_hdr_->last_leaf_);
-    Iid iid = {.page_no = file_hdr_->last_leaf_, .slot_no = node->get_size()};
+    Iid iid = {file_hdr_->last_leaf_, node->get_size()};
     buffer_pool_manager_->unpin_page(node->get_page_id(), false);  // unpin it!
     return iid;
 }

@@ -52,18 +52,45 @@ class InsertExecutor : public AbstractExecutor {
         // Insert into record file
         rid_ = fh_->insert_record(rec.data, context_);
         
+        int fail_pos = -1;
         // Insert into index
         for(size_t i = 0; i < tab_.indexes.size(); ++i) {
             auto& index = tab_.indexes[i];
-            auto ih = sm_manager_->ihs_.at(sm_manager_->get_ix_manager()->get_index_name(tab_name_, index.cols)).get();
+            auto ix_name = sm_manager_->get_ix_manager()->get_index_name(tab_name_, index.cols);
+            auto ih = sm_manager_->ihs_.at(ix_name).get();
             char* key = new char[index.col_tot_len];
             int offset = 0;
             for(int i = 0; i < index.col_num; ++i) {
                 memcpy(key + offset, rec.data + index.cols[i].offset, index.cols[i].len);
                 offset += index.cols[i].len;
             }
-            ih->insert_entry(key, rid_, context_->txn_);
+            auto page_id = ih->insert_entry(key, rid_, context_->txn_);
+            delete[] key;
+            if (page_id == INVALID_PAGE_ID) {
+                fail_pos = i;
+                break;
+            }
+
+            if (fail_pos != -1) {
+                for (int i = 0; i < fail_pos; i++) {
+                    auto index = tab_.indexes[i];
+                    auto ix_name = sm_manager_->get_ix_manager()->get_index_name(tab_name_, index.cols);
+                    auto ih = sm_manager_->ihs_.at(ix_name).get();
+                    char *key = new char[index.col_tot_len];
+                    int offset = 0;
+                    for (int j = 0; j < index.col_num; ++j) {
+                        memcpy(key + offset, rec.data + index.cols[j].offset, index.cols[j].len);
+                        offset += index.cols[j].len;
+                    }
+                    ih->delete_entry(key, context_->txn_);
+                    delete[] key;
+                }
+                fh_->delete_record(rid_, context_);
+                throw RMDBError("Insert Error");
+            }
         }
+        auto *wr = new WriteRecord(WType::INSERT_TUPLE, tab_name_, rid_, rec);
+        context_->txn_->append_write_record(wr);
         return nullptr;
     }
     Rid &rid() override { return rid_; }
