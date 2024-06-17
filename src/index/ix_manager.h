@@ -140,6 +140,7 @@ class IxManager {
 
     void destroy_index(const std::string &filename, const std::vector<std::string>& index_cols) {
         std::string ix_name = get_index_name(filename, index_cols);
+        disk_manager_->close_file(ix_name);
         disk_manager_->destroy_file(ix_name);
     }
 

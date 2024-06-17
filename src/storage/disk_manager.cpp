@@ -189,6 +189,21 @@ void DiskManager::close_file(int fd) {
     path2fd_.erase(path);
 }
 
+/**
+ * @description:用于关闭指定路径文件 
+ * @param {string} path 打开的文件的路径
+ */
+void DiskManager::close_file(const std::string &path) {
+    int fd = path2fd_[path];
+    if (close(fd) < 0) {
+        throw UnixError();
+    }
+    if (!fd2path_.count(fd)) {
+        throw FileNotOpenError(fd);
+    }
+    fd2path_.erase(fd);
+    path2fd_.erase(path);
+}
 
 /**
  * @description: 获得文件的大小
