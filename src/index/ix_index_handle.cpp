@@ -160,7 +160,7 @@ int IxNodeHandle::insert(const char *key, const Rid &value) {
  *
  * @param pos 要删除键值对的位置
  */
-void IxNodeHandle::erase_pair(int pos) {
+void IxNodeHandle::erase_pairs(int pos, int n) {
     // Todo:
     // 1. 删除该位置的key
     // 2. 删除该位置的rid
@@ -169,10 +169,10 @@ void IxNodeHandle::erase_pair(int pos) {
         throw std::runtime_error("Error: erase_pair() pos is out of range");
     }
     auto pos_key = get_key(pos);
-    memmove(pos_key, pos_key + file_hdr->col_tot_len_, (get_size() - pos - 1) * file_hdr->col_tot_len_);
+    memmove(pos_key, pos_key + file_hdr->col_tot_len_, (get_size() - pos - n) * file_hdr->col_tot_len_);
     auto pos_rid = get_rid(pos);
-    memmove(pos_rid, pos_rid + 1, (get_size() - pos - 1) * sizeof(Rid));
-    set_size(get_size() - 1);
+    memmove(pos_rid, pos_rid + n, (get_size() - pos - n) * sizeof(Rid));
+    set_size(get_size() - n);
 }
 
 /**
@@ -560,7 +560,7 @@ void IxIndexHandle::redistribute(IxNodeHandle *neighbor_node, IxNodeHandle *node
         int pos = left_node->get_size();
         int count = left - pos;
         left_node->insert_pairs(pos, key, rid, count);
-        right_node->erase_pair(0);
+        right_node->erase_pairs(0, count);
         for (int i = pos; i < pos + count; i++) {
             maintain_child(left_node, i);
         }
@@ -571,7 +571,7 @@ void IxIndexHandle::redistribute(IxNodeHandle *neighbor_node, IxNodeHandle *node
         int pos = left_node->get_size();
         int count = pos - left;
         right_node->insert_pairs(0, key, rid, count);
-        left_node->erase_pair(left);
+        left_node->erase_pairs(left, count);
         for (int i = 0; i < count; i++) {
             maintain_child(right_node, i);
         }
@@ -651,8 +651,13 @@ Rid IxIndexHandle::get_rid(const Iid &iid) const {
  * 可用*(int *)key转换回去
  */
 Iid IxIndexHandle::lower_bound(const char *key) {
+    IxNodeHandle *node = find_leaf_page(key, Operation::FIND, nullptr).first;
+    int key_idx = node->lower_bound(key);
 
-    return Iid{-1, -1};
+    Iid iid = {node->get_page_no(), key_idx};
+
+    buffer_pool_manager_->unpin_page(node->get_page_id(), false);
+    return iid;
 }
 
 /**
@@ -662,8 +667,18 @@ Iid IxIndexHandle::lower_bound(const char *key) {
  * @return Iid
  */
 Iid IxIndexHandle::upper_bound(const char *key) {
-    
-    return Iid{-1, -1};
+    IxNodeHandle *node = find_leaf_page(key, Operation::FIND, nullptr).first;
+    int key_idx = node->upper_bound(key);
+
+    Iid iid{};
+    if (key_idx == node->get_size()) { // 如果key_idx等于size，说明key比所有的key都大
+        iid = leaf_end();
+    } else {
+        iid = {.page_no = node->get_page_no(), .slot_no = key_idx};
+    }
+
+    buffer_pool_manager_->unpin_page(node->get_page_id(), false);
+    return iid;
 }
 
 /**

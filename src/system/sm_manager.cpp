@@ -240,7 +240,21 @@ void SmManager::drop_table(const std::string& tab_name, Context* context) {
  * @param {Context*} context
  */
 void SmManager::create_index(const std::string& tab_name, const std::vector<std::string>& col_names, Context* context) {
-    
+    TabMeta &tab = db_.get_table(tab_name);
+    std::vector<ColMeta> cols;
+    int tot_len = 0;
+    for (const auto &i: col_names) {
+        auto col = *tab.get_col(i);
+        cols.push_back(col);
+        tot_len += col.len;
+    }
+    ix_manager_->create_index(tab_name, cols);
+    auto ix_name = ix_manager_->get_index_name(tab_name, cols);
+    IndexMeta im = {tab_name, tot_len, (int) col_names.size(), cols};
+    tab.indexes.push_back(im);
+    ihs_.emplace(ix_name, ix_manager_->open_index(ix_name));
+
+    flush_meta();
 }
 
 /**
@@ -250,7 +264,22 @@ void SmManager::create_index(const std::string& tab_name, const std::vector<std:
  * @param {Context*} context
  */
 void SmManager::drop_index(const std::string& tab_name, const std::vector<std::string>& col_names, Context* context) {
-    
+    std::vector<ColMeta> cols;
+    TabMeta &tab = db_.get_table(tab_name);
+    int tot_len = 0;
+    for (const auto &i: col_names) {
+        auto col = *tab.get_col(i);
+        cols.push_back(col);
+        tot_len += col.len;
+    }
+    IndexMeta im = {tab_name, tot_len, (int) cols.size(), cols};
+    auto pos = std::find(tab.indexes.begin(), tab.indexes.end(), im);
+    tab.indexes.erase(pos);
+    auto ix_name = ix_manager_->get_index_name(tab_name, cols);
+    ihs_.erase(ix_name);
+    ix_manager_->destroy_index(tab_name, col_names);
+
+    flush_meta();
 }
 
 /**
@@ -260,5 +289,47 @@ void SmManager::drop_index(const std::string& tab_name, const std::vector<std::s
  * @param {Context*} context
  */
 void SmManager::drop_index(const std::string& tab_name, const std::vector<ColMeta>& cols, Context* context) {
-    
+    TabMeta &tab = db_.get_table(tab_name);
+    int tot_len = 0;
+    for (const auto &col: cols) {
+        tot_len += col.len;
+    }
+    IndexMeta im = {tab_name, tot_len, (int) cols.size(), cols};
+    auto pos = std::find(tab.indexes.begin(), tab.indexes.end(), im);
+    tab.indexes.erase(pos);
+    auto ix_name = ix_manager_->get_index_name(tab_name, cols);
+    ihs_.erase(ix_name);
+    ix_manager_->destroy_index(tab_name, cols);
+
+    flush_meta();
+}
+
+/**
+ * @description: 显示索引
+ * @param {string&} tab_name 表名称
+ * @param {Context*} context
+ */
+void SmManager::show_index(const std::string & tab_name, Context* context) {
+    std::fstream outfile;
+    outfile.open("output.txt", std::ios::out | std::ios::app);
+
+    RecordPrinter printer(3);
+
+    printer.print_separator(context);
+    TabMeta &tab = db_.get_table(tab_name);
+    for (const auto &i: tab.indexes) {
+        std::string col;
+        col += "(";
+        for (const auto &icol : i.cols) {
+            col += icol.name + ",";
+        }
+        if (col.back() == ',') col.pop_back();
+        col += ")";
+        std::vector<std::string> v = {tab_name, "unique", col};
+        printer.print_record(v, context);
+        outfile << "| " << tab_name << " | unique | " << col << " |\n";
+    }
+    printer.print_separator(context);
+
+    outfile.close();
 }

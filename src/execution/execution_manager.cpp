@@ -68,6 +68,11 @@ void QlManager::run_mutli_query(std::shared_ptr<Plan> plan, Context *context){
                 sm_manager_->drop_index(x->tab_name_, x->tab_col_names_, context);
                 break;
             }
+            case T_ShowIndex:
+            {
+                sm_manager_->show_index(x->tab_name_, context);
+                break;
+            }
             default:
                 throw InternalError("Unexpected field type");
                 break;  

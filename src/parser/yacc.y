@@ -139,6 +139,10 @@ ddl:
     {
         $$ = std::make_shared<DropIndex>($3, $5);
     }
+    |   SHOW INDEX FROM tbName
+    {
+        $$ = std::make_shared<ShowIndex>($4);
+    }
     ;
 
 dml:

@@ -156,6 +156,11 @@ class IxManager {
         return std::make_unique<IxIndexHandle>(disk_manager_, buffer_pool_manager_, fd);
     }
 
+    std::unique_ptr<IxIndexHandle> open_index(const std::string &ix_name) {
+        int fd = disk_manager_->open_file(ix_name);
+        return std::make_unique<IxIndexHandle>(disk_manager_, buffer_pool_manager_, fd);
+    }
+
     void close_index(const IxIndexHandle *ih) {
         char* data = new char[ih->file_hdr_->tot_len_];
         ih->file_hdr_->serialize(data);
