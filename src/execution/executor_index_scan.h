@@ -196,6 +196,7 @@ class IndexScanExecutor : public AbstractExecutor {
     }
 
     void nextTuple() override {
+        // std::cerr << "nextTuple 1" << std::endl;
         if (!is_end()) {
             scan_->next();
         }
@@ -206,11 +207,12 @@ class IndexScanExecutor : public AbstractExecutor {
                 if (fed_conds_.empty() || eval_conds(cols_, fed_conds_, record.get())) {
                     break;
                 }
-            } catch (RMDBError &e) {
+            } catch (RecordNotFoundError &e) {
                 std::cerr << e.what() << std::endl;
             }
             scan_->next();
         }
+        // std::cerr << "nextTuple 2" << std::endl;
     }
 
     std::unique_ptr<RmRecord> Next() override {
