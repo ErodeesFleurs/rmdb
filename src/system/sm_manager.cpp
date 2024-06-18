@@ -262,6 +262,7 @@ void SmManager::create_index(const std::string& tab_name, const std::vector<std:
     auto ih = ihs_[ix_name].get();
     auto scan_ = std::make_unique<RmScan>(rfh);
     bool is_fail = false;
+    if (context != nullptr) context->lock_mgr_->lock_shared_on_table(context->txn_, rfh->GetFd());
     while (!scan_->is_end()) {
         auto rid_ = scan_->rid();
         auto rec = rfh->get_record(rid_, context);
