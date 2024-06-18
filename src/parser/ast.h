@@ -26,6 +26,10 @@ enum SvCompOp {
     SV_OP_EQ, SV_OP_NE, SV_OP_LT, SV_OP_GT, SV_OP_LE, SV_OP_GE
 };
 
+enum SvSetOp {
+    SV_OP_ADD, SV_OP_SUB, SV_OP_SET
+};
+
 enum OrderByDir {
     OrderBy_DEFAULT,
     OrderBy_ASC,
@@ -160,9 +164,10 @@ struct Col : public Expr {
 struct SetClause : public TreeNode {
     std::string col_name;
     std::shared_ptr<Value> val;
+    SvSetOp setOp;
 
-    SetClause(std::string col_name_, std::shared_ptr<Value> val_) :
-            col_name(std::move(col_name_)), val(std::move(val_)) {}
+    SetClause(std::string col_name_, std::shared_ptr<Value> val_, SvSetOp op_ = SV_OP_SET) :
+            col_name(std::move(col_name_)), val(std::move(val_)), setOp(op_) {}
 };
 
 struct BinaryExpr : public TreeNode {

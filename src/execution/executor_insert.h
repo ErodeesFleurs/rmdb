@@ -38,57 +38,69 @@ class InsertExecutor : public AbstractExecutor {
     };
 
     std::unique_ptr<RmRecord> Next() override {
-        // Make record buffer
+        int fail_pos = -1;
         RmRecord rec(fh_->get_file_hdr().record_size);
+        //获取数据
         for (size_t i = 0; i < values_.size(); i++) {
             auto &col = tab_.cols[i];
             auto &val = values_[i];
-            if (col.type != val.type) {
-                throw IncompatibleTypeError(coltype2str(col.type), coltype2str(val.type));
+            if(val.type != col.type){
+                Value b = {.type = col.type};
+                convert(val, b);
+                if(val.type != col.type){
+                    throw IncompatibleTypeError(coltype2str(col.type), coltype2str(val.type));
+                }
             }
             val.init_raw(col.len);
             memcpy(rec.data + col.offset, val.raw->data, col.len);
         }
-        // Insert into record file
+
+        // 插入记录, 获取rid
+        //实际插入
         rid_ = fh_->insert_record(rec.data, context_);
-        
-        int fail_pos = -1;
-        // Insert into index
-        for(size_t i = 0; i < tab_.indexes.size(); ++i) {
-            auto& index = tab_.indexes[i];
+        // 更新索引
+        for (int i = 0; i < (int)tab_.indexes.size(); i++) {
+            auto &index = tab_.indexes[i];
             auto ix_name = sm_manager_->get_ix_manager()->get_index_name(tab_name_, index.cols);
             auto ih = sm_manager_->ihs_.at(ix_name).get();
-            char* key = new char[index.col_tot_len];
+            char *key = new char[index.col_tot_len];
             int offset = 0;
-            for(int i = 0; i < index.col_num; ++i) {
-                memcpy(key + offset, rec.data + index.cols[i].offset, index.cols[i].len);
-                offset += index.cols[i].len;
+            for (int j = 0; j < index.col_num; ++j) {
+                memcpy(key + offset, rec.data + index.cols[j].offset, index.cols[j].len);
+                offset += index.cols[j].len;
             }
-            auto page_id = ih->insert_entry(key, rid_, context_->txn_);
+
+            auto result = ih->insert_entry(key, rid_, context_->txn_);
             delete[] key;
-            if (page_id == INVALID_PAGE_ID) {
+            if(result == -1){
+                //说明插入失败
                 fail_pos = i;
                 break;
             }
-
-            if (fail_pos != -1) {
-                for (int i = 0; i < fail_pos; i++) {
-                    auto index = tab_.indexes[i];
-                    auto ix_name = sm_manager_->get_ix_manager()->get_index_name(tab_name_, index.cols);
-                    auto ih = sm_manager_->ihs_.at(ix_name).get();
-                    char *key = new char[index.col_tot_len];
-                    int offset = 0;
-                    for (int j = 0; j < index.col_num; ++j) {
-                        memcpy(key + offset, rec.data + index.cols[j].offset, index.cols[j].len);
-                        offset += index.cols[j].len;
-                    }
-                    ih->delete_entry(key, context_->txn_);
-                    delete[] key;
-                }
-                fh_->delete_record(rid_, context_);
-                throw RMDBError("Insert Error");
-            }
         }
+
+        if(fail_pos != -1){
+            //说明插入失败, 将之前插入的索引删除
+            for (int i = 0; i < fail_pos; i++) {
+                auto index = tab_.indexes[i];
+                auto ix_name = sm_manager_->get_ix_manager()->get_index_name(tab_name_, index.cols);
+                auto ih = sm_manager_->ihs_.at(ix_name).get();
+                char *key = new char[index.col_tot_len];
+                int offset = 0;
+                for (int j = 0; j < index.col_num; ++j) {
+                    memcpy(key + offset, rec.data + index.cols[j].offset, index.cols[j].len);
+                    offset += index.cols[j].len;
+                }
+
+                ih->delete_entry(key, context_->txn_);
+                delete[] key;
+            }
+            //实际删除
+            fh_->delete_record(rid_, context_);
+            throw RMDBError("Insert Error!!");
+        }
+
+        //更新事务
         auto *wr = new WriteRecord(WType::INSERT_TUPLE, tab_name_, rid_, rec);
         context_->txn_->append_write_record(wr);
         return nullptr;

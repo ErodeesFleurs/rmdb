@@ -37,22 +37,144 @@ class UpdateExecutor : public AbstractExecutor {
         rids_ = rids;
         context_ = context;
     }
-    std::unique_ptr<RmRecord> Next() override {
-        std::map<TabCol, ColMeta> col_metas;
-        for (const auto &set_clause : set_clauses_) {
-            col_metas[set_clause.lhs] = *get_col(tab_.cols, set_clause.lhs);
-        }
-        for (const auto &rid : rids_) {
-            std::unique_ptr<RmRecord> record = fh_->get_record(rid, context_); // 获取记录
-            for (const auto &set_clause : set_clauses_) { // 遍历set子句
-                auto &col_meta = col_metas[set_clause.lhs];
-                auto value = set_clause.rhs;
-                auto old_value = get_value(col_meta.type, record->data + col_meta.offset);
-                convert(value, old_value); // 转换数据类型
-                value.init_raw(col_meta.len);
-                memcpy(record->data + col_meta.offset, value.raw->data, col_meta.len); // 覆写数据
+
+    void delete_index(RmRecord *rec, Rid rid_) {
+        // 删除索引
+        for (auto &index: tab_.indexes) {
+            auto ix_name = sm_manager_->get_ix_manager()->get_index_name(tab_name_, index.cols);
+            auto ih = sm_manager_->ihs_.at(ix_name).get();
+            char *key = new char[index.col_tot_len];
+            int offset = 0;
+            for (int j = 0; j < index.col_num; ++j) {
+                memcpy(key + offset, rec->data + index.cols[j].offset, index.cols[j].len);
+                offset += index.cols[j].len;
             }
-            fh_->update_record(rid, record->data, context_);
+
+            ih->delete_entry(key, context_->txn_);
+            delete[] key;
+        }
+    }
+
+    bool insert_index(RmRecord *rec, Rid rid_) {
+        // 插入索引
+        int fail_p = -1;
+        for (int i = 0; i < (int)tab_.indexes.size(); i++) {
+            auto &index = tab_.indexes[i];
+            auto ix_name = sm_manager_->get_ix_manager()->get_index_name(tab_name_, index.cols);
+            auto ih = sm_manager_->ihs_.at(ix_name).get();
+            char *key = new char[index.col_tot_len];
+            int offset = 0;
+            for (int j = 0; j < index.col_num; ++j) {
+                memcpy(key + offset, rec->data + index.cols[j].offset, index.cols[j].len);
+                offset += index.cols[j].len;
+            }
+
+            auto result = ih->insert_entry(key, rid_, context_->txn_);
+            delete[] key;
+            if (result == -1) {
+                fail_p = i;
+                break;
+            }
+        }
+        if (fail_p != -1) {
+            //说明插入失败，需要rollback
+            //删掉已插入索引
+            for (int i = 0; i < fail_p; i++) {
+                auto &index = tab_.indexes[i];
+                auto ix_name = sm_manager_->get_ix_manager()->get_index_name(tab_name_, index.cols);
+                auto ih = sm_manager_->ihs_.at(ix_name).get();
+                char *key = new char[index.col_tot_len];
+                int offset = 0;
+                for (int j = 0; j < index.col_num; ++j) {
+                    memcpy(key + offset, rec->data + index.cols[j].offset, index.cols[j].len);
+                    offset += index.cols[j].len;
+                }
+
+                ih->delete_entry(key, context_->txn_);
+                delete[] key;
+            }
+            return false;
+        }
+        return true;
+    }
+
+    std::unique_ptr<RmRecord> Next() override {
+        std::map<TabCol, ColMeta> mp;
+        for (const auto &i: set_clauses_) {
+            ColMeta col = *get_col(tab_.cols, i.lhs);
+            mp[i.lhs] = col;
+        }
+        bool is_fail = false;
+        int upd_cnt = 0;
+        for (auto rid: rids_) {
+            //查找记录
+            auto rec = fh_->get_record(rid, context_);
+            auto old_rec = fh_->get_record(rid, context_);
+            delete_index(rec.get(), rid);
+            upd_cnt++;
+            for (const auto &i: set_clauses_) {
+                auto col = mp[i.lhs];
+                std::cerr << "i type: " << i.op << " "  << std::endl;
+                auto value = i.rhs;
+                if (value.type != col.type) {
+                    Value b = {.type = col.type};
+                    convert(value, b);
+                    if (value.type != col.type) {
+                        throw IncompatibleTypeError(coltype2str(col.type), coltype2str(value.type));
+                    }
+                }
+                char *rec_buf = rec->data + col.offset;
+                if (col.type == TYPE_INT) {
+                    auto old_val = *(int *) rec_buf;
+                    if(i.op == SetOp::OP_ADD){
+                        value.int_val += old_val;
+                    }else if(i.op == SetOp::OP_SUB){
+                        value.int_val -= old_val;
+                    }
+                } else if (col.type == TYPE_FLOAT) {
+                    auto old_val = *(double *) rec_buf;
+                    if(i.op == SetOp::OP_ADD){
+                        value.float_val += old_val;
+                    }else if(i.op == SetOp::OP_SUB){
+                        value.float_val -= old_val;
+                    }
+                } else if (col.type == TYPE_STRING) {
+                    //do nothing
+                }
+                value.init_raw(col.len);
+                //更新记录数据
+                memcpy(rec->data + col.offset, value.raw->data, col.len);
+            }
+            if (!insert_index(rec.get(), rid)) {
+                is_fail = true;
+                insert_index(old_rec.get(), rid);
+                upd_cnt--;
+                break;
+            }
+            //更新记录
+            fh_->update_record(rid, rec->data, context_);
+            //更新事务
+            auto *wr = new WriteRecord(WType::UPDATE_TUPLE, tab_name_, rid, *old_rec);
+            context_->txn_->append_write_record(wr);
+        }
+
+        if (is_fail) {
+            //插入失败
+            while (upd_cnt--) {
+                auto last = context_->txn_->get_last_write_record();
+                auto type = last->GetWriteType();
+                assert(type == WType::UPDATE_TUPLE);
+                auto rid_ = last->GetRid();
+                auto tab_name = last->GetTableName();
+                auto rec_ = last->GetRecord();
+                auto now_rec = fh_->get_record(rid_, context_);
+                delete_index(now_rec.get(), rid_);
+                insert_index(&rec_, rid_);
+
+                fh_->update_record(rid_, rec_.data, context_);
+                context_->txn_->delete_write_record();
+            }
+            throw RMDBError("update error!!");
         }
         return nullptr;
     }

@@ -26,7 +26,7 @@ See the Mulan PSL v2 for more details. */
 bool Planner::get_index_cols(std::string tab_name, std::vector<Condition> curr_conds, std::vector<std::string>& index_col_names) {
     index_col_names.clear();
     std::map<std::string, std::pair<int, int>> mp; // 存储列名 -> 比较方法、curr_conds中所在下标
-    for(int i = 0; i < curr_conds.size(); i++){
+    for(int i = 0; i < (int)curr_conds.size(); i++){
         auto cond = curr_conds[i];
         if(cond.lhs_col.tab_name != tab_name || !cond.is_rhs_val) continue;
         int op = -1;
@@ -64,7 +64,7 @@ bool Planner::get_index_cols(std::string tab_name, std::vector<Condition> curr_c
         res.push_back(curr_conds[i]);
         vis[i] = true;
     }
-    for(int i = 0; i < curr_conds.size(); i++){
+    for(int i = 0; i < (int)curr_conds.size(); i++){
         if(vis.count(i)) continue;
         res.push_back(curr_conds[i]);
     }

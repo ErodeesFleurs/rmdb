@@ -52,13 +52,7 @@ std::shared_ptr<Query> Analyze::do_analyze(std::shared_ptr<ast::TreeNode> parse)
         check_clause(query->tables, query->conds);
     } else if (auto x = std::dynamic_pointer_cast<ast::UpdateStmt>(parse)) {
         /** TODO: */
-        query->set_clauses.clear();
-        for (const auto &sv_set : x->set_clauses) { // 处理set子句
-            TabCol lhs_col = {x->tab_name, sv_set->col_name};
-            Value rhs_val = convert_sv_value(sv_set->val);
-            SetClause set_clause = {std::move(lhs_col), std::move(rhs_val)};
-            query->set_clauses.push_back(set_clause);
-        }
+        set_clause(x->tab_name, x->set_clauses, query->set_clauses);
         get_clause(x->conds, query->conds);
         check_clause({x->tab_name}, query->conds);
     } else if (auto x = std::dynamic_pointer_cast<ast::DeleteStmt>(parse)) {
@@ -134,6 +128,30 @@ void Analyze::get_clause(const std::vector<std::shared_ptr<ast::BinaryExpr>> &sv
             cond.is_rhs_val = false;
             cond.rhs_col = {.tab_name = rhs_col->tab_name, .col_name = rhs_col->col_name};
         }
+        conds.push_back(cond);
+    }
+}
+
+void Analyze::set_clause(const std::string& tab_name, const std::vector<std::shared_ptr<ast::SetClause>>& sv_conds, std::vector<SetClause> &conds) {
+    conds.clear();
+    for (auto &expr : sv_conds) {
+        SetClause cond;
+        switch (expr->setOp) {
+            case ast::SvSetOp::SV_OP_SET:{
+                cond.op = OP_SET;
+                break;
+            }
+            case ast::SvSetOp::SV_OP_ADD:{
+                cond.op = OP_ADD;
+                break;
+            }
+            case ast::SvSetOp::SV_OP_SUB:{
+                cond.op = OP_SUB;
+                break;
+            }
+        }
+        cond.lhs = {.tab_name = tab_name, .col_name = expr->col_name};
+        cond.rhs = convert_sv_value(expr->val);
         conds.push_back(cond);
     }
 }
