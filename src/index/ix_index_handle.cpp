@@ -281,18 +281,15 @@ IxNodeHandle *IxIndexHandle::split(IxNodeHandle *node) {
     // 2. 如果新的右兄弟结点是叶子结点，更新新旧节点的prev_leaf和next_leaf指针
     //    为新节点分配键值对，更新旧节点的键值对数记录
     // 3. 如果新的右兄弟结点不是叶子结点，更新该结点的所有孩子结点的父节点信息(使用IxIndexHandle::maintain_child())
-    std::scoped_lock lock{root_latch_};
     int left_pos = node->get_min_size();
     int right_pos = node->get_size() - left_pos;
     auto new_node = create_node();
-
     memcpy(new_node->page_hdr, node->page_hdr, sizeof(IxPageHdr));
 
     new_node->set_size(0);
     auto key = node->get_key(left_pos);
     auto rid = node->get_rid(left_pos);
     new_node->insert_pairs(0, key, rid, right_pos); // 将右半部分的键值对插入到新结点
-
     node->set_size(left_pos); // 更新原结点的键值对数量
     if (node->is_leaf_page()) {
         auto next_leaf = fetch_node(node->get_next_leaf());
