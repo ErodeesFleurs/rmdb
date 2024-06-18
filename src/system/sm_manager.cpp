@@ -294,24 +294,31 @@ void SmManager::create_index(const std::string& tab_name, const std::vector<std:
  * @param {Context*} context
  */
 void SmManager::drop_index(const std::string& tab_name, const std::vector<std::string>& col_names, Context* context) {
-    std::vector<ColMeta> cols;
-    TabMeta &tab = db_.get_table(tab_name);
-    int tot_len = 0;
-    for (const auto &i: col_names) {
-        auto col = *tab.get_col(i);
-        cols.push_back(col);
-        tot_len += col.len;
+    // 检查表名
+    if (!db_.is_table(tab_name)) {
+        throw TableNotFoundError(tab_name);
     }
-    IndexMeta im = {tab_name, tot_len, (int) cols.size(), cols};
-    auto pos = std::find(tab.indexes.begin(), tab.indexes.end(), im);
-    tab.indexes.erase(pos);
+    // 存在性检查
+    if (!ix_manager_->exists(tab_name, col_names)) {
+        throw IndexNotFoundError(tab_name, col_names);
+    }
+    // 判断索引是否正确
+    TabMeta &tab = db_.tabs_[tab_name];
+    for(auto col_name : col_names) {
+        auto col = tab.get_col(col_name);
+        if(tab.is_col_to_index(col->name)){
+            col->index = false;
+        }
+    }
 
-    auto ix_name = ix_manager_->get_index_name(tab_name, cols);
-    if (ihs_.count(ix_name)) {// 说明被打开了
-        disk_manager_->close_file(ihs_[ix_name]->get_fd());
-        ihs_.erase(ix_name);
-    }
-    ix_manager_->destroy_index(tab_name, col_names);
+    // 删除索引
+    auto index_name = ix_manager_->get_index_name(tab_name, col_names);
+    ix_manager_->close_index(ihs_.at(index_name).get());
+    ix_manager_->destroy_index(ihs_.at(index_name).get(), tab_name, col_names);
+    
+    auto ix_meta = db_.get_table(tab_name).get_index_meta(col_names);
+    db_.get_table(tab_name).indexes.erase(ix_meta);
+    ihs_.erase(index_name);
 
     flush_meta();
 }
@@ -323,48 +330,13 @@ void SmManager::drop_index(const std::string& tab_name, const std::vector<std::s
  * @param {Context*} context
  */
 void SmManager::drop_index(const std::string& tab_name, const std::vector<ColMeta>& cols, Context* context) {
-    TabMeta &tab = db_.get_table(tab_name);
-    int tot_len = 0;
-    for (const auto &col: cols) {
-        tot_len += col.len;
-    }
-    IndexMeta im = {tab_name, tot_len, (int) cols.size(), cols};
-    auto pos = std::find(tab.indexes.begin(), tab.indexes.end(), im);
-    tab.indexes.erase(pos);
+    std::vector<std::string> col_names;
 
-    auto ix_name = ix_manager_->get_index_name(tab_name, im.cols);
-    if(!ihs_.count(ix_name)){
-        //如果没有打开则打开文件
-        ihs_.emplace(ix_name, ix_manager_->open_index(tab_name, im.cols));
-    }
-    if(!fhs_.count(tab_name)){
-        //如果没有打开表文件则打开
-        fhs_.emplace(tab_name, rm_manager_->open_file(tab_name));
-    }
-    //将已有数据从b+树中删除
-    auto rfh = fhs_[tab_name].get();
-    auto ih = ihs_[ix_name].get();
-    auto scan_ = std::make_unique<RmScan>(rfh);
-    while (!scan_->is_end()) {
-        auto rid_ = scan_->rid();
-        auto rec = rfh->get_record(rid_, context);
-        char *key = new char[tot_len];
-        int offset = 0;
-        for (auto & col : im.cols) {
-            memcpy(key + offset, rec->data + col.offset, col.len);
-            offset += col.len;
-        }
-        ih->delete_entry(key, context->txn_);
-        scan_->next();
+    for (auto &col : cols) {
+        col_names.push_back(col.name);
     }
 
-    if (ihs_.count(ix_name)) {// 说明被打开了
-        disk_manager_->close_file(ihs_[ix_name]->get_fd());
-        ihs_.erase(ix_name);
-    }
-    ix_manager_->destroy_index(tab_name, cols);
-
-    flush_meta();
+    drop_index(tab_name, col_names, context);
 }
 
 /**

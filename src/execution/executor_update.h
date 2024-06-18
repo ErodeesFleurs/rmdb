@@ -174,7 +174,7 @@ class UpdateExecutor : public AbstractExecutor {
                 fh_->update_record(rid_, rec_.data, context_);
                 context_->txn_->delete_write_record();
             }
-            throw RMDBError("update error!!");
+            throw RMDBError("Update Error");
         }
         return nullptr;
     }

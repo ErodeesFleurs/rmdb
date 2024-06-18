@@ -371,10 +371,12 @@ page_id_t IxIndexHandle::insert_entry(const char *key, const Rid &value, Transac
     std::scoped_lock lock{root_latch_};
     auto [leaf_node, root_is_latched] = find_leaf_page(key, Operation::FIND, transaction);
     int old_count = leaf_node->get_size();
+    // 插入数据
     int count = leaf_node->insert(key, value);
     if (old_count == count) {
         return INVALID_PAGE_ID;
     }
+    //插入后更新父节点键值
     maintain_parent(leaf_node);
     int pos = leaf_node->lower_bound(key);
     int ret = INVALID_PAGE_ID;

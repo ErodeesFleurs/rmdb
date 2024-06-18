@@ -85,14 +85,14 @@ class IndexScanExecutor : public AbstractExecutor {
         {
             min_int.set_int(INT32_MIN);
             min_int.init_raw(sizeof(int));
-            min_float.set_float(-1e9);
+            min_float.set_float(__FLT_MIN__);
             min_float.init_raw(sizeof(float));
         }
         Value max_int, max_float;
         {
             max_int.set_int(INT32_MAX);
             max_int.init_raw(sizeof(int));
-            max_float.set_float(1e9);
+            max_float.set_float(__FLT_MAX__);
             max_float.init_raw(sizeof(float));
         }
         int offset = 0, i, f = 1;
@@ -203,12 +203,13 @@ class IndexScanExecutor : public AbstractExecutor {
         }
         while (!is_end()) {
             rid_ = scan_->rid();
+            std::cerr << "nextTuple: " << rid_.page_no << " " << rid_.slot_no << '\n';
             try {
                 auto record = fh_->get_record(rid_, context_);
                 if (fed_conds_.empty() || eval_conds(cols_, fed_conds_, record.get())) {
                     break;
                 }
-            } catch (RMDBError &e) {
+            } catch (RecordNotFoundError &e) {
                 std::cerr << e.what() << std::endl;
             }
             scan_->next();
@@ -217,6 +218,7 @@ class IndexScanExecutor : public AbstractExecutor {
     }
 
     std::unique_ptr<RmRecord> Next() override {
+        std::cerr << "Next: " << rid_.page_no << " " << rid_.slot_no << '\n';
         return fh_->get_record(rid_, context_);
     }
 
