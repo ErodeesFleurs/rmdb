@@ -79,7 +79,7 @@ class IndexScanExecutor : public AbstractExecutor {
 
     void beginTuple() override {
         std::string ix_name = sm_manager_->get_ix_manager()->get_index_name(tab_name_, index_col_names_);
-        std::cout << "index_scan: " << ix_name << "\n\n";
+        std::cout << "index_scan: " << ix_name << "\n";
         char *key = new char[index_meta_.col_tot_len];
         Value min_int, min_float;
         {
@@ -98,8 +98,7 @@ class IndexScanExecutor : public AbstractExecutor {
         int offset = 0, i, f = 1;
         for (i = 0; i < (int)conds_.size() && f; i++) {
             auto cond = conds_[i];
-            if (!cond.is_rhs_val || i >= (int)index_col_names_.size() || cond.lhs_col.tab_name != tab_name_ ||
-                    cond.lhs_col.col_name != index_col_names_[i] || cond.op == OP_NE)
+            if (!cond.is_rhs_val || i >= (int)index_col_names_.size() || cond.lhs_col.tab_name != tab_name_ || cond.lhs_col.col_name != index_col_names_[i] || cond.op == OP_NE)
                 break;
             if (cond.op == OP_GE || cond.op == OP_GT){// >= | >
                 memcpy(key + offset, cond.rhs_val.raw->data, index_meta_.cols[i].len);
@@ -177,14 +176,16 @@ class IndexScanExecutor : public AbstractExecutor {
             offset += col.len;
         }
         std::cerr << "index count: " << index_count << '\n';
+        std::cout << "key: " << (*(int *)key) << std::endl;
         Iid start = ih->leaf_begin();
-        if (flag) 
-            start = ih->upper_bound(key);
-        else 
-            start = ih->lower_bound(key);
+        std::cout << "start: " << start.page_no << " " << start.slot_no << std::endl; 
+        // if (flag) 
+        //     start = ih->upper_bound(key);
+        // else 
+        //     start = ih->lower_bound(key);
         Iid end = ih->leaf_end();
-        std::cerr << start.page_no << " " << start.slot_no << "\n";
-        std::cerr << end.page_no << " " << end.slot_no << "\n";
+        std::cout << start.page_no << " " << start.slot_no << std::endl;
+        std::cout << end.page_no << " " << end.slot_no << std::endl;
         scan_ = std::make_unique<IxScan>(ih, start, end, sm_manager_->get_bpm());
         while(!is_end()){
             rid_ = scan_->rid();
@@ -194,6 +195,8 @@ class IndexScanExecutor : public AbstractExecutor {
             }
             scan_->next();
         }
+        delete[] key;
+        std::cout << "IsEnd: " << scan_->is_end() << std::endl;
     }
 
     void nextTuple() override {
@@ -217,7 +220,7 @@ class IndexScanExecutor : public AbstractExecutor {
     }
 
     std::unique_ptr<RmRecord> Next() override {
-        std::cerr << "Next: " << rid_.page_no << " " << rid_.slot_no << '\n';
+        std::cout << "Next: " << rid_.page_no << " " << rid_.slot_no << std::endl;
         return fh_->get_record(rid_, context_);
     }
 

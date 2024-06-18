@@ -653,8 +653,19 @@ Iid IxIndexHandle::lower_bound(const char *key) {
     IxNodeHandle *node = find_leaf_page(key, Operation::FIND, nullptr).first;
     int key_idx = node->lower_bound(key);
 
-    Iid iid = {node->get_page_no(), key_idx};
+    Iid iid = {.page_no = node->get_page_no(), .slot_no = key_idx};
+    if(key_idx == node->get_size()){
+        // 说明该叶子节点不存在满足条件的值，需要找下一个叶子节点
+        if(node->get_page_id().page_no == file_hdr_->last_leaf_){
+            //说明是最后一个叶子了
+            iid = leaf_end();
+        }else{
+            //直接取下一个叶子的第一个
+            iid = {.page_no = node->get_next_leaf(), .slot_no = 0};
+        }
+    }
 
+    // unpin leaf node
     buffer_pool_manager_->unpin_page(node->get_page_id(), false);
     return iid;
 }
@@ -669,13 +680,19 @@ Iid IxIndexHandle::upper_bound(const char *key) {
     IxNodeHandle *node = find_leaf_page(key, Operation::FIND, nullptr).first;
     int key_idx = node->upper_bound(key);
 
-    Iid iid{};
-    if (key_idx == node->get_size()) { // 如果key_idx等于size，说明key比所有的key都大
-        iid = leaf_end();
-    } else {
-        iid = {.page_no = node->get_page_no(), .slot_no = key_idx};
+    Iid iid = {.page_no = node->get_page_no(), .slot_no = key_idx};
+    if(key_idx == node->get_size()){
+        // 说明该叶子节点不存在满足条件的值，需要找下一个叶子节点
+        if(node->get_page_id().page_no == file_hdr_->last_leaf_){
+            //说明是最后一个叶子了
+            iid = leaf_end();
+        }else{
+            //直接取下一个叶子的第一个
+            iid = {.page_no = node->get_next_leaf(), .slot_no = 0};
+        }
     }
 
+    // unpin leaf node
     buffer_pool_manager_->unpin_page(node->get_page_id(), false);
     return iid;
 }

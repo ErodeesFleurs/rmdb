@@ -94,7 +94,7 @@ class AbstractExecutor {
         throw InternalError("convert::Unexpected value type");
     }
 
-    static inline int val_compare(Value &pa, Value &pb, int len = 0) {
+    static inline int val_compare(Value &pa, Value &pb) {
         convert(pa, pb);
         switch (pa.type) {
             case TYPE_FLOAT:{
@@ -108,9 +108,7 @@ class AbstractExecutor {
                 return (va < vb) ? -1 : ((va > vb) ? 1 : 0);
             }
             case TYPE_STRING: {
-                std::string va = pa.str_val.substr(0, len);
-                std::string vb = pb.str_val.substr(0, len);
-                return (va < vb) ? -1 : ((va > vb) ? 1 : 0);
+                return pa.str_val.compare(pb.str_val);
             }
         }
         return 0;
@@ -133,7 +131,7 @@ class AbstractExecutor {
         if (rhs_type != lhs_type) {
             Value ls = get_value(lhs_type, lhs);
             Value rs = get_value(rhs_type, rhs);
-            cmp = val_compare(ls, rs, lhs_col->len);
+            cmp = val_compare(ls, rs);
         } else {
             cmp = ix_compare(lhs, rhs, rhs_type, lhs_col->len);
         }
@@ -157,5 +155,24 @@ class AbstractExecutor {
     bool eval_conds(const std::vector<ColMeta> &rec_cols, const std::vector<Condition> &conds, const RmRecord *rec) {
         return std::all_of(conds.begin(), conds.end(),
                            [&](const Condition &cond) { return eval_cond(rec_cols, cond, rec); });
+    }
+
+    bool check_cond(Value left, Value right, Condition cond) {
+        int cmp = val_compare(left, right);
+        if (cond.op == OP_EQ) {
+            return cmp == 0;
+        } else if (cond.op == OP_NE) {
+            return cmp != 0;
+        } else if (cond.op == OP_LT) {
+            return cmp < 0;
+        } else if (cond.op == OP_GT) {
+            return cmp > 0;
+        } else if (cond.op == OP_LE) {
+            return cmp <= 0;
+        } else if (cond.op == OP_GE) {
+            return cmp >= 0;
+        } else {
+            throw InternalError("check_cond::Unexpected op type");
+        }
     }
 };

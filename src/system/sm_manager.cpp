@@ -266,7 +266,7 @@ void SmManager::create_index(const std::string& tab_name, const std::vector<std:
     int idx = 0;
     while (!scan_->is_end()) {
         auto rid_ = scan_->rid();
-        std::cerr << "Rid: " << idx++ << " " << rid_.page_no << " " << rid_.slot_no << '\n';
+        std::cout << "Rid: " << idx++ << " " << rid_.page_no << " " << rid_.slot_no << std::endl;
         auto rec = rfh->get_record(rid_, context);
         char *key = new char[tot_len];
         int offset = 0;
@@ -280,7 +280,6 @@ void SmManager::create_index(const std::string& tab_name, const std::vector<std:
             break;
         }
         scan_->next();
-        std::cerr << "end\n";
     }
     if(is_fail){
         drop_index(tab_name, col_names, context);
