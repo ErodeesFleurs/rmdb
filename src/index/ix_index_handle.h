@@ -25,8 +25,8 @@ inline int ix_compare(const char *a, const char *b, ColType type, int col_len) {
             return (ia < ib) ? -1 : ((ia > ib) ? 1 : 0);
         }
         case TYPE_FLOAT: {
-            float fa = *(float *)a;
-            float fb = *(float *)b;
+            double fa = *(double *)a;
+            double fb = *(double *)b;
             return (fa < fb) ? -1 : ((fa > fb) ? 1 : 0);
         }
         case TYPE_STRING:

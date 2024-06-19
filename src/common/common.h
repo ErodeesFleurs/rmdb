@@ -36,7 +36,7 @@ struct Value {
     ColType type;  // type of value
     union {
         int int_val;      // int value
-        float float_val;  // float value
+        double float_val;  // float value
     };
     std::string str_val;  // string value
 
@@ -47,7 +47,7 @@ struct Value {
         int_val = int_val_;
     }
 
-    void set_float(float float_val_) {
+    void set_float(double float_val_) {
         type = TYPE_FLOAT;
         float_val = float_val_;
     }
@@ -64,8 +64,8 @@ struct Value {
             assert(len == sizeof(int));
             *(int *)(raw->data) = int_val;
         } else if (type == TYPE_FLOAT) {
-            assert(len == sizeof(float));
-            *(float *)(raw->data) = float_val;
+            assert(len == sizeof(double));
+            *(double *)(raw->data) = float_val;
         } else if (type == TYPE_STRING) {
             if (len < (int)str_val.size()) {
                 throw StringOverflowError();

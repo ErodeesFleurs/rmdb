@@ -86,15 +86,15 @@ class IndexScanExecutor : public AbstractExecutor {
         {
             min_int.set_int(INT32_MIN);
             min_int.init_raw(sizeof(int));
-            min_float.set_float(__FLT_MIN__);
-            min_float.init_raw(sizeof(float));
+            min_float.set_float(__DBL_MAX__);
+            min_float.init_raw(sizeof(double));
         }
         Value max_int, max_float;
         {
             max_int.set_int(INT32_MAX);
             max_int.init_raw(sizeof(int));
-            max_float.set_float(__FLT_MAX__);
-            max_float.init_raw(sizeof(float));
+            max_float.set_float(__DBL_MIN__);
+            max_float.init_raw(sizeof(double));
         }
         int offset = 0, i, f = 1;
         for (i = 0; i < (int)conds_.size() && f; i++) {

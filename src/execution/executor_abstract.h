@@ -63,7 +63,7 @@ class AbstractExecutor {
                 break;
             }
             case TYPE_FLOAT: {
-                float fa = *(float *) a;
+                double fa = *(double *) a;
                 res.set_float(fa);
                 break;
             }

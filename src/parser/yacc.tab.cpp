@@ -1867,7 +1867,7 @@ yyreduce:
   case 34: /* type: FLOAT  */
 #line 206 "/home/fleurs/Documents/GitHub/rmdb/src/parser/yacc.y"
     {
-        (yyval.sv_type_len) = std::make_shared<TypeLen>(SV_TYPE_FLOAT, sizeof(float));
+        (yyval.sv_type_len) = std::make_shared<TypeLen>(SV_TYPE_FLOAT, sizeof(double));
     }
 #line 1873 "/home/fleurs/Documents/GitHub/rmdb/src/parser/yacc.tab.cpp"
     break;
