@@ -21,8 +21,8 @@ using namespace ast;
 %define parse.error verbose
 
 // keywords
-%token SHOW TABLES CREATE TABLE DROP DESC INSERT INTO VALUES DELETE FROM ASC ORDER BY SUM COUNT MAX MIN AS
-WHERE UPDATE SET SELECT INT CHAR FLOAT INDEX AND JOIN EXIT HELP TXN_BEGIN TXN_COMMIT TXN_ABORT TXN_ROLLBACK ORDER_BY ENABLE_NESTLOOP ENABLE_SORTMERGE
+%token SHOW TABLES CREATE TABLE DROP DESC INSERT INTO VALUES DELETE FROM ASC ORDER GROUP BY SUM COUNT MAX MIN AS
+WHERE UPDATE SET SELECT INT CHAR FLOAT INDEX AND JOIN EXIT HELP TXN_BEGIN TXN_COMMIT TXN_ABORT TXN_ROLLBACK ORDER_BY GROUP_BY ENABLE_NESTLOOP ENABLE_SORTMERGE
 // non-keywords
 %token LEQ NEQ GEQ T_EOF
 
@@ -52,6 +52,7 @@ WHERE UPDATE SET SELECT INT CHAR FLOAT INDEX AND JOIN EXIT HELP TXN_BEGIN TXN_CO
 %type <sv_orderby> order_clause
 %type <sv_orderbys> order_clauses opt_order_clause
 %type <sv_orderby_dir> opt_asc_desc
+%type <sv_groupby> group_clause opt_group_clause
 %type <sv_setKnobType> set_knob_type
 
 %%
@@ -159,9 +160,13 @@ dml:
     {
         $$ = std::make_shared<UpdateStmt>($2, $4, $5);
     }
-    |   SELECT selector FROM tableList optWhereClause opt_order_clause
+    |   SELECT selector FROM tableList optWhereClause opt_group_clause
     {
         $$ = std::make_shared<SelectStmt>($2, $4, $5, $6);
+    }
+    |   SELECT selector FROM tableList optWhereClause opt_group_clause opt_order_clause
+    {
+        $$ = std::make_shared<SelectStmt>($2, $4, $5, $6, $7);
     }
     ;
 
@@ -487,7 +492,20 @@ opt_asc_desc:
     ASC          { $$ = OrderBy_ASC;     }
     |  DESC      { $$ = OrderBy_DESC;    }
     |       { $$ = OrderBy_DEFAULT; }
-    ;    
+    ;
+
+opt_group_clause:
+    GROUP BY group_clause
+    {
+        $$ = $3;
+    }
+    |   /* epsilon */ { /* ignore*/ }
+    ;
+group_clause:
+      col
+    {
+        $$ = std::make_shared<GroupBy>($1);
+    }
 
 set_knob_type:
     ENABLE_NESTLOOP { $$ = EnableNestLoop; }

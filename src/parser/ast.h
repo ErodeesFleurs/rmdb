@@ -197,6 +197,13 @@ struct OrderBy : public TreeNode
        cols(std::move(cols_)), orderby_dir(std::move(orderby_dir_)) {}
 };
 
+struct GroupBy : public TreeNode
+{
+    std::shared_ptr<Col> cols;
+    GroupBy( std::shared_ptr<Col> cols_) :
+       cols(std::move(cols_)) {}
+};
+
 struct InsertStmt : public TreeNode {
     std::string tab_name;
     std::vector<std::shared_ptr<Value>> vals;
@@ -243,14 +250,24 @@ struct SelectStmt : public TreeNode {
 
     
     bool has_sort;
+    std::shared_ptr<GroupBy> group;
     std::vector<std::shared_ptr<OrderBy>> order;
-
 
     SelectStmt(std::vector<std::shared_ptr<Col>> cols_,
                std::vector<std::string> tabs_,
                std::vector<std::shared_ptr<BinaryExpr>> conds_,
+               std::shared_ptr<GroupBy> group_) :
+            cols(std::move(cols_)), tabs(std::move(tabs_)), conds(std::move(conds_)), group(std::move(group_)) {
+                order = std::vector<std::shared_ptr<OrderBy>>();
+                has_sort = false;
+            }
+    SelectStmt(std::vector<std::shared_ptr<Col>> cols_,
+               std::vector<std::string> tabs_,
+               std::vector<std::shared_ptr<BinaryExpr>> conds_,
+               std::shared_ptr<GroupBy> group_,
                std::vector<std::shared_ptr<OrderBy>> order_) :
             cols(std::move(cols_)), tabs(std::move(tabs_)), conds(std::move(conds_)), 
+            group(std::move(group_)),
             order(std::move(order_)) {
                 has_sort = !order.empty();
             }
@@ -299,6 +316,8 @@ struct SemValue {
 
     std::shared_ptr<OrderBy> sv_orderby;
     std::vector<std::shared_ptr<OrderBy>> sv_orderbys;
+
+    std::shared_ptr<GroupBy> sv_groupby;
 
     SetKnobType sv_setKnobType;
 };

@@ -83,6 +83,7 @@ single_op ";"|"("|")"|","|"*"|"="|">"|"<"|"."|"+"|"-"
 "EXIT" { return EXIT; }
 "HELP" { return HELP; }
 "ORDER" { return ORDER; }
+"GROUP" { return GROUP; }
 "BY" {  return BY;  }
 "ASC" { return ASC; }
 "SUM" { return SUM; }
