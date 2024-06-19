@@ -156,23 +156,4 @@ class AbstractExecutor {
         return std::all_of(conds.begin(), conds.end(),
                            [&](const Condition &cond) { return eval_cond(rec_cols, cond, rec); });
     }
-
-    bool check_cond(Value left, Value right, Condition cond) {
-        int cmp = val_compare(left, right);
-        if (cond.op == OP_EQ) {
-            return cmp == 0;
-        } else if (cond.op == OP_NE) {
-            return cmp != 0;
-        } else if (cond.op == OP_LT) {
-            return cmp < 0;
-        } else if (cond.op == OP_GT) {
-            return cmp > 0;
-        } else if (cond.op == OP_LE) {
-            return cmp <= 0;
-        } else if (cond.op == OP_GE) {
-            return cmp >= 0;
-        } else {
-            throw InternalError("check_cond::Unexpected op type");
-        }
-    }
 };

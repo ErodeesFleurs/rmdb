@@ -22,11 +22,11 @@ int IxNodeHandle::lower_bound(const char *target) const {
     // Todo:
     // 查找当前节点中第一个大于等于target的key，并返回key的位置给上层
     // 提示: 可以采用多种查找方式，如顺序遍历、二分查找等；使用ix_compare()函数进行比较
-    int key_idx = 0, num_key = get_size();
-    while (key_idx < num_key) {
-        int now_idx = key_idx + (num_key - key_idx) / 2;
+    int key_idx = 0, num_key = get_size() - 1;
+    while (key_idx <= num_key) { // 二分查找
+        int now_idx = (key_idx + num_key) >> 1;
         if (ix_compare(target, get_key(now_idx), file_hdr->col_types_, file_hdr->col_lens_) <= 0) { // 如果target小于等于now_idx
-            num_key = now_idx;
+            num_key = now_idx - 1;
         }
         else {
             key_idx = now_idx + 1;
@@ -45,11 +45,11 @@ int IxNodeHandle::upper_bound(const char *target) const {
     // Todo:
     // 查找当前节点中第一个大于target的key，并返回key的位置给上层
     // 提示: 可以采用多种查找方式：顺序遍历、二分查找等；使用ix_compare()函数进行比较
-    int key_idx = 0, num_key = get_size();
-    while (key_idx < num_key) {
-        int now_idx = key_idx + (num_key - key_idx) / 2;
-        if (ix_compare(target, get_key(now_idx), file_hdr->col_types_, file_hdr->col_lens_) < 0) { // 如果target小于等于now_idx
-            num_key = now_idx;
+    int key_idx = 0, num_key = get_size() - 1;
+    while (key_idx <= num_key) { // 二分查找
+        int now_idx = (key_idx + num_key) >> 1;
+        if (ix_compare(target, get_key(now_idx), file_hdr->col_types_, file_hdr->col_lens_) < 0) { // 如果target小于now_idx
+            num_key = now_idx - 1;
         }
         else {
             key_idx = now_idx + 1;
@@ -156,8 +156,9 @@ int IxNodeHandle::insert(const char *key, const Rid &value) {
  * @brief 用于在结点中的指定位置删除单个键值对
  *
  * @param pos 要删除键值对的位置
+ * @note [0,pos)           [pos,num_key)
  */
-void IxNodeHandle::erase_pair(int pos) {
+void IxNodeHandle::erase_pairs(int pos, int n) {
     // Todo:
     // 1. 删除该位置的key
     // 2. 删除该位置的rid
@@ -166,11 +167,12 @@ void IxNodeHandle::erase_pair(int pos) {
         throw std::runtime_error("Error: erase_pair() pos is out of range");
     }
     auto pos_key = get_key(pos);
-    memmove(pos_key, pos_key + file_hdr->col_tot_len_, (get_size() - pos - 1) * file_hdr->col_tot_len_);
+    memmove(pos_key, pos_key + file_hdr->col_tot_len_, (get_size() - pos - n) * file_hdr->col_tot_len_);
     auto pos_rid = get_rid(pos);
-    memmove(pos_rid, pos_rid + sizeof(Rid), (get_size() - pos - 1) * sizeof(Rid));
-    set_size(get_size() - 1);
+    memmove(pos_rid, pos_rid + n * sizeof(Rid), (get_size() - pos - n) * sizeof(Rid));
+    set_size(get_size() - n);
 }
+
 
 /**
  * @brief 用于在结点中删除指定key的键值对。函数返回删除后的键值对数量

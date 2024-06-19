@@ -123,7 +123,9 @@ class IxNodeHandle {
     // 用于在结点中的指定位置插入单个键值对
     void insert_pair(int pos, const char *key, const Rid &rid) { insert_pairs(pos, key, &rid, 1); }
 
-    void erase_pair(int pos);
+    void erase_pair(int pos) { return erase_pairs(pos, 1); }
+
+    void erase_pairs(int pos, int n);
 
     int remove(const char *key);
 
