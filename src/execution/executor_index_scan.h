@@ -179,10 +179,10 @@ class IndexScanExecutor : public AbstractExecutor {
         std::cout << "key: " << (*(int *)key) << std::endl;
         Iid start = ih->leaf_begin();
         std::cout << "start: " << start.page_no << " " << start.slot_no << std::endl; 
-        // if (flag) 
-        //     start = ih->upper_bound(key);
-        // else 
-        //     start = ih->lower_bound(key);
+        if (flag) 
+            start = ih->upper_bound(key);
+        else 
+            start = ih->lower_bound(key);
         Iid end = ih->leaf_end();
         std::cout << start.page_no << " " << start.slot_no << std::endl;
         std::cout << end.page_no << " " << end.slot_no << std::endl;

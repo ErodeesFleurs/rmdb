@@ -263,10 +263,9 @@ void SmManager::create_index(const std::string& tab_name, const std::vector<std:
     auto scan_ = std::make_unique<RmScan>(rfh);
     bool is_fail = false;
     if (context != nullptr) context->lock_mgr_->lock_shared_on_table(context->txn_, rfh->GetFd());
-    int idx = 0;
     while (!scan_->is_end()) {
         auto rid_ = scan_->rid();
-        std::cout << "Rid: " << idx++ << " " << rid_.page_no << " " << rid_.slot_no << std::endl;
+        // std::cout << "Rid: " << idx++ << " " << rid_.page_no << " " << rid_.slot_no << std::endl;
         auto rec = rfh->get_record(rid_, context);
         char *key = new char[tot_len];
         int offset = 0;

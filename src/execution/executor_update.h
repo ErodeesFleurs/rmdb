@@ -107,14 +107,13 @@ class UpdateExecutor : public AbstractExecutor {
         bool is_fail = false;
         int upd_cnt = 0;
         for (auto rid: rids_) {
-            //查找记录
             auto rec = fh_->get_record(rid, context_);
             auto old_rec = fh_->get_record(rid, context_);
             delete_index(rec.get(), rid);
             upd_cnt++;
             for (const auto &i: set_clauses_) {
                 auto col = mp[i.lhs];
-                std::cerr << "i type: " << i.op << " "  << std::endl;
+                std::cerr << "i type: " << i.op << "\n";
                 auto value = i.rhs;
                 if (value.type != col.type) {
                     Value b = {.type = col.type};

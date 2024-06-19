@@ -123,8 +123,7 @@ class IxNodeHandle {
     // 用于在结点中的指定位置插入单个键值对
     void insert_pair(int pos, const char *key, const Rid &rid) { insert_pairs(pos, key, &rid, 1); }
 
-    void erase_pairs(int pos, int n);
-    void erase_pair(int pos) { erase_pairs(pos, 1); }
+    void erase_pair(int pos);
 
     int remove(const char *key);
 
@@ -155,6 +154,22 @@ class IxNodeHandle {
         }
         assert(rid_idx < page_hdr->num_key);
         return rid_idx;
+    }
+
+    /**
+     * @brief 由parent调用，寻找key，返回key在parent中是否存在
+     * @param key
+     * @return bool
+     */
+    bool exist_key(const char *key) const {
+        int key_num = page_hdr->num_key;
+        for(int i = 0;i<key_num;i++){
+            char *key_addr = get_key(i);
+            if(ix_compare(key, key_addr, file_hdr->col_types_, file_hdr->col_lens_) == 0) {
+                return true;
+            }
+        }
+        return false;
     }
 };
 
