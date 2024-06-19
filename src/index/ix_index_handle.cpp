@@ -227,7 +227,7 @@ std::pair<IxNodeHandle *, bool> IxIndexHandle::find_leaf_page(const char *key, O
     while (!cur_node->is_leaf_page()) {
         page_id_t next_page_no = cur_node->internal_lookup(key);
         buffer_pool_manager_->unpin_page(cur_node->get_page_id(), false);
-        delete cur_node;
+        // delete cur_node;
         auto next_node = fetch_node(next_page_no);
         cur_node = next_node;
     }
@@ -257,7 +257,7 @@ bool IxIndexHandle::get_value(const char *key, std::vector<Rid> *result, Transac
     if (leaf_node->leaf_lookup(key, &value)) {
         buffer_pool_manager_->unpin_page(leaf_node->get_page_id(), false);
         result->push_back(*value);
-        delete leaf_node;
+        // delete leaf_node;
         return true;
     }
     return false;
@@ -292,7 +292,7 @@ IxNodeHandle *IxIndexHandle::split(IxNodeHandle *node) {
         next_node->set_prev_leaf(new_node->get_page_no());
         buffer_pool_manager_->unpin_page(next_node->get_page_id(), true);
 
-        delete next_node;
+        // delete next_node;
     }
     int pos = node->get_size() / 2;
     int num = node->get_size() - pos;
@@ -342,7 +342,7 @@ void IxIndexHandle::insert_into_parent(IxNodeHandle *old_node, const char *key, 
         old_node->set_parent_page_no(new_root_page_no);
         new_node->set_parent_page_no(new_root_page_no);
 
-        delete new_root;
+        // delete new_root;
     }
     else {
         auto parent = fetch_node(old_node->get_parent_page_no());
@@ -352,10 +352,10 @@ void IxIndexHandle::insert_into_parent(IxNodeHandle *old_node, const char *key, 
             auto new_parent = split(parent);
             insert_into_parent(parent, new_parent->get_key(0), new_parent, transaction);
             buffer_pool_manager_->unpin_page(new_parent->get_page_id(), true);
-            delete new_parent;
+            // delete new_parent;
         }
         buffer_pool_manager_->unpin_page(parent->get_page_id(), true);
-        delete parent;
+        // delete parent;
     }
 }
 
@@ -391,11 +391,11 @@ page_id_t IxIndexHandle::insert_entry(const char *key, const Rid &value, Transac
         }
         insert_into_parent(leaf_node, new_node->get_key(0), new_node, transaction);
         buffer_pool_manager_->unpin_page(leaf_node->get_page_id(), true);
-        delete new_node;
+        // delete new_node;
     }
     buffer_pool_manager_->unpin_page(leaf_node->get_page_id(), false);
     auto page_id = leaf_node->get_page_no();
-    delete leaf_node;
+    // delete leaf_node;
     return page_id;
 }
 
@@ -416,12 +416,12 @@ bool IxIndexHandle::delete_entry(const char *key, Transaction *transaction) {
     }
     if (leaf_node->get_size() == leaf_node->remove(key)) {
         buffer_pool_manager_->unpin_page(leaf_node->get_page_id(), false);
-        delete leaf_node;
+        // delete leaf_node;
         return false;
     } else {
         coalesce_or_redistribute(leaf_node, transaction, &root_is_latched);
         buffer_pool_manager_->unpin_page(leaf_node->get_page_id(), true);
-        delete leaf_node;
+        // delete leaf_node;
         return true;
     }
     return false;
@@ -462,16 +462,16 @@ bool IxIndexHandle::coalesce_or_redistribute(IxNodeHandle *node, Transaction *tr
         redistribute(neighbor_node, node, parent, pos);
         buffer_pool_manager_->unpin_page(parent->get_page_id(), true);
         buffer_pool_manager_->unpin_page(neighbor_node->get_page_id(), true);
-        delete parent;
-        delete neighbor_node;
+        // delete parent;
+        // delete neighbor_node;
         return false;
     }
     else {
         coalesce(&neighbor_node, &node, &parent, pos, transaction, root_is_latched);
         buffer_pool_manager_->unpin_page(parent->get_page_id(), true);
         buffer_pool_manager_->unpin_page(neighbor_node->get_page_id(), true);
-        delete parent;
-        delete neighbor_node;
+        // delete parent;
+        // delete neighbor_node;
         return true;
     }
     return false;
@@ -494,7 +494,7 @@ bool IxIndexHandle::adjust_root(IxNodeHandle *old_root_node) {
         file_hdr_->root_page_ = new_root_node->get_page_no();
         buffer_pool_manager_->unpin_page(new_root_node->get_page_id(), true);
         release_node_handle(*old_root_node);
-        delete new_root_node;
+        // delete new_root_node;
         return true;
     }
     else if (old_root_node->is_leaf_page() && old_root_node->get_size() == 0) {
@@ -603,7 +603,7 @@ Rid IxIndexHandle::get_rid(const Iid &iid) const {
     }
     buffer_pool_manager_->unpin_page(node->get_page_id(), false);  // unpin it!
     auto rid = *(node->get_rid(iid.slot_no));
-    delete node;
+    // delete node;
     return rid;
 }
 
@@ -629,7 +629,7 @@ Iid IxIndexHandle::lower_bound(const char *key) {
 
     // unpin leaf node
     buffer_pool_manager_->unpin_page(node->get_page_id(), false);
-    delete node;
+    // delete node;
     return iid;
 }
 
@@ -653,7 +653,7 @@ Iid IxIndexHandle::upper_bound(const char *key) {
 
     // unpin leaf node
     buffer_pool_manager_->unpin_page(node->get_page_id(), false);
-    delete node;
+    // delete node;
     return iid;
 }
 
@@ -667,7 +667,7 @@ Iid IxIndexHandle::leaf_end() const {
     IxNodeHandle *node = fetch_node(file_hdr_->last_leaf_);
     Iid iid = {file_hdr_->last_leaf_, node->get_size()};
     buffer_pool_manager_->unpin_page(node->get_page_id(), false);  // unpin it!
-    delete node;
+    // delete node;
     return iid;
 }
 
@@ -756,8 +756,8 @@ void IxIndexHandle::erase_leaf(IxNodeHandle *leaf) {
     IxNodeHandle *next = fetch_node(leaf->get_next_leaf());
     next->set_prev_leaf(leaf->get_prev_leaf());
     buffer_pool_manager_->unpin_page(next->get_page_id(), true);
-    delete prev;
-    delete next;
+    // delete prev;
+    // delete next;
 }
 
 /**
@@ -779,6 +779,6 @@ void IxIndexHandle::maintain_child(IxNodeHandle *node, int child_idx) {
         IxNodeHandle *child = fetch_node(child_page_no);
         child->set_parent_page_no(node->get_page_no());
         buffer_pool_manager_->unpin_page(child->get_page_id(), true);
-        delete child;
+        // delete child;
     }
 }

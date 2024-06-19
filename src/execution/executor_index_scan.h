@@ -16,6 +16,7 @@ See the Mulan PSL v2 for more details. */
 #include "index/ix.h"
 #include "system/sm.h"
 
+extern int count_index_scan;
 class IndexScanExecutor : public AbstractExecutor {
    private:
     std::string tab_name_;                      // 表名称
@@ -185,6 +186,7 @@ class IndexScanExecutor : public AbstractExecutor {
         // std::cout << end.page_no << " " << end.slot_no << std::endl;
         scan_ = std::make_unique<IxScan>(ih, start, end, sm_manager_->get_bpm());
         while(!is_end()){
+            count_index_scan++;
             rid_ = scan_->rid();
             auto rec = fh_->get_record(rid_, context_);
             if (fed_conds_.empty() || eval_conds(cols_, fed_conds_, rec.get())) {
@@ -192,7 +194,6 @@ class IndexScanExecutor : public AbstractExecutor {
             }
             scan_->next();
         }
-        delete[] key;
     }
 
     void nextTuple() override {
@@ -201,6 +202,7 @@ class IndexScanExecutor : public AbstractExecutor {
             scan_->next();
         }
         while (!is_end()) {
+            count_index_scan++;
             rid_ = scan_->rid();
             try {
                 auto record = fh_->get_record(rid_, context_);

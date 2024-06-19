@@ -16,6 +16,8 @@ See the Mulan PSL v2 for more details. */
 #include "index/ix.h"
 #include "system/sm.h"
 
+extern int count_seq_scan;
+
 class SeqScanExecutor : public AbstractExecutor {
    private:
     std::string tab_name_;              // 表的名称
@@ -57,6 +59,7 @@ class SeqScanExecutor : public AbstractExecutor {
         scan_ = std::make_unique<RmScan>(fh_);
         while (!scan_->is_end()) { // 从头开始扫描
             rid_ = scan_->rid();
+            count_seq_scan++;
             auto rec = fh_->get_record(rid_, context_);
             auto is_empty = fed_conds_.empty();
             auto is_eval = eval_conds(cols_, fed_conds_, rec.get());
@@ -72,6 +75,7 @@ class SeqScanExecutor : public AbstractExecutor {
             scan_->next();
         }
         while (!scan_->is_end()) {
+            count_seq_scan++;
             rid_ = scan_->rid();
             auto rec = fh_->get_record(rid_, context_);
             if (fed_conds_.empty() || eval_conds(cols_, fed_conds_, rec.get())) {

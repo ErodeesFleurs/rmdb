@@ -29,6 +29,8 @@ See the Mulan PSL v2 for more details. */
 #define MAX_CONN_LIMIT 8
 
 static bool should_exit = false;
+int count_seq_scan = 0;
+int count_index_scan = 0;
 
 // 构建全局所需的管理器对象
 auto disk_manager = std::make_unique<DiskManager>();
@@ -187,6 +189,8 @@ void *client_handler(void *sock_fd) {
 
     // Clear
     std::cout << "Terminating current client_connection..." << std::endl;
+    std::cout << "count_seq_scan: " << count_seq_scan << std::endl;
+    std::cout << "count_index_scan: " << count_index_scan << std::endl;
     close(fd);           // close a file descriptor.
     pthread_exit(NULL);  // terminate calling thread!
 }
