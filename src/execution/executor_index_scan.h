@@ -80,110 +80,77 @@ class IndexScanExecutor : public AbstractExecutor {
 
     void beginTuple() override {
         std::string ix_name = sm_manager_->get_ix_manager()->get_index_name(tab_name_, index_col_names_);
-        // std::cout << "index_scan: " << ix_name << "\n";
-        char *key = new char[index_meta_.col_tot_len];
-        Value min_int, min_float;
-        {
-            min_int.set_int(INT32_MIN);
-            min_int.init_raw(sizeof(int));
-            min_float.set_float(__DBL_MAX__);
-            min_float.init_raw(sizeof(double));
-        }
-        Value max_int, max_float;
-        {
-            max_int.set_int(INT32_MAX);
-            max_int.init_raw(sizeof(int));
-            max_float.set_float(__DBL_MIN__);
-            max_float.init_raw(sizeof(double));
-        }
-        int offset = 0, i, f = 1;
-        for (i = 0; i < (int)conds_.size() && f; i++) {
-            auto cond = conds_[i];
-            if (!cond.is_rhs_val || i >= (int)index_col_names_.size() || cond.lhs_col.tab_name != tab_name_ || cond.lhs_col.col_name != index_col_names_[i] || cond.op == OP_NE)
-                break;
-            if (cond.op == OP_GE || cond.op == OP_GT){// >= | >
-                memcpy(key + offset, cond.rhs_val.raw->data, index_meta_.cols[i].len);
-                offset += index_meta_.cols[i].len;
-                f = 0;
-            } else if (cond.op == OP_LE || cond.op == OP_LT) {// <= | <
-                switch (cond.rhs_val.type) {
-                    case TYPE_INT: {
-                        memcpy(key + offset, min_int.raw->data, index_meta_.cols[i].len);
-                        break;
-                    }
-                    case TYPE_FLOAT:{
-                        memcpy(key + offset, min_float.raw->data, index_meta_.cols[i].len);
-                        break;
-                    }
-                    case TYPE_STRING:{
-                        Value min_char;
-                        std::string val;
-                        min_char.set_str(val);
-                        min_char.init_raw(index_meta_.cols[i].len);
-                        memcpy(key + offset, min_char.raw->data, index_meta_.cols[i].len);
-                        break;
-                    }
-                    default:
-                        break;
-                }
-                offset += index_meta_.cols[i].len;
-                f = 0;
-            } else {
-                memcpy(key + offset, cond.rhs_val.raw->data, index_meta_.cols[i].len);
-                offset += index_meta_.cols[i].len;
+        RmRecord lower_record(index_meta_.col_tot_len), upper_record(index_meta_.col_tot_len);
+        int offset = 0;
+        for (auto col : index_meta_.cols) {
+            Value max_value, min_value;
+            if (col.type == TYPE_INT) {
+                max_value.set_int(INT32_MAX);
+                min_value.set_int(INT32_MIN);
+            } else if (col.type == TYPE_FLOAT) {
+                max_value.set_float(__DBL_MAX__);
+                min_value.set_float(__DBL_MIN__);
+            } else if (col.type == TYPE_STRING) {
+                max_value.set_str(std::string(col.len, 255));
+                min_value.set_str(std::string(col.len, 0));
             }
-        }
-        index_count = i;
-        auto &type = conds_[index_count - 1].op;
-        int flag = type == OP_GT ? 1 : 0;
-        for(; i < (int)index_meta_.cols.size(); i++){
-            auto &col = index_meta_.cols[i];
-            switch (col.type) {
-                case TYPE_INT: {
-                    if(flag){
-                        memcpy(key + offset, max_int.raw->data, col.len);
-                    }else{
-                        memcpy(key + offset, min_int.raw->data, col.len);
+            for (const auto& cond : fed_conds_) {
+                if (cond.lhs_col.col_name == col.name && cond.is_rhs_val) {
+                    if (cond.op == OP_EQ) {
+                        if (check_cond(cond.rhs_val, min_value, OP_GT)) {
+                            min_value = cond.rhs_val;
+                        }
+                        if (check_cond(cond.rhs_val, max_value, OP_LT)) {
+                            max_value = cond.rhs_val;
+                        }
+                    } else if (cond.op == OP_LT) {
+                        if (check_cond(cond.rhs_val, max_value, OP_LT)) {
+                            max_value = cond.rhs_val;
+                        }
+                    } else if (cond.op == OP_LE) {
+                        if (check_cond(cond.rhs_val, max_value, OP_LT)) {
+                            max_value = cond.rhs_val;
+                        }
+                    } else if (cond.op == OP_GT) {
+                        if (check_cond(cond.rhs_val, min_value, OP_GT)) {
+                            min_value = cond.rhs_val;
+                        }
+                    } else if (cond.op == OP_GE) {
+                        if (check_cond(cond.rhs_val, min_value, OP_GT)) {
+                            min_value = cond.rhs_val;
+                        }
+                    } else if (cond.op == OP_NE) {
+                        // do nothing
                     }
                     break;
                 }
-                case TYPE_FLOAT:{
-                    if(flag){
-                        memcpy(key + offset, max_float.raw->data, col.len);
-                    }else{
-                        memcpy(key + offset, min_float.raw->data, col.len);
-                    }
-                    break;
-                }
-                case TYPE_STRING:{
-                    if(flag){
-                        Value str_val;
-                        std::string val(col.len, (char)(127));
-                        str_val.set_str(val);
-                        str_val.init_raw(col.len);
-                        memcpy(key + offset, str_val.raw->data, col.len);
-                    }else {
-                        Value min_char;
-                        std::string val;
-                        min_char.set_str(val);
-                        min_char.init_raw(index_meta_.cols[i].len);
-                        memcpy(key + offset, min_char.raw->data, col.len);
-                    }
-                    break;
-                }
-                default:
-                    break;
             }
+            if (min_value.raw == nullptr) {
+                if (min_value.type == TYPE_STRING) {
+                    min_value.init_raw(col.len);
+                } else if (min_value.type == TYPE_INT) {
+                    min_value.init_raw(sizeof(int));
+                } else if (min_value.type == TYPE_FLOAT) {
+                    min_value.init_raw(sizeof(double));
+                }
+            }
+            if (max_value.raw == nullptr) {
+                if (max_value.type == TYPE_STRING) {
+                    max_value.init_raw(col.len);
+                } else if (max_value.type == TYPE_INT) {
+                    max_value.init_raw(sizeof(int));
+                } else if (max_value.type == TYPE_FLOAT) {
+                    max_value.init_raw(sizeof(double));
+                }
+            }
+            memcpy(upper_record.data + offset, max_value.raw->data, col.len);
+            memcpy(lower_record.data + offset, min_value.raw->data, col.len);
             offset += col.len;
         }
-        Iid start = ih->leaf_begin();
-        if (flag) 
-            start = ih->upper_bound(key);
-        else 
-            start = ih->lower_bound(key);
-        Iid end = ih->leaf_end();
-        // std::cout << start.page_no << " " << start.slot_no << std::endl;
-        // std::cout << end.page_no << " " << end.slot_no << std::endl;
+        auto start = ih->lower_bound(lower_record.data);
+        auto end = ih->upper_bound(upper_record.data);
+        // std::cerr << start.page_no << " " << start.slot_no << '\n';
+        // std::cerr << end.page_no << " " << end.slot_no << '\n';
         scan_ = std::make_unique<IxScan>(ih, start, end, sm_manager_->get_bpm());
         while(!is_end()){
             count_index_scan++;

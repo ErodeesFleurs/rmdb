@@ -98,7 +98,7 @@ class InsertExecutor : public AbstractExecutor {
             }
             //实际删除
             fh_->delete_record(rid_, context_);
-            throw RMDBError("Insert Error!!");
+            throw RMDBError("Insert Error");
         }
 
         //更新事务
