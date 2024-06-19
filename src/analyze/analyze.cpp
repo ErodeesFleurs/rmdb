@@ -29,7 +29,7 @@ std::shared_ptr<Query> Analyze::do_analyze(std::shared_ptr<ast::TreeNode> parse)
 
         // 处理target list，再target list中添加上表名，例如 a.id
         for (auto &sv_sel_col : x->cols) {
-            TabCol sel_col = {.tab_name = sv_sel_col->tab_name, .col_name = sv_sel_col->col_name};
+            TabCol sel_col = {.tab_name = sv_sel_col->tab_name, .col_name = sv_sel_col->col_name, .as_name = sv_sel_col->as_name, .aggregate = sv_sel_col->aggregate};
             query->cols.push_back(sel_col);
         }
         
@@ -44,6 +44,7 @@ std::shared_ptr<Query> Analyze::do_analyze(std::shared_ptr<ast::TreeNode> parse)
         } else {
             // infer table name from column name
             for (auto &sel_col : query->cols) {
+                if (sel_col.aggregate == "count" && sel_col.col_name.empty()) sel_col.col_name = all_cols[0].name, sel_col.tab_name = all_cols[0].tab_name;
                 sel_col = check_column(all_cols, sel_col);  // 列元数据校验
             }
         }

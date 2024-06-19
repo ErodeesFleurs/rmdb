@@ -21,7 +21,7 @@ using namespace ast;
 %define parse.error verbose
 
 // keywords
-%token SHOW TABLES CREATE TABLE DROP DESC INSERT INTO VALUES DELETE FROM ASC ORDER BY
+%token SHOW TABLES CREATE TABLE DROP DESC INSERT INTO VALUES DELETE FROM ASC ORDER BY SUM COUNT MAX MIN AS
 WHERE UPDATE SET SELECT INT CHAR FLOAT INDEX AND JOIN EXIT HELP TXN_BEGIN TXN_COMMIT TXN_ABORT TXN_ROLLBACK ORDER_BY ENABLE_NESTLOOP ENABLE_SORTMERGE
 // non-keywords
 %token LEQ NEQ GEQ T_EOF
@@ -49,7 +49,8 @@ WHERE UPDATE SET SELECT INT CHAR FLOAT INDEX AND JOIN EXIT HELP TXN_BEGIN TXN_CO
 %type <sv_set_clauses> setClauses
 %type <sv_cond> condition
 %type <sv_conds> whereClause optWhereClause
-%type <sv_orderby>  order_clause opt_order_clause
+%type <sv_orderby> order_clause
+%type <sv_orderbys> order_clauses opt_order_clause
 %type <sv_orderby_dir> opt_asc_desc
 %type <sv_setKnobType> set_knob_type
 
@@ -265,13 +266,93 @@ whereClause:
     ;
 
 col:
-        tbName '.' colName
+        tbName '.' colName AS colName
+    {
+        $$ = std::make_shared<Col>($1, $3, $5);
+    }
+    |   colName AS colName
+    {
+        $$ = std::make_shared<Col>("", $1, $3);
+    }
+    |    tbName '.' colName
     {
         $$ = std::make_shared<Col>($1, $3);
     }
     |   colName
     {
         $$ = std::make_shared<Col>("", $1);
+    }
+    |   COUNT '(' '*' ')' AS colName
+    {
+        $$ = std::make_shared<Col>("", "", $6, "count");
+    }
+    |   COUNT '(' '*' ')'
+    {
+        $$ = std::make_shared<Col>("", "", "count_row", "count");
+    }
+    |   SUM '(' tbName '.' colName ')' AS colName
+    {
+        $$ = std::make_shared<Col>($3, $5, $8, "sum");
+    }
+    |   SUM '(' tbName '.' colName ')'
+    {
+        $$ = std::make_shared<Col>($3, $5, "sum_" + $5, "sum");
+    }
+    |   MAX '(' tbName '.' colName ')' AS colName
+    {
+        $$ = std::make_shared<Col>($3, $5, $8, "max");
+    }
+    |   MAX '(' tbName '.' colName ')'
+    {
+        $$ = std::make_shared<Col>($3, $5, "max_" + $5, "max");
+    }
+    |   MIN '(' tbName '.' colName ')' AS colName
+    {
+        $$ = std::make_shared<Col>($3, $5, $8, "min");
+    }
+    |   MIN '(' tbName '.' colName ')'
+    {
+        $$ = std::make_shared<Col>($3, $5, "min_" + $5, "min");
+    }
+    |   COUNT '(' tbName '.' colName ')' AS colName
+    {
+        $$ = std::make_shared<Col>($3, $5, $8, "count");
+    }
+    |   COUNT '(' tbName '.' colName ')'
+    {
+        $$ = std::make_shared<Col>($3, $5, "count_" + $5, "count");
+    }
+    |   SUM '(' colName ')' AS colName
+    {
+        $$ = std::make_shared<Col>("", $3, $6, "sum");
+    }
+    |   SUM '(' colName ')'
+    {
+        $$ = std::make_shared<Col>("", $3, "sum_" + $3, "sum");
+    }
+    |   MAX '(' colName ')' AS colName
+    {
+        $$ = std::make_shared<Col>("", $3, $6, "max");
+    }
+    |   MAX '(' colName ')'
+    {
+        $$ = std::make_shared<Col>("", $3, "max_" + $3, "max");
+    }
+    |   MIN '(' colName ')' AS colName
+    {
+        $$ = std::make_shared<Col>("", $3, $6, "min");
+    }
+    |   MIN '(' colName ')'
+    {
+        $$ = std::make_shared<Col>("", $3, "min_" + $3, "min");
+    }
+    |   COUNT '(' colName ')' AS colName
+    {
+        $$ = std::make_shared<Col>("", $3, $6, "count");
+    }
+    |   COUNT '(' colName ')'
+    {
+        $$ = std::make_shared<Col>("", $3, "count" + $3, "count");
     }
     ;
 
@@ -378,7 +459,7 @@ tableList:
     ;
 
 opt_order_clause:
-    ORDER BY order_clause      
+    ORDER BY order_clauses  
     { 
         $$ = $3; 
     }
@@ -390,7 +471,17 @@ order_clause:
     { 
         $$ = std::make_shared<OrderBy>($1, $2);
     }
-    ;   
+    ;
+order_clauses:
+      order_clause
+    {
+        $$ = std::vector<std::shared_ptr<OrderBy>>{$1};
+    }
+    |	order_clauses ',' order_clause
+    {
+    	$$.push_back($3);
+    }
+    ; 
 
 opt_asc_desc:
     ASC          { $$ = OrderBy_ASC;     }
