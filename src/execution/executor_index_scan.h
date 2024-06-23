@@ -79,84 +79,96 @@ class IndexScanExecutor : public AbstractExecutor {
     }
 
     void beginTuple() override {
-        std::string ix_name = sm_manager_->get_ix_manager()->get_index_name(tab_name_, index_col_names_);
-        RmRecord lower_record(index_meta_.col_tot_len), upper_record(index_meta_.col_tot_len);
-        int offset = 0;
-        for (auto col : index_meta_.cols) {
-            Value max_value, min_value;
-            if (col.type == TYPE_INT) {
-                max_value.set_int(INT32_MAX);
-                min_value.set_int(INT32_MIN);
-            } else if (col.type == TYPE_FLOAT) {
-                max_value.set_float(__DBL_MAX__);
-                min_value.set_float(__DBL_MIN__);
-            } else if (col.type == TYPE_STRING) {
-                max_value.set_str(std::string(col.len, 255));
-                min_value.set_str(std::string(col.len, 0));
-            }
-            for (const auto& cond : fed_conds_) {
-                if (cond.lhs_col.col_name == col.name && cond.is_rhs_val) {
-                    if (cond.op == OP_EQ) {
-                        if (check_cond(cond.rhs_val, min_value, OP_GT)) {
-                            min_value = cond.rhs_val;
-                        }
-                        if (check_cond(cond.rhs_val, max_value, OP_LT)) {
-                            max_value = cond.rhs_val;
-                        }
-                    } else if (cond.op == OP_LT) {
-                        if (check_cond(cond.rhs_val, max_value, OP_LT)) {
-                            max_value = cond.rhs_val;
-                        }
-                    } else if (cond.op == OP_LE) {
-                        if (check_cond(cond.rhs_val, max_value, OP_LT)) {
-                            max_value = cond.rhs_val;
-                        }
-                    } else if (cond.op == OP_GT) {
-                        if (check_cond(cond.rhs_val, min_value, OP_GT)) {
-                            min_value = cond.rhs_val;
-                        }
-                    } else if (cond.op == OP_GE) {
-                        if (check_cond(cond.rhs_val, min_value, OP_GT)) {
-                            min_value = cond.rhs_val;
-                        }
-                    } else if (cond.op == OP_NE) {
-                        // do nothing
-                    }
-                    break;
-                }
-            }
-            if (min_value.raw == nullptr) {
-                if (min_value.type == TYPE_STRING) {
-                    min_value.init_raw(col.len);
-                } else if (min_value.type == TYPE_INT) {
-                    min_value.init_raw(sizeof(int));
-                } else if (min_value.type == TYPE_FLOAT) {
-                    min_value.init_raw(sizeof(double));
-                }
-            }
-            if (max_value.raw == nullptr) {
-                if (max_value.type == TYPE_STRING) {
-                    max_value.init_raw(col.len);
-                } else if (max_value.type == TYPE_INT) {
-                    max_value.init_raw(sizeof(int));
-                } else if (max_value.type == TYPE_FLOAT) {
-                    max_value.init_raw(sizeof(double));
-                }
-            }
-            memcpy(upper_record.data + offset, max_value.raw->data, col.len);
-            memcpy(lower_record.data + offset, min_value.raw->data, col.len);
-            offset += col.len;
-        }
-        auto start = ih->lower_bound(lower_record.data);
-        auto end = ih->upper_bound(upper_record.data);
-        // std::cerr << start.page_no << " " << start.slot_no << '\n';
-        // std::cerr << end.page_no << " " << end.slot_no << '\n';
-        scan_ = std::make_unique<IxScan>(ih, start, end, sm_manager_->get_bpm());
-        while(!is_end()){
-            count_index_scan++;
+        // std::string ix_name = sm_manager_->get_ix_manager()->get_index_name(tab_name_, index_col_names_);
+        // RmRecord lower_record(index_meta_.col_tot_len), upper_record(index_meta_.col_tot_len);
+        // int offset = 0;
+        // for (auto col : index_meta_.cols) {
+        //     Value max_value, min_value;
+        //     if (col.type == TYPE_INT) {
+        //         max_value.set_int(INT32_MAX);
+        //         min_value.set_int(INT32_MIN);
+        //     } else if (col.type == TYPE_FLOAT) {
+        //         max_value.set_float(__DBL_MAX__);
+        //         min_value.set_float(__DBL_MIN__);
+        //     } else if (col.type == TYPE_STRING) {
+        //         max_value.set_str(std::string(col.len, 255));
+        //         min_value.set_str(std::string(col.len, 0));
+        //     }
+        //     for (const auto& cond : fed_conds_) {
+        //         if (cond.lhs_col.col_name == col.name && cond.is_rhs_val) {
+        //             if (cond.op == OP_EQ) {
+        //                 if (check_cond(cond.rhs_val, min_value, OP_GT)) {
+        //                     min_value = cond.rhs_val;
+        //                 }
+        //                 if (check_cond(cond.rhs_val, max_value, OP_LT)) {
+        //                     max_value = cond.rhs_val;
+        //                 }
+        //             } else if (cond.op == OP_LT) {
+        //                 if (check_cond(cond.rhs_val, max_value, OP_LT)) {
+        //                     max_value = cond.rhs_val;
+        //                 }
+        //             } else if (cond.op == OP_LE) {
+        //                 if (check_cond(cond.rhs_val, max_value, OP_LT)) {
+        //                     max_value = cond.rhs_val;
+        //                 }
+        //             } else if (cond.op == OP_GT) {
+        //                 if (check_cond(cond.rhs_val, min_value, OP_GT)) {
+        //                     min_value = cond.rhs_val;
+        //                 }
+        //             } else if (cond.op == OP_GE) {
+        //                 if (check_cond(cond.rhs_val, min_value, OP_GT)) {
+        //                     min_value = cond.rhs_val;
+        //                 }
+        //             } else if (cond.op == OP_NE) {
+        //                 // do nothing
+        //             }
+        //             break;
+        //         }
+        //     }
+        //     if (min_value.raw == nullptr) {
+        //         if (min_value.type == TYPE_STRING) {
+        //             min_value.init_raw(col.len);
+        //         } else if (min_value.type == TYPE_INT) {
+        //             min_value.init_raw(sizeof(int));
+        //         } else if (min_value.type == TYPE_FLOAT) {
+        //             min_value.init_raw(sizeof(double));
+        //         }
+        //     }
+        //     if (max_value.raw == nullptr) {
+        //         if (max_value.type == TYPE_STRING) {
+        //             max_value.init_raw(col.len);
+        //         } else if (max_value.type == TYPE_INT) {
+        //             max_value.init_raw(sizeof(int));
+        //         } else if (max_value.type == TYPE_FLOAT) {
+        //             max_value.init_raw(sizeof(double));
+        //         }
+        //     }
+        //     memcpy(upper_record.data + offset, max_value.raw->data, col.len);
+        //     memcpy(lower_record.data + offset, min_value.raw->data, col.len);
+        //     offset += col.len;
+        // }
+        // auto start = ih->lower_bound(lower_record.data);
+        // auto end = ih->upper_bound(upper_record.data);
+        // // std::cerr << start.page_no << " " << start.slot_no << '\n';
+        // // std::cerr << end.page_no << " " << end.slot_no << '\n';
+        // scan_ = std::make_unique<IxScan>(ih, start, end, sm_manager_->get_bpm());
+        // while(!is_end()){
+        //     count_index_scan++;
+        //     rid_ = scan_->rid();
+        //     auto rec = fh_->get_record(rid_, context_);
+        //     if (fed_conds_.empty() || eval_conds(cols_, fed_conds_, rec.get())) {
+        //         break;
+        //     }
+        //     scan_->next();
+        // }
+        scan_ = std::make_unique<RmScan>(fh_);
+        while (!scan_->is_end()) { // 从头开始扫描
             rid_ = scan_->rid();
+            count_index_scan++;
             auto rec = fh_->get_record(rid_, context_);
-            if (fed_conds_.empty() || eval_conds(cols_, fed_conds_, rec.get())) {
+            auto is_empty = fed_conds_.empty();
+            auto is_eval = eval_conds(cols_, fed_conds_, rec.get());
+            if (is_empty || is_eval) {
                 break;
             }
             scan_->next();
