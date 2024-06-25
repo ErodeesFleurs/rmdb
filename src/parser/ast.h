@@ -9,9 +9,12 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details. */
 #pragma once
 
+#include "defs.h"
+
 #include <vector>
 #include <string>
 #include <memory>
+#include <iostream>
 
 enum JoinType {
     INNER_JOIN, LEFT_JOIN, RIGHT_JOIN, FULL_JOIN
@@ -157,7 +160,7 @@ struct Col : public Expr {
     std::string tab_name;
     std::string col_name;
     std::string as_name;
-    std::string aggregate;
+    AggregateType aggregate;
 
     Col(std::string tab_name_, std::string col_name_) :
             tab_name(std::move(tab_name_)), col_name(std::move(col_name_)) {};
@@ -168,7 +171,7 @@ struct Col : public Expr {
 
     Col(std::string tab_name_, std::string col_name_, std::string as_name_, std::string aggregate_) :
             tab_name(std::move(tab_name_)), col_name(std::move(col_name_)),
-            as_name(std::move(as_name_)), aggregate(std::move(aggregate_)) {}
+            as_name(std::move(as_name_)), aggregate(std::move(str2aggregate(aggregate_))) {}
 };
 
 struct SetClause : public TreeNode {
@@ -250,24 +253,28 @@ struct SelectStmt : public TreeNode {
 
     
     bool has_sort;
-    std::shared_ptr<GroupBy> group;
+    std::vector<std::shared_ptr<GroupBy>> group;
+    std::vector<std::shared_ptr<BinaryExpr>> having_conds;
     std::vector<std::shared_ptr<OrderBy>> order;
 
     SelectStmt(std::vector<std::shared_ptr<Col>> cols_,
                std::vector<std::string> tabs_,
                std::vector<std::shared_ptr<BinaryExpr>> conds_,
-               std::shared_ptr<GroupBy> group_) :
-            cols(std::move(cols_)), tabs(std::move(tabs_)), conds(std::move(conds_)), group(std::move(group_)) {
+               std::vector<std::shared_ptr<GroupBy>> group_,
+               std::vector<std::shared_ptr<BinaryExpr>> having_conds_) :
+            cols(std::move(cols_)), tabs(std::move(tabs_)), conds(std::move(conds_)), group(std::move(group_)), having_conds(std::move(having_conds_)) {
                 order = std::vector<std::shared_ptr<OrderBy>>();
                 has_sort = false;
             }
     SelectStmt(std::vector<std::shared_ptr<Col>> cols_,
                std::vector<std::string> tabs_,
                std::vector<std::shared_ptr<BinaryExpr>> conds_,
-               std::shared_ptr<GroupBy> group_,
+               std::vector<std::shared_ptr<GroupBy>> group_,
+               std::vector<std::shared_ptr<BinaryExpr>> having_conds_,
                std::vector<std::shared_ptr<OrderBy>> order_) :
             cols(std::move(cols_)), tabs(std::move(tabs_)), conds(std::move(conds_)), 
             group(std::move(group_)),
+            having_conds(std::move(having_conds_)),
             order(std::move(order_)) {
                 has_sort = !order.empty();
             }
@@ -318,6 +325,9 @@ struct SemValue {
     std::vector<std::shared_ptr<OrderBy>> sv_orderbys;
 
     std::shared_ptr<GroupBy> sv_groupby;
+    std::vector<std::shared_ptr<GroupBy>> sv_groupbys;
+
+    std::vector<std::shared_ptr<BinaryExpr>> sv_having_conds;
 
     SetKnobType sv_setKnobType;
 };

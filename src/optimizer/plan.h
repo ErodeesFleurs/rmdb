@@ -41,6 +41,7 @@ typedef enum PlanTag{
     T_SeqScan,
     T_IndexScan,
     T_NestLoop,
+    T_Group,
     T_SortMerge,    // sort merge join
     T_Sort,
     T_Projection
@@ -114,6 +115,40 @@ class ProjectionPlan : public Plan
         ~ProjectionPlan(){}
         std::shared_ptr<Plan> subplan_;
         std::vector<TabCol> sel_cols_;
+        
+};
+
+class AggregationPlan : public Plan
+{
+    public:
+        AggregationPlan(PlanTag tag, std::shared_ptr<Plan> subplan, std::vector<TabCol> sel_cols, std::vector<AggregateType> agg_types)
+        {
+            Plan::tag = tag;
+            subplan_ = std::move(subplan);
+            sel_cols_ = std::move(sel_cols);
+            agg_types_ = std::move(agg_types);
+        }
+        ~AggregationPlan(){}
+        std::shared_ptr<Plan> subplan_;
+        std::vector<TabCol> sel_cols_;
+        std::vector<AggregateType> agg_types_;
+        
+};
+
+class GroupPlan : public Plan
+{
+    public:
+        GroupPlan(PlanTag tag, std::shared_ptr<Plan> subplan, std::vector<TabCol> sel_cols, std::vector<TabCol> group_cols)
+        {
+            Plan::tag = tag;
+            subplan_ = std::move(subplan);
+            sel_cols_ = std::move(sel_cols);
+            group_cols_ = std::move(group_cols);
+        }
+        ~GroupPlan(){}
+        std::shared_ptr<Plan> subplan_;
+        std::vector<TabCol> sel_cols_;
+        std::vector<TabCol> group_cols_;
         
 };
 

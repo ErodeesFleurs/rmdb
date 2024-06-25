@@ -35,6 +35,10 @@ class Query{
     //insert 的values值
     std::vector<Value> values;
 
+    std::vector<TabCol> group_cols;
+
+    std::vector<Condition> having_conds;
+
     Query(){}
 
 };

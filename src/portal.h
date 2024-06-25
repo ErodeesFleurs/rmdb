@@ -22,6 +22,8 @@ See the Mulan PSL v2 for more details. */
 #include "execution/executor_update.h"
 #include "execution/executor_insert.h"
 #include "execution/executor_delete.h"
+#include "execution/execution_aggregation.h"
+#include "execution/execution_group.h"
 #include "execution/execution_sort.h"
 #include "common/common.h"
 
@@ -123,7 +125,7 @@ class Portal
         switch(portal->tag) {
             case PORTAL_ONE_SELECT:
             {
-                ql->select_from(std::move(portal->root), std::move(portal->sel_cols), context);
+                ql->select_from(std::move(portal->root), std::move(portal->sel_cols),  context);
                 break;
             }
 
@@ -176,6 +178,14 @@ class Portal
                                 std::move(left), 
                                 std::move(right), std::move(x->conds_));
             return join;
+        } else if (auto x = std::dynamic_pointer_cast<AggregationPlan>(plan)) {
+            // std::cerr << "AggregationPlan" << std::endl;
+            return std::make_unique<AggregateExecutor>(convert_plan_executor(x->subplan_, context), 
+                                            x->sel_cols_, x->agg_types_);
+        } else if(auto x = std::dynamic_pointer_cast<GroupPlan>(plan)) {
+            // std::cerr << "GroupPlan" << std::endl;
+            return std::make_unique<GroupExecutor>(convert_plan_executor(x->subplan_, context), 
+                                            x->sel_cols_, x->group_cols_);
         } else if(auto x = std::dynamic_pointer_cast<SortPlan>(plan)) {
             // std::cerr << "SortPlan" << std::endl;
             return std::make_unique<SortExecutor>(convert_plan_executor(x->subplan_, context), 

@@ -56,6 +56,7 @@ class SeqScanExecutor : public AbstractExecutor {
     }
 
     void beginTuple() override {
+        std::cerr << "SeqScan BeginTuple" << std::endl;
         // auto delay = [](volatile int64_t count) {
         //     for (volatile int64_t i = 0; i < count; i++) {
         //     }

@@ -12,6 +12,7 @@ See the Mulan PSL v2 for more details. */
 
 #include <iostream>
 #include <map>
+#include <algorithm>
 
 // 此处重载了<<操作符，在ColMeta中进行了调用
 template<typename T, typename = typename std::enable_if<std::is_enum<T>::value, T>::type>
@@ -50,6 +51,38 @@ inline std::string coltype2str(ColType type) {
             {TYPE_STRING, "STRING"}
     };
     return m.at(type);
+}
+
+enum class AggregateType {
+    NONE,
+    COUNT,
+    SUM,
+    MAX,
+    MIN
+};
+
+inline std::string aggregate2str(AggregateType type) {
+    std::map<AggregateType, std::string> m = {
+            {AggregateType::NONE,  "NONE"},
+            {AggregateType::COUNT, "COUNT"},
+            {AggregateType::SUM,   "SUM"},
+            {AggregateType::MAX,   "MAX"},
+            {AggregateType::MIN,   "MIN"}
+    };
+    return m.at(type);
+}
+
+inline AggregateType str2aggregate(std::string str) {
+    if (str.empty()) return AggregateType::NONE;
+    std::transform(str.begin(), str.end(), str.begin(), ::toupper);
+    std::map<std::string, AggregateType> m = {
+            {"NONE", AggregateType::NONE},
+            {"COUNT", AggregateType::COUNT},
+            {"SUM", AggregateType::SUM},
+            {"MAX", AggregateType::MAX},
+            {"MIN", AggregateType::MIN}
+    };
+    return m.at(str);
 }
 
 class RecScan {

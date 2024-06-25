@@ -175,96 +175,33 @@ void QlManager::select_from(std::unique_ptr<AbstractExecutor> executorTreeRoot, 
 
     // Print records
     size_t num_rec = 0;
-    // 聚合函数
-    if (!sel_cols.begin()->aggregate.empty()) {
-        std::string type = sel_cols.begin()->aggregate;
-        int ans1 = 0;
-        double ans2 = 0;
-        std::string ans3;
-        int flag = 0;
-        num_rec = 1;
-        if (type == "count") flag = 1;
-        for (executorTreeRoot->beginTuple(); !executorTreeRoot->is_end(); executorTreeRoot->nextTuple()) {
-            auto Tuple = executorTreeRoot->Next();
-            std::vector<std::string> columns;
-            for (auto &col : executorTreeRoot->cols()) {
-                char *rec_buf = Tuple->data + col.offset;
-                if (type == "count") ans1++, flag = 1;
-                if (col.type == TYPE_INT) {
-                    if (type == "sum") ans1 += *(int *)rec_buf, flag = 1;
-                    if (type == "max") {
-                        if (flag == 0) ans1 = *(int *)rec_buf, flag = 1;
-                        else ans1 = std::max(ans1, *(int *)rec_buf);
-                    }
-                    if (type == "min") {
-                        if (flag == 0) ans1 = *(int *)rec_buf, flag = 1;
-                        else ans1 = std::min(ans1, *(int *)rec_buf);
-                    }
-                } else if (col.type == TYPE_FLOAT) {
-                    if (type == "sum") ans2 += *(double *)rec_buf, flag = 2;
-                    if (type == "max") {
-                        if (flag == 0) ans2 = *(double *)rec_buf, flag = 2;
-                        else ans2 = std::max(ans2, *(double *)rec_buf);
-                    }
-                    if (type == "min") {
-                        if (flag == 0) ans2 = *(double *)rec_buf, flag = 2;
-                        else ans2 = std::min(ans2, *(double *)rec_buf);
-                    }
-                } else if (col.type == TYPE_STRING) {
-                    if (type == "max") {
-                        if (flag == 0) ans3 = std::string((char *)rec_buf, col.len), flag = 3;
-                        else ans3 = std::max(ans3, std::string((char *)rec_buf, col.len));
-                    }
-                    if (type == "min") {
-                        if (flag == 0) ans3 = std::string((char *)rec_buf, col.len), flag = 3;
-                        else ans3 = std::min(ans3, std::string((char *)rec_buf, col.len));
-                    }
-                }
-            }
-        }
+
+    // 执行query_plan
+    for (executorTreeRoot->beginTuple(); !executorTreeRoot->is_end(); executorTreeRoot->nextTuple()) {
+        auto Tuple = executorTreeRoot->Next();
         std::vector<std::string> columns;
+        for (auto &col : executorTreeRoot->cols()) {
+            std::string col_str;
+            char *rec_buf = Tuple->data + col.offset;
+            if (col.type == TYPE_INT) {
+                col_str = std::to_string(*(int *)rec_buf);
+            } else if (col.type == TYPE_FLOAT) {
+                col_str = std::to_string(*(double *)rec_buf);
+            } else if (col.type == TYPE_STRING) {
+                col_str = std::string((char *)rec_buf, col.len);
+                col_str.resize(strlen(col_str.c_str()));
+            }
+            columns.push_back(col_str);
+        }
+        // print record into buffer
+        rec_printer.print_record(columns, context);
+        // print record into file
         outfile << "|";
-        if (flag == 1) {
-            columns.push_back(std::to_string(ans1));
-            outfile << " " << std::to_string(ans1) << " |";
-        } else if (flag == 2) {
-            columns.push_back(std::to_string(ans2));
-            outfile << " " << std::to_string(ans2) << " |";
-        } else {
-            columns.push_back(ans3);
-            outfile << " " << ans3 << " |";
+        for(int i = 0; i < (int)columns.size(); ++i) {
+            outfile << " " << columns[i] << " |";
         }
         outfile << "\n";
-        rec_printer.print_record(columns, context);
-    }
-    else {
-        // 执行query_plan
-        for (executorTreeRoot->beginTuple(); !executorTreeRoot->is_end(); executorTreeRoot->nextTuple()) {
-            auto Tuple = executorTreeRoot->Next();
-            std::vector<std::string> columns;
-            for (auto &col : executorTreeRoot->cols()) {
-                std::string col_str;
-                char *rec_buf = Tuple->data + col.offset;
-                if (col.type == TYPE_INT) {
-                    col_str = std::to_string(*(int *)rec_buf);
-                } else if (col.type == TYPE_FLOAT) {
-                    col_str = std::to_string(*(double *)rec_buf);
-                } else if (col.type == TYPE_STRING) {
-                    col_str = std::string((char *)rec_buf, col.len);
-                    col_str.resize(strlen(col_str.c_str()));
-                }
-                columns.push_back(col_str);
-            }
-            // print record into buffer
-            rec_printer.print_record(columns, context);
-            // print record into file
-            outfile << "|";
-            for(int i = 0; i < (int)columns.size(); ++i) {
-                outfile << " " << columns[i] << " |";
-            }
-            outfile << "\n";
-            num_rec++;
-        }
+        num_rec++;
     }
     outfile.close();
     // Print footer into buffer

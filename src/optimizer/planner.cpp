@@ -172,6 +172,10 @@ std::shared_ptr<Plan> Planner::physical_optimization(std::shared_ptr<Query> quer
     
     // 其他物理优化
 
+    // 处理groupby
+    plan = generate_group_plan(query, std::move(plan));
+    // 处理聚合
+    plan = generate_aggregate_plan(query, std::move(plan));
     // 处理orderby
     plan = generate_sort_plan(query, std::move(plan)); 
 
@@ -302,6 +306,34 @@ std::shared_ptr<Plan> Planner::make_one_rel(std::shared_ptr<Query> query)
 
 }
 
+ std::shared_ptr<Plan> Planner::generate_aggregate_plan(std::shared_ptr<Query> query, std::shared_ptr<Plan> plan) {
+    auto x = std::dynamic_pointer_cast<ast::SelectStmt>(query->parse);
+    if (x->cols.front()->aggregate == AggregateType::NONE) {
+        return plan;
+    }
+    std::vector<std::string> tables = query->tables;
+    std::vector<ColMeta> all_cols;
+    for (auto &sel_tab_name : tables) {
+        // 这里db_不能写成get_db(), 注意要传指针
+        const auto &sel_tab_cols = sm_manager_->db_.get_table(sel_tab_name).cols;
+        all_cols.insert(all_cols.end(), sel_tab_cols.begin(), sel_tab_cols.end());
+    }
+    std::vector<TabCol> sel_cols;
+    for (const auto &agg : x->cols) {
+        for (auto &col : all_cols) {
+            if (col.name == agg->col_name) {
+                TabCol sel_col = {.tab_name = col.tab_name, .col_name = col.name};
+                sel_cols.push_back(sel_col);
+            }
+        }
+    }
+    std::vector<AggregateType> agg_types;
+    for (const auto &agg : x->cols) {
+        agg_types.push_back(agg->aggregate);
+    }
+    std::cerr << "agg_types size: " << agg_types.size() << std::endl;
+    return std::make_shared<AggregationPlan>(T_Group, std::move(plan), sel_cols, agg_types);
+ }
 
 std::shared_ptr<Plan> Planner::generate_sort_plan(std::shared_ptr<Query> query, std::shared_ptr<Plan> plan)
 {
@@ -332,6 +364,41 @@ std::shared_ptr<Plan> Planner::generate_sort_plan(std::shared_ptr<Query> query, 
     }
     return std::make_shared<SortPlan>(T_Sort, std::move(plan), sel_cols,
                                       is_desc);
+}
+
+std::shared_ptr<Plan> Planner::generate_group_plan(std::shared_ptr<Query> query, std::shared_ptr<Plan> plan) {
+    auto x = std::dynamic_pointer_cast<ast::SelectStmt>(query->parse);
+    if (x->group.empty()) {
+        return plan;
+    }
+    std::vector<std::string> tables = query->tables;
+    std::vector<ColMeta> all_cols;
+    for (auto &sel_tab_name : tables) {
+        // 这里db_不能写成get_db(), 注意要传指针
+        const auto &sel_tab_cols = sm_manager_->db_.get_table(sel_tab_name).cols;
+        all_cols.insert(all_cols.end(), sel_tab_cols.begin(), sel_tab_cols.end());
+    }
+    std::vector<TabCol> sel_cols;
+    for (auto &sel : x->cols) {
+        for (auto &col : all_cols) {
+            if (col.name == sel->col_name) {
+                TabCol sel_col = {.tab_name = col.tab_name, .col_name = col.name};
+                sel_cols.push_back(sel_col);
+            }
+        }
+    }
+
+    std::vector<TabCol> group_cols;
+    for (auto &group : x->group) {
+        for (auto &col : all_cols) {
+            if (col.name == group->cols->col_name) {
+                TabCol sel_col = {.tab_name = col.tab_name, .col_name = col.name};
+                group_cols.push_back(sel_col);
+            }
+        }
+    }
+
+    return std::make_shared<GroupPlan>(T_Group, std::move(plan), sel_cols, group_cols);
 }
 
 

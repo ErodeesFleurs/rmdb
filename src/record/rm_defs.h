@@ -82,6 +82,17 @@ struct RmRecord {
         memcpy(data, data_ + sizeof(int), size);
     }
 
+    void append(const char* data_, int size_) {
+        char* new_data = new char[size + size_];
+        memcpy(new_data, data, size);
+        memcpy(new_data + size, data_, size_);
+        size += size_;
+        if(allocated_) {
+            delete[] data;
+        }
+        data = new_data;
+    }
+
     ~RmRecord() {
         if(allocated_) {
             delete[] data;
