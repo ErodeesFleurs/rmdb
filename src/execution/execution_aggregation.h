@@ -42,7 +42,7 @@ public:
             grouped_records_ = dynamic_cast<GroupExecutor*>(prev_.get())->cloneGroupedRecords();
         }
         else {
-            aggregated_records_.emplace_back()
+            aggregated_records_.emplace_back(prev_->Next());
         }
     }
 
