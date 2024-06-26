@@ -78,7 +78,10 @@ std::shared_ptr<Query> Analyze::do_analyze(std::shared_ptr<ast::TreeNode> parse)
         check_clause(query->tables, query->conds);
         //处理having条件
         get_clause(x->having_conds, query->having_conds);
-        check_clause(query->tables, query->having_conds);
+        for (auto& cond : x->having_conds) {
+            std::cerr << "Cond: " << cond->lhs->tab_name << ", " << cond->lhs->col_name << ", " << cond->lhs->aggregate << ", " << cond->op << " " << std::endl;
+        }
+        // check_clause(query->tables, query->having_conds);
     } else if (auto x = std::dynamic_pointer_cast<ast::UpdateStmt>(parse)) {
         /** TODO: */
         set_clause(x->tab_name, x->set_clauses, query->set_clauses);
@@ -148,14 +151,14 @@ void Analyze::get_clause(const std::vector<std::shared_ptr<ast::BinaryExpr>> &sv
     conds.clear();
     for (auto &expr : sv_conds) {
         Condition cond;
-        cond.lhs_col = {.tab_name = expr->lhs->tab_name, .col_name = expr->lhs->col_name};
+        cond.lhs_col = {.tab_name = expr->lhs->tab_name, .col_name = expr->lhs->col_name, .as_name = expr->lhs->as_name, .aggregate = expr->lhs->aggregate};
         cond.op = convert_sv_comp_op(expr->op);
         if (auto rhs_val = std::dynamic_pointer_cast<ast::Value>(expr->rhs)) {
             cond.is_rhs_val = true;
             cond.rhs_val = convert_sv_value(rhs_val);
         } else if (auto rhs_col = std::dynamic_pointer_cast<ast::Col>(expr->rhs)) {
             cond.is_rhs_val = false;
-            cond.rhs_col = {.tab_name = rhs_col->tab_name, .col_name = rhs_col->col_name};
+            cond.rhs_col = {.tab_name = rhs_col->tab_name, .col_name = rhs_col->col_name, .as_name = rhs_col->as_name, .aggregate = rhs_col->aggregate};
         }
         conds.push_back(cond);
     }

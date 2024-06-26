@@ -19,7 +19,7 @@ private:
     std::vector<AggregateType> agg_types_;
     bool is_grouped = false;
     bool is_end_ = false;
-    std::unordered_map<std::string, std::vector<std::unique_ptr<RmRecord>>> grouped_records_;
+    std::unordered_map<std::string, std::vector<std::unique_ptr<RmRecord>>>* grouped_records_;
     std::vector<std::unique_ptr<RmRecord>> aggregated_records_;
     std::vector<std::unique_ptr<RmRecord>>::iterator current_record_;
 
@@ -58,13 +58,15 @@ public:
         std::cerr << "Aggregate BeginTuple" << " " << is_grouped << std::endl;
         prev_->beginTuple();
         if (is_grouped) {
-            grouped_records_ = dynamic_cast<GroupExecutor*>(prev_.get())->cloneGroupedRecords();
-            for (const auto& group : grouped_records_) {
+            auto group_executor  = dynamic_cast<GroupExecutor*>(prev_.get());
+            std::cerr << "Grouped records size: " << group_executor->grouped_records.size() << std::endl;
+            for (const auto& group : group_executor->grouped_records) {
                 std::cerr << "Group size: " << group.second.size() << std::endl;
             }
-            for (const auto& group : grouped_records_) {
+            for (const auto& group : group_executor->grouped_records) {
                 aggregated_records_.push_back(aggregateGroup(group.second));
             }
+            std::cerr << "Aggregated records size: " << aggregated_records_.size() << std::endl;
         }
         else {
             std::vector<std::unique_ptr<RmRecord>> records;
@@ -76,6 +78,7 @@ public:
             std::cerr << "Aggregated records size: " << aggregated_records_.size() << std::endl;
         }
         current_record_ = aggregated_records_.begin();
+        is_end_ = (current_record_ == aggregated_records_.end());
     }
 
     void nextTuple() override {
@@ -105,6 +108,10 @@ public:
         return _abstract_rid;
     }
 
+    std::string getType() override {
+        return "AggregateExecutor";
+    }
+
     std::unique_ptr<RmRecord> aggregateGroup(const std::vector<std::unique_ptr<RmRecord>>& records) {
         bool is_count = true;
         for (const auto& agg_type : agg_types_) {
@@ -126,6 +133,7 @@ public:
         }
         auto result = std::make_unique<RmRecord>();
         for (size_t i = 0; i < agg_types_.size(); ++i) {
+            std::cerr << "Aggregating: " << agg_types_[i] << std::endl;
             std::cerr << "Aggregating: " << aggregate2str(agg_types_[i]) << std::endl;
             switch (agg_types_[i]) {
                 case AggregateType::NONE: {
@@ -208,6 +216,7 @@ public:
                 }
             }
         }
+        std::cerr << "result size: " << result->size << std::endl;
         return result;
     }
 };

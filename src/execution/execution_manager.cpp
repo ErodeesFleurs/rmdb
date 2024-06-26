@@ -183,7 +183,7 @@ void QlManager::select_from(std::unique_ptr<AbstractExecutor> executorTreeRoot, 
         std::vector<std::string> columns;
         for (auto &col : executorTreeRoot->cols()) {
             std::cerr << "Next column" << std::endl;
-            std::cerr << col.name << " " << col.offset << " " << col.type << std::endl;
+            std::cerr << "Column name: " << col.name << " " << col.tab_name << " " << col.offset << " " << col.type << std::endl;
             std::string col_str;
             char *rec_buf = Tuple->data + col.offset;
             if (col.type == TYPE_INT) {

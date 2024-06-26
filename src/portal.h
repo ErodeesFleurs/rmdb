@@ -185,7 +185,7 @@ class Portal
         } else if(auto x = std::dynamic_pointer_cast<GroupPlan>(plan)) {
             // std::cerr << "GroupPlan" << std::endl;
             return std::make_unique<GroupExecutor>(convert_plan_executor(x->subplan_, context), 
-                                            x->sel_cols_, x->group_cols_);
+                                            x->sel_cols_, x->group_cols_, x->having_conds_);
         } else if(auto x = std::dynamic_pointer_cast<SortPlan>(plan)) {
             // std::cerr << "SortPlan" << std::endl;
             return std::make_unique<SortExecutor>(convert_plan_executor(x->subplan_, context), 

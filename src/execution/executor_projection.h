@@ -20,14 +20,22 @@ class ProjectionExecutor : public AbstractExecutor {
     std::unique_ptr<AbstractExecutor> prev_;        // 投影节点的儿子节点
     std::vector<ColMeta> cols_;                     // 需要投影的字段
     size_t len_;                                    // 字段总长度
-    std::vector<size_t> sel_idxs_;                  
+    std::vector<size_t> sel_idxs_;
+    bool prev_is_aggr_ = false;
 
    public:
     ProjectionExecutor(std::unique_ptr<AbstractExecutor> prev, const std::vector<TabCol> &sel_cols) {
         prev_ = std::move(prev);
 
+        if (prev_->getType() == "AggregateExecutor") {
+            prev_is_aggr_ = true;
+        }
+
         size_t curr_offset = 0;
         auto &prev_cols = prev_->cols();
+        for (auto& col : prev_cols) {
+            std::cerr << "ProjectionExecutor: " << col.name << " " << col.tab_name << " " << col.offset << " " << col.type << std::endl;
+        }
         for (auto &sel_col : sel_cols) {
             auto pos = get_col(prev_cols, sel_col);
             sel_idxs_.push_back(pos - prev_cols.begin());
@@ -35,6 +43,9 @@ class ProjectionExecutor : public AbstractExecutor {
             col.offset = curr_offset;
             curr_offset += col.len;
             cols_.push_back(col);
+        }
+        if (prev_is_aggr_) {
+            cols_ = prev_cols;
         }
         len_ = curr_offset;
     }
@@ -59,9 +70,13 @@ class ProjectionExecutor : public AbstractExecutor {
         auto prev_rec = prev_->Next();
         for (size_t i = 0; i < sel_idxs_.size(); i++) { // 从prev_rec中取出需要的字段
             auto idx = sel_idxs_[i];
+            if (prev_is_aggr_) {
+                idx = i;
+            }
             auto col = cols_[i];
             auto prev_col = prev_cols[idx];
             auto prev_val = prev_rec->data + prev_col.offset;
+            std::cerr << "Projection Next: " << idx << " " <<  prev_col.name << " " << prev_col.tab_name << " " << prev_col.offset << " " << prev_col.type << " " << col.len << std::endl;
             auto val = rec->data + col.offset;
             memcpy(val, prev_val, col.len);
         }

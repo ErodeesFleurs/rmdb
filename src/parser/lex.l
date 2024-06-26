@@ -85,6 +85,7 @@ single_op ";"|"("|")"|","|"*"|"="|">"|"<"|"."|"+"|"-"
 "ORDER" { return ORDER; }
 "GROUP" { return GROUP; }
 "BY" {  return BY;  }
+"HAVING" { return HAVING; }
 "ASC" { return ASC; }
 "SUM" { return SUM; }
 "MAX" { return MAX; }

@@ -330,7 +330,7 @@ std::shared_ptr<Plan> Planner::make_one_rel(std::shared_ptr<Query> query)
         if (agg->col_name == "") {
             TabCol sel_col = {.tab_name = all_cols[0].tab_name, .col_name = all_cols[0].name};
             sel_cols.push_back(sel_col);
-            break;
+            continue;
         }
         for (auto &col : all_cols) {
             if (col.name == agg->col_name) {
@@ -409,7 +409,7 @@ std::shared_ptr<Plan> Planner::generate_group_plan(std::shared_ptr<Query> query,
         }
     }
 
-    return std::make_shared<GroupPlan>(T_Group, std::move(plan), sel_cols, group_cols);
+    return std::make_shared<GroupPlan>(T_Group, std::move(plan), sel_cols, group_cols, query->having_conds);
 }
 
 
