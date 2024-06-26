@@ -125,7 +125,20 @@ class GroupExecutor : public AbstractExecutor {
             throw ColumnNotFoundError(col_name);
         }
         auto col_meta = *pos;
-        if (agg_type == AggregateType::COUNT) {
+        if (agg_type == AggregateType::NONE) {
+            for (auto& col_meta : rec_cols) {
+                if (col_meta.name == col_name) {
+                    if (col_meta.type == TYPE_INT) {
+                        val.set_int(*(int*)(rec[0]->data + col_meta.offset));
+                    } else if (col_meta.type == TYPE_FLOAT) {
+                        val.set_float(*(double*)(rec[0]->data + col_meta.offset));
+                    } else {
+                        val.set_str(std::string(rec[0]->data + col_meta.offset, col_meta.len));
+                    }
+                    break;
+                }
+            }
+        } else if (agg_type == AggregateType::COUNT) {
             val.set_int(rec.size());
         } else if (agg_type == AggregateType::SUM) {
             if (col_meta.type == TYPE_INT) {
@@ -207,6 +220,7 @@ class GroupExecutor : public AbstractExecutor {
         
         std::cerr << "lhs_val: " << lhs_val << std::endl;
         std::cerr << "rhs_val: " << rhs_val << std::endl;
+        std::cerr << "is ok: " << check_cond(lhs_val, rhs_val, cond.op) << std::endl;
         return check_cond(lhs_val, rhs_val, cond.op);
     }
 

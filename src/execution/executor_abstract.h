@@ -108,7 +108,11 @@ class AbstractExecutor {
                 return (va < vb) ? -1 : ((va > vb) ? 1 : 0);
             }
             case TYPE_STRING: {
-                return pa.str_val.compare(pb.str_val);
+                auto same_size_str = pb.str_val;
+                while(same_size_str.size() < pa.str_val.size()){
+                    same_size_str += char(0);
+                }
+                return (pa.str_val < same_size_str) ? -1 : ((pa.str_val > same_size_str) ? 1 : 0);
             }
         }
         return 0;
