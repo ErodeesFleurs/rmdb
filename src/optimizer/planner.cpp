@@ -308,7 +308,14 @@ std::shared_ptr<Plan> Planner::make_one_rel(std::shared_ptr<Query> query)
 
  std::shared_ptr<Plan> Planner::generate_aggregate_plan(std::shared_ptr<Query> query, std::shared_ptr<Plan> plan) {
     auto x = std::dynamic_pointer_cast<ast::SelectStmt>(query->parse);
-    if (x->cols.front()->aggregate == AggregateType::NONE) {
+    bool is_aggregate = false;
+    for (auto &sel : x->cols) {
+        if (sel->aggregate != AggregateType::NONE) {
+            is_aggregate = true;
+            break;
+        }
+    }
+    if (!is_aggregate) {
         return plan;
     }
     std::vector<std::string> tables = query->tables;
@@ -320,6 +327,13 @@ std::shared_ptr<Plan> Planner::make_one_rel(std::shared_ptr<Query> query)
     }
     std::vector<TabCol> sel_cols;
     for (const auto &agg : x->cols) {
+        if (agg->col_name == "") {
+            for (auto &col : all_cols) {
+                TabCol sel_col = {.tab_name = col.tab_name, .col_name = col.name};
+                sel_cols.push_back(sel_col);
+            }
+            break;
+        }
         for (auto &col : all_cols) {
             if (col.name == agg->col_name) {
                 TabCol sel_col = {.tab_name = col.tab_name, .col_name = col.name};
@@ -331,8 +345,7 @@ std::shared_ptr<Plan> Planner::make_one_rel(std::shared_ptr<Query> query)
     for (const auto &agg : x->cols) {
         agg_types.push_back(agg->aggregate);
     }
-    std::cerr << "agg_types size: " << agg_types.size() << std::endl;
-    return std::make_shared<AggregationPlan>(T_Group, std::move(plan), sel_cols, agg_types);
+    return std::make_shared<AggregationPlan>(T_Aggregation, std::move(plan), sel_cols, agg_types);
  }
 
 std::shared_ptr<Plan> Planner::generate_sort_plan(std::shared_ptr<Query> query, std::shared_ptr<Plan> plan)

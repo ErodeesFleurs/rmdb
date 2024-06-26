@@ -77,6 +77,93 @@ struct Value {
             memcpy(raw->data, str_val.c_str(), str_val.size());
         }
     }
+
+    void init_raw() {
+        assert(raw == nullptr);
+        if (type == TYPE_INT) {
+            raw = std::make_shared<RmRecord>(sizeof(int));
+            *(int *)(raw->data) = int_val;
+        } else if (type == TYPE_FLOAT) {
+            raw = std::make_shared<RmRecord>(sizeof(double));
+            *(double *)(raw->data) = float_val;
+        } else if (type == TYPE_STRING) {
+            raw = std::make_shared<RmRecord>(str_val.size());
+            memcpy(raw->data, str_val.c_str(), str_val.size());
+        }
+    }
+
+    friend std::ostream &operator<<(std::ostream &os, const Value &val) {
+        switch (val.type) {
+            case TYPE_INT:
+                os << val.int_val;
+                break;
+            case TYPE_FLOAT:
+                os << val.float_val;
+                break;
+            case TYPE_STRING:
+                os << val.str_val;
+                break;
+            default:
+                os << "UNKNOWN";
+        }
+        return os;
+    }
+
+    friend bool operator==(const Value &x, const Value &y) {
+        if (x.type != y.type) return false;
+        switch (x.type) {
+            case TYPE_INT:
+                return x.int_val == y.int_val;
+            case TYPE_FLOAT:
+                return x.float_val == y.float_val;
+            case TYPE_STRING:
+                return x.str_val == y.str_val;
+            default:
+                return false;
+        }
+    }
+    
+    friend bool operator!=(const Value &x, const Value &y) {
+        return !(x == y);
+    }
+
+    friend bool operator<(const Value &x, const Value &y) {
+        if (x.type != y.type) return x.type < y.type;
+        switch (x.type) {
+            case TYPE_INT:
+                return x.int_val < y.int_val;
+            case TYPE_FLOAT:
+                return x.float_val < y.float_val;
+            case TYPE_STRING:
+                return x.str_val < y.str_val;
+            default:
+                return false;
+        }
+    }
+
+    friend bool operator>(const Value &x, const Value &y) {
+        return y < x;
+    }
+
+    friend bool operator<=(const Value &x, const Value &y) {
+        return !(y < x);
+    }
+
+    friend bool operator>=(const Value &x, const Value &y) {
+        return !(x < y);
+    }
+
+    friend Value operator+(const Value &x, const Value &y) {
+        Value res;
+        if (x.type == TYPE_INT && y.type == TYPE_INT) {
+            res.set_int(x.int_val + y.int_val);
+        } else if (x.type == TYPE_FLOAT && y.type == TYPE_FLOAT) {
+            res.set_float(x.float_val + y.float_val);
+        } else {
+            throw std::runtime_error("Invalid operation");
+        }
+        return res;
+    }
 };
 
 enum CompOp { OP_EQ, OP_NE, OP_LT, OP_GT, OP_LE, OP_GE };

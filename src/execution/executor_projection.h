@@ -44,6 +44,7 @@ class ProjectionExecutor : public AbstractExecutor {
     }
 
     void beginTuple() override {
+        std::cerr << "Projection BeginTuple" << std::endl;
         prev_->beginTuple(); // 调用子节点的beginTuple
     }
 
@@ -52,6 +53,7 @@ class ProjectionExecutor : public AbstractExecutor {
     }
 
     std::unique_ptr<RmRecord> Next() override {
+        std::cerr << "Projection Next" << std::endl;
         auto rec = std::make_unique<RmRecord>(len_);
         auto& prev_cols = prev_->cols();
         auto prev_rec = prev_->Next();

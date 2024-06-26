@@ -178,9 +178,12 @@ void QlManager::select_from(std::unique_ptr<AbstractExecutor> executorTreeRoot, 
 
     // 执行query_plan
     for (executorTreeRoot->beginTuple(); !executorTreeRoot->is_end(); executorTreeRoot->nextTuple()) {
+        std::cerr << "Next tuple" << std::endl;
         auto Tuple = executorTreeRoot->Next();
         std::vector<std::string> columns;
         for (auto &col : executorTreeRoot->cols()) {
+            std::cerr << "Next column" << std::endl;
+            std::cerr << col.name << " " << col.offset << " " << col.type << std::endl;
             std::string col_str;
             char *rec_buf = Tuple->data + col.offset;
             if (col.type == TYPE_INT) {

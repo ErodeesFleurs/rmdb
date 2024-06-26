@@ -41,6 +41,7 @@ typedef enum PlanTag{
     T_SeqScan,
     T_IndexScan,
     T_NestLoop,
+    T_Aggregation,
     T_Group,
     T_SortMerge,    // sort merge join
     T_Sort,
