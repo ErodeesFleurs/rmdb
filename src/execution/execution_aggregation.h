@@ -55,7 +55,7 @@ public:
     }
 
     void beginTuple() override {
-        std::cerr << "Aggregate BeginTuple" << std::endl;
+        std::cerr << "Aggregate BeginTuple" << " " << is_grouped << std::endl;
         prev_->beginTuple();
         if (is_grouped) {
             grouped_records_ = dynamic_cast<GroupExecutor*>(prev_.get())->cloneGroupedRecords();
@@ -106,9 +106,27 @@ public:
     }
 
     std::unique_ptr<RmRecord> aggregateGroup(const std::vector<std::unique_ptr<RmRecord>>& records) {
-        if (records.empty()) return nullptr;
+        bool is_count = true;
+        for (const auto& agg_type : agg_types_) {
+            if (agg_type != AggregateType::COUNT) {
+                is_count = false;
+                break;
+            }
+        }
+        if (records.empty() && !is_count) return nullptr;
+        else if (records.empty() && is_count) {
+            auto result = std::make_unique<RmRecord>();
+            for (size_t i = 0; i < agg_types_.size(); ++i) {
+                auto count_value = Value();
+                count_value.set_int(0);
+                count_value.init_raw();
+                result->append(count_value.raw->data, count_value.raw->size);
+            }
+            return result;
+        }
         auto result = std::make_unique<RmRecord>();
         for (size_t i = 0; i < agg_types_.size(); ++i) {
+            std::cerr << "Aggregating: " << aggregate2str(agg_types_[i]) << std::endl;
             switch (agg_types_[i]) {
                 case AggregateType::NONE: {
                     std::cerr << "No aggregation" << std::endl;
@@ -140,6 +158,7 @@ public:
                     auto count_value = Value();
                     count_value.set_int(records.size());
                     count_value.init_raw();
+                    std::cerr << "Count value: " << count_value << std::endl;
                     result->append(count_value.raw->data, count_value.raw->size);
                     break;
                 }

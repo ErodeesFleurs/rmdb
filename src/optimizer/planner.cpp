@@ -328,10 +328,8 @@ std::shared_ptr<Plan> Planner::make_one_rel(std::shared_ptr<Query> query)
     std::vector<TabCol> sel_cols;
     for (const auto &agg : x->cols) {
         if (agg->col_name == "") {
-            for (auto &col : all_cols) {
-                TabCol sel_col = {.tab_name = col.tab_name, .col_name = col.name};
-                sel_cols.push_back(sel_col);
-            }
+            TabCol sel_col = {.tab_name = all_cols[0].tab_name, .col_name = all_cols[0].name};
+            sel_cols.push_back(sel_col);
             break;
         }
         for (auto &col : all_cols) {
