@@ -180,5 +180,85 @@ class AbstractExecutor {
         }
     }
 
+    Value get_aggr_value(const std::vector<ColMeta>& rec_cols, const std::vector<std::unique_ptr<RmRecord>>& rec, const TabCol &tab_col, AggregateType agg_type) {
+        Value val;
+        auto col_meta = *get_col(rec_cols, tab_col);
+        if (agg_type == AggregateType::NONE) {
+            for (auto& col_meta : rec_cols) {
+                if (col_meta.name == tab_col.col_name) {
+                    if (col_meta.type == TYPE_INT) {
+                        val.set_int(*(int*)(rec[0]->data + col_meta.offset));
+                    } else if (col_meta.type == TYPE_FLOAT) {
+                        val.set_float(*(double*)(rec[0]->data + col_meta.offset));
+                    } else {
+                        val.set_str(std::string(rec[0]->data + col_meta.offset, col_meta.len));
+                    }
+                    break;
+                }
+            }
+        } else if (agg_type == AggregateType::COUNT) {
+            val.set_int(rec.size());
+        } else if (agg_type == AggregateType::SUM) {
+            if (col_meta.type == TYPE_INT) {
+                int sum = 0;
+                for (const auto& record : rec) {
+                    sum += *(int*)(record->data + col_meta.offset);
+                }
+                val.set_int(sum);
+            } else if (col_meta.type == TYPE_FLOAT) {
+                double sum = 0;
+                for (const auto& record : rec) {
+                    sum += *(double*)(record->data + col_meta.offset);
+                }
+                val.set_float(sum);
+            }
+        } else if (agg_type == AggregateType::MAX) {
+            if (col_meta.type == TYPE_INT) {
+                int max = std::numeric_limits<int>::min();
+                for (const auto& record : rec) {
+                    max = std::max(max, *(int*)(record->data + col_meta.offset));
+                }
+                val.set_int(max);
+            } else if (col_meta.type == TYPE_FLOAT) {
+                double max = std::numeric_limits<double>::min();
+                for (const auto& record : rec) {
+                    max = std::max(max, *(double*)(record->data + col_meta.offset));
+                }
+                val.set_float(max);
+            } else if (col_meta.type == TYPE_STRING) {
+                std::string max = "";
+                for (const auto& record : rec) {
+                    std::string str(record->data + col_meta.offset, col_meta.len);
+                    max = std::max(max, str);
+                }
+                val.set_str(max);
+            }
+        } else if (agg_type == AggregateType::MIN) {
+            if (col_meta.type == TYPE_INT) {
+                int min = std::numeric_limits<int>::max();
+                for (const auto& record : rec) {
+                    min = std::min(min, *(int*)(record->data + col_meta.offset));
+                }
+                val.set_int(min);
+            }
+            else if (col_meta.type == TYPE_FLOAT) {
+                double min = std::numeric_limits<double>::max();
+                for (const auto& record : rec) {
+                    min = std::min(min, *(double*)(record->data + col_meta.offset));
+                }
+                val.set_float(min);
+            }
+            else if (col_meta.type == TYPE_STRING) {
+                std::string min = std::string(255, 255);
+                for (const auto& record : rec) {
+                    std::string str(record->data + col_meta.offset, col_meta.len);
+                    min = std::min(min, str);
+                }
+                val.set_str(min);
+            }
+        }
+        return val;
+    }
+
 
 };

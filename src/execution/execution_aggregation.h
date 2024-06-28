@@ -17,8 +17,6 @@ private:
     std::vector<ColMeta> cols_;
     std::vector<ColMeta> output_cols_;
     std::vector<AggregateType> agg_types_;
-    bool is_grouped = false;
-    bool is_end_ = false;
     std::unordered_map<std::string, std::vector<std::unique_ptr<RmRecord>>>* grouped_records_;
     std::vector<std::unique_ptr<RmRecord>> aggregated_records_;
     std::vector<std::unique_ptr<RmRecord>>::iterator current_record_;
@@ -26,13 +24,12 @@ private:
 public:
     AggregateExecutor(std::unique_ptr<AbstractExecutor> prev, const std::vector<TabCol>& sel_cols, const std::vector<AggregateType>& agg_types)
         : prev_(std::move(prev)), agg_types_(agg_types) {
-        std::cerr << "sel_cols size: " << sel_cols.size() << std::endl;
-        std::cerr << "agg_types size: " << agg_types.size() << std::endl;
+        // 构造输出列
         for (const auto& sel_col : sel_cols) {
             cols_.push_back(*prev_->get_col(prev_->cols(), sel_col));
-            std::cerr << "Sel col: " << cols_.back().name << " " << cols_.back().tab_name << " " << cols_.back().offset << " " << cols_.back().type << std::endl;
             output_cols_.push_back(cols_.back());
         }
+        // 如果首位是COUNT
         output_cols_.front().offset = 0;
         if (agg_types[0] == AggregateType::COUNT) {
             output_cols_.front().type = TYPE_INT;
@@ -45,30 +42,18 @@ public:
             }
             output_cols_[i].offset = output_cols_[i - 1].offset + output_cols_[i - 1].len;
         }
-        auto pointer = prev_.get();
-        if (dynamic_cast<GroupExecutor*>(pointer)) {
-            is_grouped = true;
-        }
-        for (const auto& agg_type : agg_types) {
-            std::cerr << "Agg type: " << agg_type << std::endl;
-        }
     }
 
     void beginTuple() override {
-        std::cerr << "Aggregate BeginTuple" << " " << is_grouped << std::endl;
+        std::cerr << "Aggregate BeginTuple" << std::endl;
         prev_->beginTuple();
-        if (is_grouped) {
-            auto group_executor  = dynamic_cast<GroupExecutor*>(prev_.get());
-            std::cerr << "Grouped records size: " << group_executor->group_iterators.size() << std::endl;
-            auto group_iter = group_executor->group_iterators.begin();
-            while (group_iter != group_executor->group_iterators.end()) {
-                std::cerr << "Group size: " << (*group_iter)->second.size() << std::endl;
-                group_iter++;
-            }
+        if (auto group_executor  = dynamic_cast<GroupExecutor*>(prev_.get())) {
             for (const auto& group : group_executor->group_iterators) {
-                aggregated_records_.push_back(aggregateGroup(group->second));
+                auto record = aggregateGroup(group->second);
+                if (record) {
+                    aggregated_records_.push_back(std::move(record));
+                }
             }
-            std::cerr << "Aggregated records size: " << aggregated_records_.size() << std::endl;
         }
         else {
             std::vector<std::unique_ptr<RmRecord>> records;
@@ -76,30 +61,26 @@ public:
                 records.push_back(prev_->Next());
                 prev_->nextTuple();
             }
-            aggregated_records_.push_back(aggregateGroup(records));
-            std::cerr << "Aggregated records size: " << aggregated_records_.size() << std::endl;
+            auto record = aggregateGroup(records);
+            if (record) {
+                aggregated_records_.push_back(std::move(record));
+            }
         }
         current_record_ = aggregated_records_.begin();
-        is_end_ = (current_record_ == aggregated_records_.end());
     }
 
     void nextTuple() override {
         if (current_record_ != aggregated_records_.end()) {
             ++current_record_;
         }
-        is_end_ = (current_record_ == aggregated_records_.end());
     }
 
     std::unique_ptr<RmRecord> Next() override {
-        std::cerr << "Aggregate Next " << is_end_ << std::endl;
-        if (is_end_) {
-            return nullptr;
-        }
         return std::make_unique<RmRecord>(**current_record_);
     }
 
     bool is_end() const override {
-        return is_end_;
+        return current_record_ == aggregated_records_.end();
     }
 
     const std::vector<ColMeta>& cols() const override {
@@ -122,7 +103,9 @@ public:
                 break;
             }
         }
+        // 如果没有记录，且不是count，返回空
         if (records.empty() && !is_count) return nullptr;
+        // 如果没有记录，且是count，返回0
         else if (records.empty() && is_count) {
             auto result = std::make_unique<RmRecord>();
             for (size_t i = 0; i < agg_types_.size(); ++i) {
@@ -135,88 +118,11 @@ public:
         }
         auto result = std::make_unique<RmRecord>();
         for (size_t i = 0; i < agg_types_.size(); ++i) {
-            std::cerr << "Aggregating: " << agg_types_[i] << std::endl;
             std::cerr << "Aggregating: " << aggregate2str(agg_types_[i]) << std::endl;
-            switch (agg_types_[i]) {
-                case AggregateType::NONE: {
-                    std::cerr << "No aggregation" << std::endl;
-                    auto col = cols_[i];
-                    result->append(records[0]->data + col.offset, col.len);
-                    break;
-                }
-                case AggregateType::SUM: {
-                    std::cerr << "Summing" << std::endl;
-                    auto sum_value = Value();
-                    if (cols_[i].type == TYPE_INT) {
-                        sum_value.set_int(0);
-                    }
-                    else if (cols_[i].type == TYPE_FLOAT) {
-                        sum_value.set_float(0);
-                    }
-                    for (const auto& record : records) {
-                        auto col = cols_[i];
-                        auto value = get_value(col.type, record->data + col.offset);
-                        sum_value = sum_value + value;
-                    };
-                    sum_value.init_raw();
-                    std::cerr << "Sum value: " << sum_value << std::endl;
-                    result->append(sum_value.raw->data, sum_value.raw->size);
-                    break;
-                }
-                case AggregateType::COUNT: {
-                    std::cerr << "Counting" << std::endl;
-                    auto count_value = Value();
-                    count_value.set_int(records.size());
-                    count_value.init_raw();
-                    std::cerr << "Count value: " << count_value << std::endl;
-                    result->append(count_value.raw->data, count_value.raw->size);
-                    break;
-                }
-                case AggregateType::MAX: {
-                    std::cerr << "Maxing" << std::endl;
-                    auto max_value = Value();
-                    if (cols_[i].type == TYPE_INT) {
-                        max_value.set_int(INT_MIN);
-                    }
-                    else if (cols_[i].type == TYPE_FLOAT) {
-                        max_value.set_float(__DBL_MIN__);
-                    }
-                    else if (cols_[i].type == TYPE_STRING) {
-                        max_value.set_str("");
-                    }
-                    for (const auto& record : records) {
-                        auto col = cols_[i];
-                        auto value = get_value(col.type, record->data + col.offset);
-                        max_value = std::max(max_value, value);
-                    };
-                    max_value.init_raw();
-                    std::cerr << "Max value: " << max_value << std::endl;
-                    result->append(max_value.raw->data, max_value.raw->size);
-                    break;
-                }
-                case AggregateType::MIN: {
-                    std::cerr << "Minnig" << std::endl;
-                    auto min_value = Value();
-                    if (cols_[i].type == TYPE_INT) {
-                        min_value.set_int(INT_MAX);
-                    }
-                    else if (cols_[i].type == TYPE_FLOAT) {
-                        min_value.set_float(__DBL_MAX__);
-                    }
-                    else if (cols_[i].type == TYPE_STRING) {
-                        min_value.set_str(std::string(255, 255));
-                    }
-                    for (const auto& record : records) {
-                        auto col = cols_[i];
-                        auto value = get_value(col.type, record->data + col.offset);
-                        min_value = std::min(min_value, value);
-                    };
-                    min_value.init_raw();
-                    std::cerr << "Min value: " << min_value << std::endl;
-                    result->append(min_value.raw->data, min_value.raw->size);
-                    break;
-                }
-            }
+            std::cerr << "Aggregating: " << cols_[i].name << " " << cols_[i].tab_name << std::endl;
+            Value res = get_aggr_value(cols_, records, TabCol{.tab_name = cols_[i].tab_name, .col_name = cols_[i].name}, agg_types_[i]);
+            res.init_raw();
+            result->append(res.raw->data, res.raw->size);
         }
         std::cerr << "result size: " << result->size << std::endl;
         return result;

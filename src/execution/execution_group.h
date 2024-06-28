@@ -34,6 +34,7 @@ class GroupExecutor : public AbstractExecutor {
         std::cerr << "Group BeginTuple" << std::endl;
         prev_->beginTuple();
         grouped_records.clear();
+        group_iterators.clear();
 
         while (!prev_->is_end()) {
             auto tuple = prev_->Next();
@@ -44,7 +45,6 @@ class GroupExecutor : public AbstractExecutor {
         // 条件过滤
         std::vector<std::string> group_keys_to_remove;
         for (auto& [key, records] : grouped_records) {
-            std::cerr << "Group key: " << key << " " << records.size() << std::endl;
             if (having_conds_.empty()) {
                 break;
             }
@@ -54,15 +54,18 @@ class GroupExecutor : public AbstractExecutor {
                 group_keys_to_remove.push_back(key);
             }
         }
+        // 删除不满足条件的组
         for (const auto& key : group_keys_to_remove) {
             grouped_records.erase(key);
         }
-        group_iterators.clear();
+        
         for (auto it = grouped_records.begin(); it != grouped_records.end(); ++it) {
             group_iterators.push_back(it);
         }
         std::reverse(group_iterators.begin(), group_iterators.end());
+
         current_group = group_iterators.begin();
+        // 初始化current_tuple
         if (current_group != group_iterators.end()) {
             auto& front = current_group->operator->()->second.front();
             auto temp_tuple = std::make_unique<RmRecord>(front->size, front->data);
@@ -100,107 +103,14 @@ class GroupExecutor : public AbstractExecutor {
    private:
 
    std::string generateGroupKey(std::unique_ptr<RmRecord>& record) {
-        std::string group_key;
+        std::string group_key = "";
         for (const auto& group_col : group_cols_) {
             const auto col_meta = prev_->get_col(prev_->cols(), group_col);
             const char* col_data = record->data + col_meta->offset;
-            if (col_meta->type == TYPE_INT) {
-                group_key += std::to_string(*(int*)col_data);
-            } else if (col_meta->type == TYPE_FLOAT) {
-                group_key += std::to_string(*(double*)col_data);
-            } else {
-                group_key += std::string(col_data, col_meta->len);
-            }
-            group_key += '|';
+            group_key += std::string(col_data, col_meta->len);
         }
-        std::cerr << "Group key: " << group_key << std::endl;
+        // std::cerr << "Group key: " << group_key << std::endl;
         return group_key;
-    }
-
-    Value get_aggr_value(const std::vector<ColMeta>& rec_cols, std::vector<std::unique_ptr<RmRecord>>& rec, const std::string &col_name, AggregateType agg_type) {
-        Value val;
-        auto pos = std::find_if(rec_cols.begin(), rec_cols.end(), [&](const ColMeta &col) {
-            return col.name == col_name;
-        });
-        if (pos == rec_cols.end()) {
-            throw ColumnNotFoundError(col_name);
-        }
-        auto col_meta = *pos;
-        if (agg_type == AggregateType::NONE) {
-            for (auto& col_meta : rec_cols) {
-                if (col_meta.name == col_name) {
-                    if (col_meta.type == TYPE_INT) {
-                        val.set_int(*(int*)(rec[0]->data + col_meta.offset));
-                    } else if (col_meta.type == TYPE_FLOAT) {
-                        val.set_float(*(double*)(rec[0]->data + col_meta.offset));
-                    } else {
-                        val.set_str(std::string(rec[0]->data + col_meta.offset, col_meta.len));
-                    }
-                    break;
-                }
-            }
-        } else if (agg_type == AggregateType::COUNT) {
-            val.set_int(rec.size());
-        } else if (agg_type == AggregateType::SUM) {
-            if (col_meta.type == TYPE_INT) {
-                int sum = 0;
-                for (const auto& record : rec) {
-                    sum += *(int*)(record->data + col_meta.offset);
-                }
-                val.set_int(sum);
-            } else if (col_meta.type == TYPE_FLOAT) {
-                double sum = 0;
-                for (const auto& record : rec) {
-                    sum += *(double*)(record->data + col_meta.offset);
-                }
-                val.set_float(sum);
-            }
-        } else if (agg_type == AggregateType::MAX) {
-            if (col_meta.type == TYPE_INT) {
-                int max = std::numeric_limits<int>::min();
-                for (const auto& record : rec) {
-                    max = std::max(max, *(int*)(record->data + col_meta.offset));
-                }
-                val.set_int(max);
-            } else if (col_meta.type == TYPE_FLOAT) {
-                double max = std::numeric_limits<double>::min();
-                for (const auto& record : rec) {
-                    max = std::max(max, *(double*)(record->data + col_meta.offset));
-                }
-                val.set_float(max);
-            } else if (col_meta.type == TYPE_STRING) {
-                std::string max = "";
-                for (const auto& record : rec) {
-                    std::string str(record->data + col_meta.offset, col_meta.len);
-                    max = std::max(max, str);
-                }
-                val.set_str(max);
-            }
-        } else if (agg_type == AggregateType::MIN) {
-            if (col_meta.type == TYPE_INT) {
-                int min = std::numeric_limits<int>::max();
-                for (const auto& record : rec) {
-                    min = std::min(min, *(int*)(record->data + col_meta.offset));
-                }
-                val.set_int(min);
-            }
-            else if (col_meta.type == TYPE_FLOAT) {
-                double min = std::numeric_limits<double>::max();
-                for (const auto& record : rec) {
-                    min = std::min(min, *(double*)(record->data + col_meta.offset));
-                }
-                val.set_float(min);
-            }
-            else if (col_meta.type == TYPE_STRING) {
-                std::string min = std::string(255, 255);
-                for (const auto& record : rec) {
-                    std::string str(record->data + col_meta.offset, col_meta.len);
-                    min = std::min(min, str);
-                }
-                val.set_str(min);
-            }
-        }
-        return val;
     }
 
     bool eval_aggr_cond(const std::vector<ColMeta>& rec_cols, const Condition& cond, std::vector<std::unique_ptr<RmRecord>>& rec) {
@@ -208,7 +118,7 @@ class GroupExecutor : public AbstractExecutor {
         if (copy_cond.lhs_col.col_name == "") {
             copy_cond.lhs_col.col_name = rec_cols[0].name;
         }
-        Value lhs_val = get_aggr_value(rec_cols, rec, copy_cond.lhs_col.col_name, cond.lhs_col.aggregate);
+        Value lhs_val = get_aggr_value(rec_cols, rec, copy_cond.lhs_col, cond.lhs_col.aggregate);
         Value rhs_val;
         if (cond.is_rhs_val) {
             rhs_val = cond.rhs_val;
@@ -216,12 +126,8 @@ class GroupExecutor : public AbstractExecutor {
             if (copy_cond.rhs_col.col_name == "") {
                 copy_cond.rhs_col.col_name = rec_cols[0].name;
             }
-            rhs_val = get_aggr_value(rec_cols, rec, copy_cond.rhs_col.col_name, cond.rhs_col.aggregate);
+            rhs_val = get_aggr_value(rec_cols, rec, copy_cond.rhs_col, cond.rhs_col.aggregate);
         }
-        
-        std::cerr << "lhs_val: " << lhs_val << std::endl;
-        std::cerr << "rhs_val: " << rhs_val << std::endl;
-        std::cerr << "is ok: " << check_cond(lhs_val, rhs_val, cond.op) << std::endl;
         return check_cond(lhs_val, rhs_val, cond.op);
     }
 
