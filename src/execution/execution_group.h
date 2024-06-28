@@ -13,12 +13,12 @@ class GroupExecutor : public AbstractExecutor {
     std::vector<ColMeta> cols_;                    
     std::vector<TabCol> group_cols_;
     std::vector<Condition> having_conds_;
-    std::vector<std::unordered_map<std::string, std::vector<std::unique_ptr<RmRecord>>>::iterator> group_iterators;
+    std::unordered_map<std::string, std::vector<std::unique_ptr<RmRecord>>> grouped_records;
     std::vector<std::unordered_map<std::string, std::vector<std::unique_ptr<RmRecord>>>::iterator>::iterator current_group;
     std::unique_ptr<RmRecord> current_tuple;
 
    public:
-    std::unordered_map<std::string, std::vector<std::unique_ptr<RmRecord>>> grouped_records;
+    std::vector<std::unordered_map<std::string, std::vector<std::unique_ptr<RmRecord>>>::iterator> group_iterators;
 
     GroupExecutor(std::unique_ptr<AbstractExecutor> prev, const std::vector<TabCol>& sel_cols, const std::vector<TabCol>& group_cols, std::vector<Condition> conds) {
         prev_ = std::move(prev);
@@ -61,6 +61,7 @@ class GroupExecutor : public AbstractExecutor {
         for (auto it = grouped_records.begin(); it != grouped_records.end(); ++it) {
             group_iterators.push_back(it);
         }
+        std::reverse(group_iterators.begin(), group_iterators.end());
         current_group = group_iterators.begin();
         if (current_group != group_iterators.end()) {
             auto& front = current_group->operator->()->second.front();
@@ -112,7 +113,7 @@ class GroupExecutor : public AbstractExecutor {
             }
             group_key += '|';
         }
-        // std::cerr << "Group key: " << group_key << std::endl;
+        std::cerr << "Group key: " << group_key << std::endl;
         return group_key;
     }
 

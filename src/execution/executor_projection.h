@@ -76,7 +76,7 @@ class ProjectionExecutor : public AbstractExecutor {
             auto col = cols_[i];
             auto prev_col = prev_cols[idx];
             auto prev_val = prev_rec->data + prev_col.offset;
-            std::cerr << "Projection Next: " << idx << " " <<  prev_col.name << " " << prev_col.tab_name << " " << prev_col.offset << " " << prev_col.type << " " << col.len << std::endl;
+            std::cerr << "Projection Next: " << idx << " " <<  prev_col.name << " " << prev_col.tab_name << " " << prev_col.offset << " " << prev_col.type << " " << prev_col.len << std::endl;
             auto val = rec->data + col.offset;
             memcpy(val, prev_val, col.len);
         }

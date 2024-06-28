@@ -59,12 +59,14 @@ public:
         prev_->beginTuple();
         if (is_grouped) {
             auto group_executor  = dynamic_cast<GroupExecutor*>(prev_.get());
-            std::cerr << "Grouped records size: " << group_executor->grouped_records.size() << std::endl;
-            for (const auto& group : group_executor->grouped_records) {
-                std::cerr << "Group size: " << group.second.size() << std::endl;
+            std::cerr << "Grouped records size: " << group_executor->group_iterators.size() << std::endl;
+            auto group_iter = group_executor->group_iterators.begin();
+            while (group_iter != group_executor->group_iterators.end()) {
+                std::cerr << "Group size: " << (*group_iter)->second.size() << std::endl;
+                group_iter++;
             }
-            for (const auto& group : group_executor->grouped_records) {
-                aggregated_records_.push_back(aggregateGroup(group.second));
+            for (const auto& group : group_executor->group_iterators) {
+                aggregated_records_.push_back(aggregateGroup(group->second));
             }
             std::cerr << "Aggregated records size: " << aggregated_records_.size() << std::endl;
         }
