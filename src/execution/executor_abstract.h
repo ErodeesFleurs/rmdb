@@ -44,9 +44,9 @@ class AbstractExecutor {
 
     virtual ColMeta get_col_offset(const TabCol &target) { return ColMeta();};
 
-    static std::vector<ColMeta>::const_iterator get_col(const std::vector<ColMeta> &rec_cols, const TabCol &target) {
+    static std::vector<ColMeta>::const_iterator get_col(const std::vector<ColMeta> &rec_cols, const TabCol &target, bool cmp_table = true) {
         auto pos = std::find_if(rec_cols.begin(), rec_cols.end(), [&](const ColMeta &col) {
-            return col.tab_name == target.tab_name && col.name == target.col_name;
+            return (!cmp_table || col.tab_name == target.tab_name) && col.name == target.col_name;
         });
         if (pos == rec_cols.end()) {
             throw ColumnNotFoundError(target.tab_name + '.' + target.col_name);
@@ -182,7 +182,9 @@ class AbstractExecutor {
 
     Value get_aggr_value(const std::vector<ColMeta>& rec_cols, const std::vector<std::unique_ptr<RmRecord>>& rec, const TabCol &tab_col, AggregateType agg_type) {
         Value val;
-        auto col_meta = *get_col(rec_cols, tab_col);
+        std::cerr << "GAV: " << rec_cols[0].tab_name << ", " << tab_col.tab_name << ", " << tab_col.col_name << std::endl;
+        auto col_meta = *get_col(rec_cols, tab_col, false);
+        std::cerr << "CM" << std::endl;
         if (agg_type == AggregateType::NONE) {
             for (auto& col_meta : rec_cols) {
                 if (col_meta.name == tab_col.col_name) {
