@@ -25,17 +25,15 @@ class ProjectionExecutor : public AbstractExecutor {
 
    public:
     ProjectionExecutor(std::unique_ptr<AbstractExecutor> prev, const std::vector<TabCol> &sel_cols) {
+        std::cerr << "ProjectionExecutor" << std::endl;
         prev_ = std::move(prev);
 
-        if (prev_->getType() == "AggregateExecutor") {
+        if (prev_->getType() == ExecutorType::AGGREGATE) {
             prev_is_aggr_ = true;
         }
 
         size_t curr_offset = 0;
         auto &prev_cols = prev_->cols();
-        for (auto& col : prev_cols) {
-            std::cerr << "ProjectionExecutor: " << col.name << " " << col.tab_name << " " << col.offset << " " << col.type << std::endl;
-        }
         for (auto &sel_col : sel_cols) {
             auto pos = get_col(prev_cols, sel_col);
             sel_idxs_.push_back(pos - prev_cols.begin());
@@ -86,4 +84,8 @@ class ProjectionExecutor : public AbstractExecutor {
     }
 
     Rid &rid() override { return _abstract_rid; }
+
+    ExecutorType getType() const override {
+        return ExecutorType::PROJECTION;
+    }
 };

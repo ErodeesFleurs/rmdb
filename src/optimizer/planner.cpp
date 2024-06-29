@@ -318,33 +318,11 @@ std::shared_ptr<Plan> Planner::make_one_rel(std::shared_ptr<Query> query)
     if (!is_aggregate) {
         return plan;
     }
-    std::vector<std::string> tables = query->tables;
-    std::vector<ColMeta> all_cols;
-    for (auto &sel_tab_name : tables) {
-        // 这里db_不能写成get_db(), 注意要传指针
-        const auto &sel_tab_cols = sm_manager_->db_.get_table(sel_tab_name).cols;
-        all_cols.insert(all_cols.end(), sel_tab_cols.begin(), sel_tab_cols.end());
-    }
-    std::vector<TabCol> sel_cols;
-    for (const auto &agg : x->cols) {
-        if (agg->col_name == "") {
-            TabCol sel_col = {.tab_name = all_cols[0].tab_name, .col_name = all_cols[0].name};
-            sel_cols.push_back(sel_col);
-            continue;
-        }
-        for (auto &col : all_cols) {
-            if (col.name == agg->col_name) {
-                TabCol sel_col = {.tab_name = col.tab_name, .col_name = col.name};
-                sel_cols.push_back(sel_col);
-                break;
-            }
-        }
-    }
     std::vector<AggregateType> agg_types;
     for (const auto &agg : x->cols) {
         agg_types.push_back(agg->aggregate);
     }
-    return std::make_shared<AggregationPlan>(T_Aggregation, std::move(plan), sel_cols, agg_types);
+    return std::make_shared<AggregationPlan>(T_Aggregation, std::move(plan), query->cols, agg_types);
  }
 
 std::shared_ptr<Plan> Planner::generate_sort_plan(std::shared_ptr<Query> query, std::shared_ptr<Plan> plan)
@@ -383,34 +361,7 @@ std::shared_ptr<Plan> Planner::generate_group_plan(std::shared_ptr<Query> query,
     if (x->group.empty()) {
         return plan;
     }
-    std::vector<std::string> tables = query->tables;
-    std::vector<ColMeta> all_cols;
-    for (auto &sel_tab_name : tables) {
-        // 这里db_不能写成get_db(), 注意要传指针
-        const auto &sel_tab_cols = sm_manager_->db_.get_table(sel_tab_name).cols;
-        all_cols.insert(all_cols.end(), sel_tab_cols.begin(), sel_tab_cols.end());
-    }
-    std::vector<TabCol> sel_cols;
-    for (auto &sel : x->cols) {
-        for (auto &col : all_cols) {
-            if (col.name == sel->col_name) {
-                TabCol sel_col = {.tab_name = col.tab_name, .col_name = col.name};
-                sel_cols.push_back(sel_col);
-            }
-        }
-    }
-
-    std::vector<TabCol> group_cols;
-    for (auto &group : x->group) {
-        for (auto &col : all_cols) {
-            if (col.name == group->cols->col_name) {
-                TabCol sel_col = {.tab_name = col.tab_name, .col_name = col.name};
-                group_cols.push_back(sel_col);
-            }
-        }
-    }
-
-    return std::make_shared<GroupPlan>(T_Group, std::move(plan), sel_cols, group_cols, query->having_conds);
+    return std::make_shared<GroupPlan>(T_Group, std::move(plan), query->cols, query->group_cols, query->having_conds);
 }
 
 

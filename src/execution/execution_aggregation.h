@@ -24,9 +24,15 @@ private:
 public:
     AggregateExecutor(std::unique_ptr<AbstractExecutor> prev, const std::vector<TabCol>& sel_cols, const std::vector<AggregateType>& agg_types)
         : prev_(std::move(prev)), agg_types_(agg_types) {
+        std::cerr << "AggregateExecutor" << std::endl;
         // 构造输出列
         for (const auto& sel_col : sel_cols) {
-            cols_.push_back(*prev_->get_col(prev_->cols(), sel_col));
+            if (sel_col.col_name == "*" && sel_col.aggregate == AggregateType::COUNT) {
+                cols_.push_back(ColMeta{.tab_name = "", .name = "*", .type = TYPE_INT, .len = sizeof(int), .offset = 0});
+            }
+            else {
+                cols_.push_back(*prev_->get_col(prev_->cols(), sel_col));
+            }
             output_cols_.push_back(cols_.back());
         }
         // 如果首位是COUNT
@@ -91,8 +97,8 @@ public:
         return _abstract_rid;
     }
 
-    std::string getType() override {
-        return "AggregateExecutor";
+    ExecutorType getType() const override {
+        return ExecutorType::AGGREGATE;
     }
 
     std::unique_ptr<RmRecord> aggregateGroup(const std::vector<std::unique_ptr<RmRecord>>& records) {

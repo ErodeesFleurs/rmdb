@@ -2067,7 +2067,7 @@ yyreduce:
   case 51: /* col: COUNT '(' '*' ')' AS colName  */
 #line 293 "/home/fleurs/Documents/GitHub/rmdb/src/parser/yacc.y"
     {
-        (yyval.sv_col) = std::make_shared<Col>("", "", (yyvsp[0].sv_str), "COUNT");
+        (yyval.sv_col) = std::make_shared<Col>("", "*", (yyvsp[0].sv_str), "COUNT");
     }
 #line 2073 "/home/fleurs/Documents/GitHub/rmdb/src/parser/yacc.tab.cpp"
     break;
@@ -2075,7 +2075,7 @@ yyreduce:
   case 52: /* col: COUNT '(' '*' ')'  */
 #line 297 "/home/fleurs/Documents/GitHub/rmdb/src/parser/yacc.y"
     {
-        (yyval.sv_col) = std::make_shared<Col>("", "", "count_row", "COUNT");
+        (yyval.sv_col) = std::make_shared<Col>("", "*", "count_row", "COUNT");
     }
 #line 2081 "/home/fleurs/Documents/GitHub/rmdb/src/parser/yacc.tab.cpp"
     break;

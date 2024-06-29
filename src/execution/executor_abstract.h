@@ -15,6 +15,24 @@ See the Mulan PSL v2 for more details. */
 #include "index/ix.h"
 #include "system/sm.h"
 
+enum class ExecutorType {
+    UNKNOWN,
+    ABSTRACT,
+    SEQ_SCAN,
+    INDEX_SCAN,
+    GROUP,
+    NESTED_LOOP_JOIN,
+    PROJECTION,
+    SORT,
+    AGGREGATE,
+    UPDATE,
+    DELETE,
+    INSERT,
+    SELECT,
+    CREATE,
+    DROP
+};
+
 class AbstractExecutor {
    public:
     Rid _abstract_rid;
@@ -30,7 +48,7 @@ class AbstractExecutor {
         return *_cols;
     };
 
-    virtual std::string getType() { return "AbstractExecutor"; };
+    virtual ExecutorType getType() const { return ExecutorType::ABSTRACT; };
 
     virtual void beginTuple(){};
 
@@ -156,12 +174,12 @@ class AbstractExecutor {
         }
     }
 
-    bool eval_conds(const std::vector<ColMeta> &rec_cols, const std::vector<Condition> &conds, const RmRecord *rec) {
+    static bool eval_conds(const std::vector<ColMeta> &rec_cols, const std::vector<Condition> &conds, const RmRecord *rec) {
         return std::all_of(conds.begin(), conds.end(),
                            [&](const Condition &cond) { return eval_cond(rec_cols, cond, rec); });
     }
 
-    bool check_cond(Value left, Value right, CompOp op) {
+    static bool check_cond(Value left, Value right, CompOp op) {
         int cmp = val_compare(left, right);
         if (op == OP_EQ) {
             return cmp == 0;
@@ -180,9 +198,15 @@ class AbstractExecutor {
         }
     }
 
-    Value get_aggr_value(const std::vector<ColMeta>& rec_cols, const std::vector<std::unique_ptr<RmRecord>>& rec, const TabCol &tab_col, AggregateType agg_type) {
+    static Value get_aggr_value(const std::vector<ColMeta>& rec_cols, const std::vector<std::unique_ptr<RmRecord>>& rec, const TabCol &tab_col, AggregateType agg_type) {
         Value val;
-        auto col_meta = *get_col(rec_cols, tab_col, false);
+        ColMeta col_meta;
+        if (agg_type == AggregateType::COUNT && tab_col.col_name == "*") {
+            col_meta = ColMeta{.tab_name = "", .name = "*", .type = TYPE_INT, .len = sizeof(int), .offset = 0};
+        }
+        else {
+            col_meta = *get_col(rec_cols, tab_col, false);
+        }
         if (agg_type == AggregateType::NONE) {
             for (auto& col_meta : rec_cols) {
                 if (col_meta.name == tab_col.col_name) {

@@ -11,7 +11,7 @@ class GroupExecutor : public AbstractExecutor {
    private:
     std::unique_ptr<AbstractExecutor> prev_;
     std::vector<ColMeta> cols_;                    
-    std::vector<TabCol> group_cols_;
+    std::vector<ColMeta> group_cols_;
     std::vector<Condition> having_conds_;
     std::unordered_map<std::string, std::vector<std::unique_ptr<RmRecord>>> grouped_records;
     std::vector<std::unordered_map<std::string, std::vector<std::unique_ptr<RmRecord>>>::iterator>::iterator current_group;
@@ -21,12 +21,19 @@ class GroupExecutor : public AbstractExecutor {
     std::vector<std::unordered_map<std::string, std::vector<std::unique_ptr<RmRecord>>>::iterator> group_iterators;
 
     GroupExecutor(std::unique_ptr<AbstractExecutor> prev, const std::vector<TabCol>& sel_cols, const std::vector<TabCol>& group_cols, std::vector<Condition> conds) {
+        std::cerr << "GroupExecutor" << std::endl;
         prev_ = std::move(prev);
         for (const auto& sel_col : sel_cols) {
-            cols_.push_back(*prev_->get_col(prev_->cols(), sel_col));
+            if (sel_col.col_name == "*" && sel_col.aggregate == AggregateType::COUNT) {
+                cols_.push_back(ColMeta{.tab_name = "", .name = "*", .type = TYPE_INT, .len = sizeof(int), .offset = 0});
+                continue;
+            }
+            cols_.push_back(*get_col(prev_->cols(), sel_col));
+        }
+        for (const auto& group_col : group_cols) {
+            group_cols_.push_back(*get_col(prev_->cols(), group_col));
         }
         having_conds_ = conds;
-        group_cols_ = group_cols;
         current_tuple = nullptr;
     }
 
@@ -70,6 +77,7 @@ class GroupExecutor : public AbstractExecutor {
             auto temp_tuple = std::make_unique<RmRecord>(front->size, front->data);
             current_tuple = std::move(temp_tuple);
         }
+        std::cerr << "Group BeginTuple End" << std::endl;
     }
 
     void nextTuple() override {
@@ -99,14 +107,17 @@ class GroupExecutor : public AbstractExecutor {
         return current_group == group_iterators.end();
     }
 
+    ExecutorType getType() const override {
+        return ExecutorType::GROUP;
+    }
+
    private:
 
    std::string generateGroupKey(std::unique_ptr<RmRecord>& record) {
         std::string group_key = "";
         for (const auto& group_col : group_cols_) {
-            const auto col_meta = prev_->get_col(prev_->cols(), group_col);
-            const char* col_data = record->data + col_meta->offset;
-            group_key += std::string(col_data, col_meta->len);
+            const char* col_data = record->data + group_col.offset;
+            group_key += std::string(col_data, group_col.len);
         }
         // std::cerr << "Group key: " << group_key << std::endl;
         return group_key;
@@ -114,9 +125,6 @@ class GroupExecutor : public AbstractExecutor {
 
     bool eval_aggr_cond(const std::vector<ColMeta>& rec_cols, const Condition& cond, std::vector<std::unique_ptr<RmRecord>>& rec) {
         auto copy_cond = cond;
-        if (copy_cond.lhs_col.col_name == "") {
-            copy_cond.lhs_col.col_name = rec_cols[0].name;
-        }
         Value lhs_val = get_aggr_value(rec_cols, rec, copy_cond.lhs_col, cond.lhs_col.aggregate);
         Value rhs_val;
         if (cond.is_rhs_val) {

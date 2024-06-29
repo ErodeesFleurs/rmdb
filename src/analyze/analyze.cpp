@@ -26,25 +26,9 @@ std::shared_ptr<Query> Analyze::do_analyze(std::shared_ptr<ast::TreeNode> parse)
                 throw TableNotFoundError(table);
             }
         }
-        //如果分组， 保证分组列在table中
-        if (!x->group.empty()) {
-            for (auto &group_col : x->group) {
-                bool found = false;
-                for (auto &tab_name : query->tables) {
-                    const auto &tab = sm_manager_->db_.get_table(tab_name);
-                    for (const auto &col : tab.cols) {
-                        if (col.name == group_col->cols->col_name) {
-                            found = true;
-                            break;
-                        }
-                    }
-                    if (found) break;
-                }
-                if (!found) {
-                    throw std::runtime_error("Group by column not found");
-                }
-            }
-        }
+
+        std::vector<ColMeta> all_cols;
+        get_all_cols(query->tables, all_cols);
 
         // 处理target list，再target list中添加上表名，例如 a.id
         for (auto &sv_sel_col : x->cols) {
@@ -52,18 +36,21 @@ std::shared_ptr<Query> Analyze::do_analyze(std::shared_ptr<ast::TreeNode> parse)
             query->cols.push_back(sel_col);
         }
 
-        //处理group by
+        // 处理group by
         for (auto &sv_group_col : x->group) {
-            TabCol group_col = {.tab_name = sv_group_col->cols->tab_name, .col_name = sv_group_col->cols->col_name};
+            TabCol group_col = {.tab_name = sv_group_col->cols->tab_name, .col_name = sv_group_col->cols->col_name, .as_name = sv_group_col->cols->as_name, .aggregate = sv_group_col->cols->aggregate};
             query->group_cols.push_back(group_col);
         }
-        
-        std::vector<ColMeta> all_cols;
-        get_all_cols(query->tables, all_cols);
+        // 如果有group by，检查group by的列是否存在
+        for (auto &group_col : query->group_cols) {
+            group_col = check_column(all_cols, group_col); // Group列元数据校验
+        }
+        check_group(query->group_cols, query->tables);
+
         if (query->cols.empty()) {
             // select all columns
             for (auto &col : all_cols) {
-                TabCol sel_col = {.tab_name = col.tab_name, .col_name = col.name};
+                TabCol sel_col = {.tab_name = col.tab_name, .col_name = col.name, .as_name = col.name, .aggregate = AggregateType::NONE};
                 query->cols.push_back(sel_col);
             }
         } else {
@@ -77,12 +64,13 @@ std::shared_ptr<Query> Analyze::do_analyze(std::shared_ptr<ast::TreeNode> parse)
                 sel_col = check_column(all_cols, sel_col);  // 列元数据校验
             }
         }
-        //处理where条件
+        // 处理where条件
         get_clause(x->conds, query->conds);
         check_clause(query->tables, query->conds);
-        //处理having条件
+        // 处理having条件
         get_clause(x->having_conds, query->having_conds);
-        // check_clause(query->tables, query->having_conds);
+        check_clause(query->tables, query->having_conds);
+        // 检查where条件中是否有聚合函数
         check_conds_with_aggregate(query->conds);
         check_col_with_group(query->cols, query->group_cols);
     } else if (auto x = std::dynamic_pointer_cast<ast::UpdateStmt>(parse)) {
@@ -120,6 +108,9 @@ TabCol Analyze::check_column(const std::vector<ColMeta> &all_cols, TabCol target
             }
         }
         if (tab_name.empty()) {
+            if (target.col_name == "*" && target.aggregate == AggregateType::COUNT) {
+                return target;
+            }
             throw ColumnNotFoundError(target.col_name);
         }
         target.tab_name = tab_name;
@@ -202,6 +193,21 @@ void Analyze::check_clause(const std::vector<std::string> &tab_names, std::vecto
         if (!cond.is_rhs_val) {
             cond.rhs_col = check_column(all_cols, cond.rhs_col);
         }
+        // 如果是count(*)，则不需要检查类型
+        if (cond.lhs_col.aggregate == AggregateType::COUNT && cond.lhs_col.col_name == "*") {
+            ColType lhs_type = TYPE_INT;
+            ColType rhs_type;
+            if (cond.is_rhs_val) {
+                rhs_type = cond.rhs_val.type;
+                cond.rhs_val.init_raw();
+            } else {
+                rhs_type = sm_manager_->db_.get_table(cond.rhs_col.tab_name).get_col(cond.rhs_col.col_name)->type;
+            }
+            if(lhs_type != rhs_type && (lhs_type == TYPE_STRING || rhs_type == TYPE_STRING)){
+                throw IncompatibleTypeError(coltype2str(lhs_type), coltype2str(rhs_type));
+            }
+            continue;
+        }
         TabMeta &lhs_tab = sm_manager_->db_.get_table(cond.lhs_col.tab_name);
         auto lhs_col = lhs_tab.get_col(cond.lhs_col.col_name);
         ColType lhs_type = lhs_col->type;
@@ -250,6 +256,23 @@ void Analyze::check_conds_with_aggregate(const std::vector<Condition> &conds) {
     for (auto &cond : conds) {
         if (cond.lhs_col.aggregate != AggregateType::NONE || (!cond.is_rhs_val && cond.rhs_col.aggregate != AggregateType::NONE)) {
             throw RMDBError("Aggregate column in where clause");
+        }
+    }
+}
+
+void Analyze::check_group(const std::vector<TabCol> &group_cols, const std::vector<std::string> &tab_names) {
+    std::vector<ColMeta> all_cols;
+    get_all_cols(tab_names, all_cols);
+    for (auto &group_col : group_cols) {
+        bool found = false;
+        for (auto &col : all_cols) {
+            if (col.name == group_col.col_name) {
+                found = true;
+                break;
+            }
+        }
+        if (!found) {
+            throw RMDBError("Group by column not found");
         }
     }
 }

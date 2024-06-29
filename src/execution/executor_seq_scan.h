@@ -74,6 +74,7 @@ class SeqScanExecutor : public AbstractExecutor {
             }
             scan_->next();
         }
+        std::cerr << "SeqScan BeginTuple end" << std::endl;
     }
 
     void nextTuple() override {
@@ -100,4 +101,8 @@ class SeqScanExecutor : public AbstractExecutor {
     }
 
     Rid &rid() override { return rid_; }
+
+    ExecutorType getType() const override {
+        return ExecutorType::SEQ_SCAN;
+    }
 };

@@ -199,4 +199,8 @@ class IndexScanExecutor : public AbstractExecutor {
     }
 
     Rid &rid() override { return rid_; }
+
+    ExecutorType getType() const override {
+        return ExecutorType::INDEX_SCAN;
+    }
 };

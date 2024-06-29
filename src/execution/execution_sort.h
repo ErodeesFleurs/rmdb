@@ -113,4 +113,6 @@ class SortExecutor : public AbstractExecutor {
         }
         return true;
     }
+
+    ExecutorType getType() const override { return ExecutorType::SORT; }
 };

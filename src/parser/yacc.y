@@ -291,11 +291,11 @@ col:
     }
     |   COUNT '(' '*' ')' AS colName
     {
-        $$ = std::make_shared<Col>("", "", $6, "COUNT");
+        $$ = std::make_shared<Col>("", "*", $6, "COUNT");
     }
     |   COUNT '(' '*' ')'
     {
-        $$ = std::make_shared<Col>("", "", "count_row", "COUNT");
+        $$ = std::make_shared<Col>("", "*", "count_row", "COUNT");
     }
     |   SUM '(' tbName '.' colName ')' AS colName
     {
