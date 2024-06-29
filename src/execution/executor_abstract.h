@@ -10,8 +10,8 @@ See the Mulan PSL v2 for more details. */
 
 #pragma once
 
-#include "execution_defs.h"
 #include "common/common.h"
+#include "execution_defs.h"
 #include "index/ix.h"
 #include "system/sm.h"
 
@@ -37,14 +37,14 @@ class AbstractExecutor {
    public:
     Rid _abstract_rid;
 
-    Context *context_;
+    Context* context_;
 
     virtual ~AbstractExecutor() = default;
 
     virtual size_t tupleLen() const { return 0; };
 
-    virtual const std::vector<ColMeta> &cols() const {
-        std::vector<ColMeta> *_cols = nullptr;
+    virtual const std::vector<ColMeta>& cols() const {
+        std::vector<ColMeta>* _cols = nullptr;
         return *_cols;
     };
 
@@ -56,32 +56,36 @@ class AbstractExecutor {
 
     virtual bool is_end() const { return true; };
 
-    virtual Rid &rid() = 0;
+    virtual Rid& rid() = 0;
 
     virtual std::unique_ptr<RmRecord> Next() = 0;
 
-    virtual ColMeta get_col_offset(const TabCol &target) { return ColMeta();};
+    virtual ColMeta get_col_offset(const TabCol& target) { return ColMeta(); };
 
-    static std::vector<ColMeta>::const_iterator get_col(const std::vector<ColMeta> &rec_cols, const TabCol &target, bool cmp_table = true) {
-        auto pos = std::find_if(rec_cols.begin(), rec_cols.end(), [&](const ColMeta &col) {
-            return (!cmp_table || col.tab_name == target.tab_name) && col.name == target.col_name;
-        });
+    static std::vector<ColMeta>::const_iterator get_col(
+        const std::vector<ColMeta>& rec_cols, const TabCol& target,
+        bool cmp_table = true) {
+        auto pos = std::find_if(
+            rec_cols.begin(), rec_cols.end(), [&](const ColMeta& col) {
+                return (!cmp_table || col.tab_name == target.tab_name) &&
+                       col.name == target.col_name;
+            });
         if (pos == rec_cols.end()) {
             throw ColumnNotFoundError(target.tab_name + '.' + target.col_name);
         }
         return pos;
     }
 
-    static Value get_value(ColType p, const char *a) {
+    static Value get_value(ColType p, const char* a) {
         Value res;
         switch (p) {
             case TYPE_INT: {
-                int ia = *(int *) a;
+                int ia = *(int*)a;
                 res.set_int(ia);
                 break;
             }
             case TYPE_FLOAT: {
-                double fa = *(double *) a;
+                double fa = *(double*)a;
                 res.set_float(fa);
                 break;
             }
@@ -93,29 +97,29 @@ class AbstractExecutor {
         return res;
     }
 
-    static void convert(Value &a, Value &b) {
+    static void convert(Value& a, Value& b) {
         // 数值类型的转化(int, float)
         // int -> float
-        if (a.type == b.type) return;
+        if (a.type == b.type)
+            return;
         if (a.type == TYPE_FLOAT) {
             if (b.type == TYPE_INT) {
-                b.set_float((double) b.int_val);
+                b.set_float((double)b.int_val);
                 return;
             }
-        }
-        else if (a.type == TYPE_INT) {
+        } else if (a.type == TYPE_INT) {
             if (b.type == TYPE_FLOAT) {
-                a.set_float((double) a.int_val);
+                a.set_float((double)a.int_val);
                 return;
             }
         }
         throw InternalError("convert::Unexpected value type");
     }
 
-    static inline int val_compare(Value &pa, Value &pb) {
+    static inline int val_compare(Value& pa, Value& pb) {
         convert(pa, pb);
         switch (pa.type) {
-            case TYPE_FLOAT:{
+            case TYPE_FLOAT: {
                 double va = pa.float_val;
                 double vb = pb.float_val;
                 return (va < vb) ? -1 : ((va > vb) ? 1 : 0);
@@ -127,19 +131,22 @@ class AbstractExecutor {
             }
             case TYPE_STRING: {
                 auto same_size_str = pb.str_val;
-                while(same_size_str.size() < pa.str_val.size()){
+                while (same_size_str.size() < pa.str_val.size()) {
                     same_size_str += char(0);
                 }
-                return (pa.str_val < same_size_str) ? -1 : ((pa.str_val > same_size_str) ? 1 : 0);
+                return (pa.str_val < same_size_str)
+                           ? -1
+                           : ((pa.str_val > same_size_str) ? 1 : 0);
             }
         }
         return 0;
     }
 
-    static bool eval_cond(const std::vector<ColMeta> &rec_cols, const Condition &cond, const RmRecord *rec) {
+    static bool eval_cond(const std::vector<ColMeta>& rec_cols,
+                          const Condition& cond, const RmRecord* rec) {
         auto lhs_col = get_col(rec_cols, cond.lhs_col);
-        char *lhs = rec->data + lhs_col->offset;
-        char *rhs;
+        char* lhs = rec->data + lhs_col->offset;
+        char* rhs;
         ColType rhs_type, lhs_type = lhs_col->type;
         if (cond.is_rhs_val) {
             rhs_type = cond.rhs_val.type;
@@ -174,9 +181,13 @@ class AbstractExecutor {
         }
     }
 
-    static bool eval_conds(const std::vector<ColMeta> &rec_cols, const std::vector<Condition> &conds, const RmRecord *rec) {
+    static bool eval_conds(const std::vector<ColMeta>& rec_cols,
+                           const std::vector<Condition>& conds,
+                           const RmRecord* rec) {
         return std::all_of(conds.begin(), conds.end(),
-                           [&](const Condition &cond) { return eval_cond(rec_cols, cond, rec); });
+                           [&](const Condition& cond) {
+                               return eval_cond(rec_cols, cond, rec);
+                           });
     }
 
     static bool check_cond(Value left, Value right, CompOp op) {
@@ -198,13 +209,19 @@ class AbstractExecutor {
         }
     }
 
-    static Value get_aggr_value(const std::vector<ColMeta>& rec_cols, const std::vector<std::unique_ptr<RmRecord>>& rec, const TabCol &tab_col, AggregateType agg_type) {
+    static Value get_aggr_value(
+        const std::vector<ColMeta>& rec_cols,
+        const std::vector<std::unique_ptr<RmRecord>>& rec,
+        const TabCol& tab_col, AggregateType agg_type) {
         Value val;
         ColMeta col_meta;
         if (agg_type == AggregateType::COUNT && tab_col.col_name == "*") {
-            col_meta = ColMeta{.tab_name = "", .name = "*", .type = TYPE_INT, .len = sizeof(int), .offset = 0};
-        }
-        else {
+            col_meta = ColMeta{.tab_name = "",
+                               .name = "*",
+                               .type = TYPE_INT,
+                               .len = sizeof(int),
+                               .offset = 0};
+        } else {
             col_meta = *get_col(rec_cols, tab_col, false);
         }
         if (agg_type == AggregateType::NONE) {
@@ -213,9 +230,11 @@ class AbstractExecutor {
                     if (col_meta.type == TYPE_INT) {
                         val.set_int(*(int*)(rec[0]->data + col_meta.offset));
                     } else if (col_meta.type == TYPE_FLOAT) {
-                        val.set_float(*(double*)(rec[0]->data + col_meta.offset));
+                        val.set_float(
+                            *(double*)(rec[0]->data + col_meta.offset));
                     } else {
-                        val.set_str(std::string(rec[0]->data + col_meta.offset, col_meta.len));
+                        val.set_str(std::string(rec[0]->data + col_meta.offset,
+                                                col_meta.len));
                     }
                     break;
                 }
@@ -240,19 +259,22 @@ class AbstractExecutor {
             if (col_meta.type == TYPE_INT) {
                 int max = std::numeric_limits<int>::min();
                 for (const auto& record : rec) {
-                    max = std::max(max, *(int*)(record->data + col_meta.offset));
+                    max =
+                        std::max(max, *(int*)(record->data + col_meta.offset));
                 }
                 val.set_int(max);
             } else if (col_meta.type == TYPE_FLOAT) {
                 double max = std::numeric_limits<double>::min();
                 for (const auto& record : rec) {
-                    max = std::max(max, *(double*)(record->data + col_meta.offset));
+                    max = std::max(max,
+                                   *(double*)(record->data + col_meta.offset));
                 }
                 val.set_float(max);
             } else if (col_meta.type == TYPE_STRING) {
                 std::string max = "";
                 for (const auto& record : rec) {
-                    std::string str(record->data + col_meta.offset, col_meta.len);
+                    std::string str(record->data + col_meta.offset,
+                                    col_meta.len);
                     max = std::max(max, str);
                 }
                 val.set_str(max);
@@ -261,21 +283,22 @@ class AbstractExecutor {
             if (col_meta.type == TYPE_INT) {
                 int min = std::numeric_limits<int>::max();
                 for (const auto& record : rec) {
-                    min = std::min(min, *(int*)(record->data + col_meta.offset));
+                    min =
+                        std::min(min, *(int*)(record->data + col_meta.offset));
                 }
                 val.set_int(min);
-            }
-            else if (col_meta.type == TYPE_FLOAT) {
+            } else if (col_meta.type == TYPE_FLOAT) {
                 double min = std::numeric_limits<double>::max();
                 for (const auto& record : rec) {
-                    min = std::min(min, *(double*)(record->data + col_meta.offset));
+                    min = std::min(min,
+                                   *(double*)(record->data + col_meta.offset));
                 }
                 val.set_float(min);
-            }
-            else if (col_meta.type == TYPE_STRING) {
+            } else if (col_meta.type == TYPE_STRING) {
                 std::string min = std::string(255, 255);
                 for (const auto& record : rec) {
-                    std::string str(record->data + col_meta.offset, col_meta.len);
+                    std::string str(record->data + col_meta.offset,
+                                    col_meta.len);
                     min = std::min(min, str);
                 }
                 val.set_str(min);
@@ -283,6 +306,4 @@ class AbstractExecutor {
         }
         return val;
     }
-
-
 };

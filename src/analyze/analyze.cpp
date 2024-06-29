@@ -15,7 +15,8 @@ See the Mulan PSL v2 for more details. */
  * @param {shared_ptr<ast::TreeNode>} parse parser生成的结果集
  * @return {shared_ptr<Query>} Query 
  */
-std::shared_ptr<Query> Analyze::do_analyze(std::shared_ptr<ast::TreeNode> parse) {
+std::shared_ptr<Query> Analyze::do_analyze(
+    std::shared_ptr<ast::TreeNode> parse) {
     std::shared_ptr<Query> query = std::make_shared<Query>();
     if (auto x = std::dynamic_pointer_cast<ast::SelectStmt>(parse)) {
         // 处理表名
@@ -31,33 +32,43 @@ std::shared_ptr<Query> Analyze::do_analyze(std::shared_ptr<ast::TreeNode> parse)
         get_all_cols(query->tables, all_cols);
 
         // 处理target list，再target list中添加上表名，例如 a.id
-        for (auto &sv_sel_col : x->cols) {
-            TabCol sel_col = {.tab_name = sv_sel_col->tab_name, .col_name = sv_sel_col->col_name, .as_name = sv_sel_col->as_name, .aggregate = sv_sel_col->aggregate};
+        for (auto& sv_sel_col : x->cols) {
+            TabCol sel_col = {.tab_name = sv_sel_col->tab_name,
+                              .col_name = sv_sel_col->col_name,
+                              .as_name = sv_sel_col->as_name,
+                              .aggregate = sv_sel_col->aggregate};
             query->cols.push_back(sel_col);
         }
 
         // 处理group by
-        for (auto &sv_group_col : x->group) {
-            TabCol group_col = {.tab_name = sv_group_col->cols->tab_name, .col_name = sv_group_col->cols->col_name, .as_name = sv_group_col->cols->as_name, .aggregate = sv_group_col->cols->aggregate};
+        for (auto& sv_group_col : x->group) {
+            TabCol group_col = {.tab_name = sv_group_col->cols->tab_name,
+                                .col_name = sv_group_col->cols->col_name,
+                                .as_name = sv_group_col->cols->as_name,
+                                .aggregate = sv_group_col->cols->aggregate};
             query->group_cols.push_back(group_col);
         }
         // 如果有group by，检查group by的列是否存在
-        for (auto &group_col : query->group_cols) {
-            group_col = check_column(all_cols, group_col); // Group列元数据校验
+        for (auto& group_col : query->group_cols) {
+            group_col = check_column(all_cols, group_col);  // Group列元数据校验
         }
         check_group(query->group_cols, query->tables);
 
         if (query->cols.empty()) {
             // select all columns
-            for (auto &col : all_cols) {
-                TabCol sel_col = {.tab_name = col.tab_name, .col_name = col.name, .as_name = col.name, .aggregate = AggregateType::NONE};
+            for (auto& col : all_cols) {
+                TabCol sel_col = {.tab_name = col.tab_name,
+                                  .col_name = col.name,
+                                  .as_name = col.name,
+                                  .aggregate = AggregateType::NONE};
                 query->cols.push_back(sel_col);
             }
         } else {
             // infer table name from column name
-            for (auto &sel_col : query->cols) {
+            for (auto& sel_col : query->cols) {
                 // 如果是count(*)，则默认为第一个列
-                if (sel_col.aggregate == AggregateType::COUNT && sel_col.col_name.empty()) {
+                if (sel_col.aggregate == AggregateType::COUNT &&
+                    sel_col.col_name.empty()) {
                     sel_col.col_name = all_cols[0].name;
                     sel_col.tab_name = all_cols[0].tab_name;
                 }
@@ -86,10 +97,10 @@ std::shared_ptr<Query> Analyze::do_analyze(std::shared_ptr<ast::TreeNode> parse)
     } else if (auto x = std::dynamic_pointer_cast<ast::DeleteStmt>(parse)) {
         //处理where条件
         get_clause(x->conds, query->conds);
-        check_clause({x->tab_name}, query->conds);        
+        check_clause({x->tab_name}, query->conds);
     } else if (auto x = std::dynamic_pointer_cast<ast::InsertStmt>(parse)) {
         // 处理insert 的values值
-        for (auto &sv_val : x->vals) {
+        for (auto& sv_val : x->vals) {
             query->values.push_back(convert_sv_value(sv_val));
         }
     } else {
@@ -99,12 +110,12 @@ std::shared_ptr<Query> Analyze::do_analyze(std::shared_ptr<ast::TreeNode> parse)
     return query;
 }
 
-
-TabCol Analyze::check_column(const std::vector<ColMeta> &all_cols, TabCol target) {
+TabCol Analyze::check_column(const std::vector<ColMeta>& all_cols,
+                             TabCol target) {
     if (target.tab_name.empty()) {
         // Table name not specified, infer table name from column name
         std::string tab_name;
-        for (auto &col : all_cols) {
+        for (auto& col : all_cols) {
             if (col.name == target.col_name) {
                 if (!tab_name.empty()) {
                     throw AmbiguousColumnError(target.col_name);
@@ -113,7 +124,8 @@ TabCol Analyze::check_column(const std::vector<ColMeta> &all_cols, TabCol target
             }
         }
         if (tab_name.empty()) {
-            if (target.col_name == "*" && target.aggregate == AggregateType::COUNT) {
+            if (target.col_name == "*" &&
+                target.aggregate == AggregateType::COUNT) {
                 return target;
             }
             throw ColumnNotFoundError(target.col_name);
@@ -122,61 +134,76 @@ TabCol Analyze::check_column(const std::vector<ColMeta> &all_cols, TabCol target
     } else {
         /** TODO: Make sure target column exists */
         int count = 0;
-        for (auto &col : all_cols) { // 遍历查找是否存在以及是否重复
-            if (col.name == target.col_name && col.tab_name == target.tab_name) {
+        for (auto& col : all_cols) {  // 遍历查找是否存在以及是否重复
+            if (col.name == target.col_name &&
+                col.tab_name == target.tab_name) {
                 count++;
                 if (count > 1) {
                     throw AmbiguousColumnError(target.col_name);
                 }
             }
         }
-        if (count == 0) { // 如果未能找到
+        if (count == 0) {  // 如果未能找到
             throw ColumnNotFoundError(target.col_name);
         }
-        
     }
     return target;
 }
 
-void Analyze::get_all_cols(const std::vector<std::string> &tab_names, std::vector<ColMeta> &all_cols) {
-    for (auto &sel_tab_name : tab_names) {
+void Analyze::get_all_cols(const std::vector<std::string>& tab_names,
+                           std::vector<ColMeta>& all_cols) {
+    for (auto& sel_tab_name : tab_names) {
         // 这里db_不能写成get_db(), 注意要传指针
-        const auto &sel_tab_cols = sm_manager_->db_.get_table(sel_tab_name).cols;
-        all_cols.insert(all_cols.end(), sel_tab_cols.begin(), sel_tab_cols.end());
+        const auto& sel_tab_cols =
+            sm_manager_->db_.get_table(sel_tab_name).cols;
+        all_cols.insert(all_cols.end(), sel_tab_cols.begin(),
+                        sel_tab_cols.end());
     }
 }
 
-void Analyze::get_clause(const std::vector<std::shared_ptr<ast::BinaryExpr>> &sv_conds, std::vector<Condition> &conds) {
+void Analyze::get_clause(
+    const std::vector<std::shared_ptr<ast::BinaryExpr>>& sv_conds,
+    std::vector<Condition>& conds) {
     conds.clear();
-    for (auto &expr : sv_conds) {
+    for (auto& expr : sv_conds) {
         Condition cond;
-        cond.lhs_col = {.tab_name = expr->lhs->tab_name, .col_name = expr->lhs->col_name, .as_name = expr->lhs->as_name, .aggregate = expr->lhs->aggregate};
+        cond.lhs_col = {.tab_name = expr->lhs->tab_name,
+                        .col_name = expr->lhs->col_name,
+                        .as_name = expr->lhs->as_name,
+                        .aggregate = expr->lhs->aggregate};
         cond.op = convert_sv_comp_op(expr->op);
         if (auto rhs_val = std::dynamic_pointer_cast<ast::Value>(expr->rhs)) {
             cond.is_rhs_val = true;
             cond.rhs_val = convert_sv_value(rhs_val);
-        } else if (auto rhs_col = std::dynamic_pointer_cast<ast::Col>(expr->rhs)) {
+        } else if (auto rhs_col =
+                       std::dynamic_pointer_cast<ast::Col>(expr->rhs)) {
             cond.is_rhs_val = false;
-            cond.rhs_col = {.tab_name = rhs_col->tab_name, .col_name = rhs_col->col_name, .as_name = rhs_col->as_name, .aggregate = rhs_col->aggregate};
+            cond.rhs_col = {.tab_name = rhs_col->tab_name,
+                            .col_name = rhs_col->col_name,
+                            .as_name = rhs_col->as_name,
+                            .aggregate = rhs_col->aggregate};
         }
         conds.push_back(cond);
     }
 }
 
-void Analyze::set_clause(const std::string& tab_name, const std::vector<std::shared_ptr<ast::SetClause>>& sv_conds, std::vector<SetClause> &conds) {
+void Analyze::set_clause(
+    const std::string& tab_name,
+    const std::vector<std::shared_ptr<ast::SetClause>>& sv_conds,
+    std::vector<SetClause>& conds) {
     conds.clear();
-    for (auto &expr : sv_conds) {
+    for (auto& expr : sv_conds) {
         SetClause cond;
         switch (expr->setOp) {
-            case ast::SvSetOp::SV_OP_SET:{
+            case ast::SvSetOp::SV_OP_SET: {
                 cond.op = OP_SET;
                 break;
             }
-            case ast::SvSetOp::SV_OP_ADD:{
+            case ast::SvSetOp::SV_OP_ADD: {
                 cond.op = OP_ADD;
                 break;
             }
-            case ast::SvSetOp::SV_OP_SUB:{
+            case ast::SvSetOp::SV_OP_SUB: {
                 cond.op = OP_SUB;
                 break;
             }
@@ -187,78 +214,93 @@ void Analyze::set_clause(const std::string& tab_name, const std::vector<std::sha
     }
 }
 
-void Analyze::check_clause(const std::vector<std::string> &tab_names, std::vector<Condition> &conds) {
+void Analyze::check_clause(const std::vector<std::string>& tab_names,
+                           std::vector<Condition>& conds) {
     // auto all_cols = get_all_cols(tab_names);
     std::vector<ColMeta> all_cols;
     get_all_cols(tab_names, all_cols);
     // Get raw values in where clause
-    for (auto &cond : conds) {
+    for (auto& cond : conds) {
         // Infer table name from column name
         cond.lhs_col = check_column(all_cols, cond.lhs_col);
         if (!cond.is_rhs_val) {
             cond.rhs_col = check_column(all_cols, cond.rhs_col);
         }
         // 如果是count(*)，则不需要检查类型
-        if (cond.lhs_col.aggregate == AggregateType::COUNT && cond.lhs_col.col_name == "*") {
+        if (cond.lhs_col.aggregate == AggregateType::COUNT &&
+            cond.lhs_col.col_name == "*") {
             ColType lhs_type = TYPE_INT;
             ColType rhs_type;
             if (cond.is_rhs_val) {
                 rhs_type = cond.rhs_val.type;
                 cond.rhs_val.init_raw();
             } else {
-                rhs_type = sm_manager_->db_.get_table(cond.rhs_col.tab_name).get_col(cond.rhs_col.col_name)->type;
+                rhs_type = sm_manager_->db_.get_table(cond.rhs_col.tab_name)
+                               .get_col(cond.rhs_col.col_name)
+                               ->type;
             }
-            if(lhs_type != rhs_type && (lhs_type == TYPE_STRING || rhs_type == TYPE_STRING)){
-                throw IncompatibleTypeError(coltype2str(lhs_type), coltype2str(rhs_type));
+            if (lhs_type != rhs_type &&
+                (lhs_type == TYPE_STRING || rhs_type == TYPE_STRING)) {
+                throw IncompatibleTypeError(coltype2str(lhs_type),
+                                            coltype2str(rhs_type));
             }
             continue;
         }
-        TabMeta &lhs_tab = sm_manager_->db_.get_table(cond.lhs_col.tab_name);
+        TabMeta& lhs_tab = sm_manager_->db_.get_table(cond.lhs_col.tab_name);
         auto lhs_col = lhs_tab.get_col(cond.lhs_col.col_name);
         ColType lhs_type = lhs_col->type;
         ColType rhs_type;
         if (cond.is_rhs_val) {
             rhs_type = cond.rhs_val.type;
-            if(rhs_type == TYPE_FLOAT){
+            if (rhs_type == TYPE_FLOAT) {
                 cond.rhs_val.init_raw(sizeof(double));
-            }else if(rhs_type == TYPE_INT){
+            } else if (rhs_type == TYPE_INT) {
                 cond.rhs_val.init_raw(sizeof(int));
-            }else{
+            } else {
                 cond.rhs_val.init_raw(lhs_col->len);
             }
         } else {
-            TabMeta &rhs_tab = sm_manager_->db_.get_table(cond.rhs_col.tab_name);
+            TabMeta& rhs_tab =
+                sm_manager_->db_.get_table(cond.rhs_col.tab_name);
             auto rhs_col = rhs_tab.get_col(cond.rhs_col.col_name);
             rhs_type = rhs_col->type;
         }
-        if (lhs_type != rhs_type && (lhs_type == TYPE_STRING || rhs_type == TYPE_STRING)) {
-            throw IncompatibleTypeError(coltype2str(lhs_type), coltype2str(rhs_type));
+        if (lhs_type != rhs_type &&
+            (lhs_type == TYPE_STRING || rhs_type == TYPE_STRING)) {
+            throw IncompatibleTypeError(coltype2str(lhs_type),
+                                        coltype2str(rhs_type));
         }
     }
 }
 
-void Analyze::check_col_group_and_aggr(const std::vector<TabCol> &cols, const std::vector<TabCol> &group_cols) {
+void Analyze::check_col_group_and_aggr(const std::vector<TabCol>& cols,
+                                       const std::vector<TabCol>& group_cols) {
     if (group_cols.empty()) {
-        bool has_aggr = std::any_of(cols.begin(), cols.end(), [](const TabCol &col) {
-            return col.aggregate != AggregateType::NONE;
-        });
-        bool has_non_aggr = std::any_of(cols.begin(), cols.end(), [](const TabCol &col) {
-            return col.aggregate == AggregateType::NONE;
-        });
+        bool has_aggr =
+            std::any_of(cols.begin(), cols.end(), [](const TabCol& col) {
+                return col.aggregate != AggregateType::NONE;
+            });
+        bool has_non_aggr =
+            std::any_of(cols.begin(), cols.end(), [](const TabCol& col) {
+                return col.aggregate == AggregateType::NONE;
+            });
         if (has_aggr && has_non_aggr) {
-            throw RMDBError("Non aggregate column in select list with aggregate column");
+            throw RMDBError(
+                "Non aggregate column in select list with aggregate column");
         }
     } else {
-        for (auto &col : cols) {
+        for (auto& col : cols) {
             if (col.aggregate != AggregateType::NONE) {
                 continue;
             }
-            bool found = std::any_of(group_cols.begin(), group_cols.end(), [&](const TabCol &group_col) {
-                if (col.col_name == group_col.col_name) {
-                    return true;
-                }
-                return false;
-            });
+            bool found =
+                std::any_of(group_cols.begin(), group_cols.end(),
+                            [&](const TabCol& group_col) {
+                                if (col.col_name == group_col.col_name) {
+                                    return true;
+                                }
+                                return false;
+                            });
             if (!found) {
                 throw RMDBError("Non aggregate column not in group by");
             }
@@ -266,34 +308,43 @@ void Analyze::check_col_group_and_aggr(const std::vector<TabCol> &cols, const st
     }
 }
 
-void Analyze::check_conds_with_aggregate(const std::vector<Condition> &conds) {
-    for (auto &cond : conds) {
-        if (cond.lhs_col.aggregate != AggregateType::NONE || (!cond.is_rhs_val && cond.rhs_col.aggregate != AggregateType::NONE)) {
+void Analyze::check_conds_with_aggregate(const std::vector<Condition>& conds) {
+    for (auto& cond : conds) {
+        if (cond.lhs_col.aggregate != AggregateType::NONE ||
+            (!cond.is_rhs_val &&
+             cond.rhs_col.aggregate != AggregateType::NONE)) {
             throw RMDBError("Aggregate column in where clause");
         }
     }
 }
 
-void Analyze::check_having_conds(const std::vector<Condition> &having_conds, const std::vector<TabCol> &group_cols) {
-    for (auto &cond : having_conds) {
+void Analyze::check_having_conds(const std::vector<Condition>& having_conds,
+                                 const std::vector<TabCol>& group_cols) {
+    for (auto& cond : having_conds) {
         if (cond.lhs_col.aggregate == AggregateType::NONE) {
-            bool found = std::any_of(group_cols.begin(), group_cols.end(), [&](const TabCol &group_col) {
-                if (cond.lhs_col.col_name == group_col.col_name && cond.lhs_col.tab_name == group_col.tab_name) {
-                    return true;
-                }
-                return false;
-            });
+            bool found = std::any_of(
+                group_cols.begin(), group_cols.end(),
+                [&](const TabCol& group_col) {
+                    if (cond.lhs_col.col_name == group_col.col_name &&
+                        cond.lhs_col.tab_name == group_col.tab_name) {
+                        return true;
+                    }
+                    return false;
+                });
             if (!found) {
                 throw RMDBError("Non aggregate column not in group by");
             }
         }
         if (!cond.is_rhs_val && cond.rhs_col.aggregate == AggregateType::NONE) {
-            bool found = std::any_of(group_cols.begin(), group_cols.end(), [&](const TabCol &group_col) {
-                if (cond.rhs_col.col_name == group_col.col_name && cond.rhs_col.tab_name == group_col.tab_name) {
-                    return true;
-                }
-                return false;
-            });
+            bool found = std::any_of(
+                group_cols.begin(), group_cols.end(),
+                [&](const TabCol& group_col) {
+                    if (cond.rhs_col.col_name == group_col.col_name &&
+                        cond.rhs_col.tab_name == group_col.tab_name) {
+                        return true;
+                    }
+                    return false;
+                });
             if (!found) {
                 throw RMDBError("Non aggregate column not in group by");
             }
@@ -301,13 +352,15 @@ void Analyze::check_having_conds(const std::vector<Condition> &having_conds, con
     }
 }
 
-void Analyze::check_group(const std::vector<TabCol> &group_cols, const std::vector<std::string> &tab_names) {
+void Analyze::check_group(const std::vector<TabCol>& group_cols,
+                          const std::vector<std::string>& tab_names) {
     std::vector<ColMeta> all_cols;
     get_all_cols(tab_names, all_cols);
-    for (auto &group_col : group_cols) {
+    for (auto& group_col : group_cols) {
         bool found = false;
-        for (auto &col : all_cols) {
-            if (col.name == group_col.col_name && col.tab_name == group_col.tab_name) {
+        for (auto& col : all_cols) {
+            if (col.name == group_col.col_name &&
+                col.tab_name == group_col.tab_name) {
                 found = true;
                 break;
             }
@@ -318,19 +371,22 @@ void Analyze::check_group(const std::vector<TabCol> &group_cols, const std::vect
     }
 }
 
-void Analyze::check_without_group(const std::vector<TabCol> &group_cols, const std::vector<Condition> &having_conds) {
+void Analyze::check_without_group(const std::vector<TabCol>& group_cols,
+                                  const std::vector<Condition>& having_conds) {
     if (group_cols.empty() && !having_conds.empty()) {
         throw RMDBError("Having clause without group by");
     }
 }
 
-Value Analyze::convert_sv_value(const std::shared_ptr<ast::Value> &sv_val) {
+Value Analyze::convert_sv_value(const std::shared_ptr<ast::Value>& sv_val) {
     Value val;
     if (auto int_lit = std::dynamic_pointer_cast<ast::IntLit>(sv_val)) {
         val.set_int(int_lit->val);
-    } else if (auto float_lit = std::dynamic_pointer_cast<ast::FloatLit>(sv_val)) {
+    } else if (auto float_lit =
+                   std::dynamic_pointer_cast<ast::FloatLit>(sv_val)) {
         val.set_float(float_lit->val);
-    } else if (auto str_lit = std::dynamic_pointer_cast<ast::StringLit>(sv_val)) {
+    } else if (auto str_lit =
+                   std::dynamic_pointer_cast<ast::StringLit>(sv_val)) {
         val.set_str(str_lit->val);
     } else {
         throw InternalError("Unexpected sv value type");

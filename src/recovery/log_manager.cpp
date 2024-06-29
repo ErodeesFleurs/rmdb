@@ -8,8 +8,8 @@ EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
 MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details. */
 
-#include <cstring>
 #include "log_manager.h"
+#include <cstring>
 
 /**
  * @description: 添加日志记录到日志缓冲区中，并返回日志记录号
@@ -17,12 +17,10 @@ See the Mulan PSL v2 for more details. */
  * @return {lsn_t} 返回该日志的日志记录号
  */
 lsn_t LogManager::add_log_to_buffer(LogRecord* log_record) {
-  return 0;
+    return 0;
 }
 
 /**
  * @description: 把日志缓冲区的内容刷到磁盘中，由于目前只设置了一个缓冲区，因此需要阻塞其他日志操作
  */
-void LogManager::flush_log_to_disk() {
-
-}
+void LogManager::flush_log_to_disk() {}

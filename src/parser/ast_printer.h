@@ -9,70 +9,66 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details. */
 #pragma once
 
-#include "ast.h"
 #include <cassert>
 #include <iostream>
 #include <map>
+#include "ast.h"
 
 namespace ast {
 
 class TreePrinter {
-public:
-    static void print(const std::shared_ptr<TreeNode> &node) {
+   public:
+    static void print(const std::shared_ptr<TreeNode>& node) {
         print_node(node, 0);
     }
 
-private:
+   private:
     static std::string offset2string(int offset) {
         return std::string(offset, ' ');
     }
 
-    template<typename T>
-    static void print_val(const T &val, int offset) {
+    template <typename T>
+    static void print_val(const T& val, int offset) {
         std::cout << offset2string(offset) << val << '\n';
     }
 
-    template<typename T>
-    static void print_val_list(const std::vector<T> &vals, int offset) {
+    template <typename T>
+    static void print_val_list(const std::vector<T>& vals, int offset) {
         std::cout << offset2string(offset) << "LIST\n";
         offset += 2;
-        for (auto &val : vals) {
+        for (auto& val : vals) {
             print_val(val, offset);
         }
     }
 
     static std::string type2str(SvType type) {
         static std::map<SvType, std::string> m{
-                {SV_TYPE_INT,    "INT"},
-                {SV_TYPE_FLOAT,  "FLOAT"},
-                {SV_TYPE_STRING, "STRING"},
+            {SV_TYPE_INT, "INT"},
+            {SV_TYPE_FLOAT, "FLOAT"},
+            {SV_TYPE_STRING, "STRING"},
         };
         return m.at(type);
     }
 
     static std::string op2str(SvCompOp op) {
         static std::map<SvCompOp, std::string> m{
-                {SV_OP_EQ, "=="},
-                {SV_OP_NE, "!="},
-                {SV_OP_LT, "<"},
-                {SV_OP_GT, ">"},
-                {SV_OP_LE, "<="},
-                {SV_OP_GE, ">="},
+            {SV_OP_EQ, "=="}, {SV_OP_NE, "!="}, {SV_OP_LT, "<"},
+            {SV_OP_GT, ">"},  {SV_OP_LE, "<="}, {SV_OP_GE, ">="},
         };
         return m.at(op);
     }
 
-    template<typename T>
+    template <typename T>
     static void print_node_list(std::vector<T> nodes, int offset) {
         std::cout << offset2string(offset);
         offset += 2;
         std::cout << "LIST\n";
-        for (auto &node : nodes) {
+        for (auto& node : nodes) {
             print_node(node, offset);
         }
     }
 
-    static void print_node(const std::shared_ptr<TreeNode> &node, int offset) {
+    static void print_node(const std::shared_ptr<TreeNode>& node, int offset) {
         std::cout << offset2string(offset);
         offset += 2;
         if (auto x = std::dynamic_pointer_cast<Help>(node)) {
@@ -93,13 +89,13 @@ private:
             std::cout << "CREATE_INDEX\n";
             print_val(x->tab_name, offset);
             // print_val(x->col_name, offset);
-            for(auto col_name: x->col_names)
+            for (auto col_name : x->col_names)
                 print_val(col_name, offset);
         } else if (auto x = std::dynamic_pointer_cast<DropIndex>(node)) {
             std::cout << "DROP_INDEX\n";
             print_val(x->tab_name, offset);
             // print_val(x->col_name, offset);
-            for(auto col_name: x->col_names)
+            for (auto col_name : x->col_names)
                 print_val(col_name, offset);
         } else if (auto x = std::dynamic_pointer_cast<ShowIndex>(node)) {
             std::cout << "SHOW_INDEX\n";
@@ -167,4 +163,4 @@ private:
     }
 };
 
-}
+}  // namespace ast

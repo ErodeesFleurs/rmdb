@@ -10,14 +10,15 @@ See the Mulan PSL v2 for more details. */
 
 #pragma once
 
+#include "common/config.h"
 #include "defs.h"
 #include "storage/disk_manager.h"
-#include "common/config.h"
 
 #include <atomic>
 #include <chrono>
 
-static constexpr std::chrono::duration<int64_t> FLUSH_TIMEOUT = std::chrono::seconds(3);
+static constexpr std::chrono::duration<int64_t> FLUSH_TIMEOUT =
+    std::chrono::seconds(3);
 // the offset of log_type_ in log header
 static constexpr int OFFSET_LOG_TYPE = 0;
 // the offset of lsn_ in log header
@@ -32,4 +33,3 @@ static constexpr int OFFSET_PREV_LSN = OFFSET_LOG_TID + sizeof(txn_id_t);
 static constexpr int OFFSET_LOG_DATA = OFFSET_PREV_LSN + sizeof(lsn_t);
 // sizeof log_header
 static constexpr int LOG_HEADER_SIZE = OFFSET_LOG_DATA;
-

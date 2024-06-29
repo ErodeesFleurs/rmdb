@@ -18,7 +18,6 @@ See the Mulan PSL v2 for more details. */
 #include "defs.h"
 #include "record/rm_defs.h"
 
-
 struct TabCol {
     std::string tab_name;
     std::string col_name;
@@ -26,19 +25,21 @@ struct TabCol {
     std::string as_name;
     AggregateType aggregate;
 
-    friend bool operator<(const TabCol &x, const TabCol &y) {
-        return std::make_pair(x.tab_name, x.col_name) < std::make_pair(y.tab_name, y.col_name);
+    friend bool operator<(const TabCol& x, const TabCol& y) {
+        return std::make_pair(x.tab_name, x.col_name) <
+               std::make_pair(y.tab_name, y.col_name);
     }
 
-    friend bool operator==(const TabCol &x, const TabCol &y) {
-        return std::make_pair(x.tab_name, x.col_name) == std::make_pair(y.tab_name, y.col_name);
+    friend bool operator==(const TabCol& x, const TabCol& y) {
+        return std::make_pair(x.tab_name, x.col_name) ==
+               std::make_pair(y.tab_name, y.col_name);
     }
 };
 
 struct Value {
     ColType type;  // type of value
     union {
-        int int_val;      // int value
+        int int_val;       // int value
         double float_val;  // float value
     };
     std::string str_val;  // string value
@@ -65,10 +66,10 @@ struct Value {
         raw = std::make_shared<RmRecord>(len);
         if (type == TYPE_INT) {
             assert(len == sizeof(int));
-            *(int *)(raw->data) = int_val;
+            *(int*)(raw->data) = int_val;
         } else if (type == TYPE_FLOAT) {
             assert(len == sizeof(double));
-            *(double *)(raw->data) = float_val;
+            *(double*)(raw->data) = float_val;
         } else if (type == TYPE_STRING) {
             if (len < (int)str_val.size()) {
                 throw StringOverflowError();
@@ -82,17 +83,17 @@ struct Value {
         assert(raw == nullptr);
         if (type == TYPE_INT) {
             raw = std::make_shared<RmRecord>(sizeof(int));
-            *(int *)(raw->data) = int_val;
+            *(int*)(raw->data) = int_val;
         } else if (type == TYPE_FLOAT) {
             raw = std::make_shared<RmRecord>(sizeof(double));
-            *(double *)(raw->data) = float_val;
+            *(double*)(raw->data) = float_val;
         } else if (type == TYPE_STRING) {
             raw = std::make_shared<RmRecord>(str_val.size());
             memcpy(raw->data, str_val.c_str(), str_val.size());
         }
     }
 
-    friend std::ostream &operator<<(std::ostream &os, const Value &val) {
+    friend std::ostream& operator<<(std::ostream& os, const Value& val) {
         switch (val.type) {
             case TYPE_INT:
                 os << val.int_val;
@@ -109,8 +110,9 @@ struct Value {
         return os;
     }
 
-    friend bool operator==(const Value &x, const Value &y) {
-        if (x.type != y.type) return false;
+    friend bool operator==(const Value& x, const Value& y) {
+        if (x.type != y.type)
+            return false;
         switch (x.type) {
             case TYPE_INT:
                 return x.int_val == y.int_val;
@@ -122,13 +124,12 @@ struct Value {
                 return false;
         }
     }
-    
-    friend bool operator!=(const Value &x, const Value &y) {
-        return !(x == y);
-    }
 
-    friend bool operator<(const Value &x, const Value &y) {
-        if (x.type != y.type) return x.type < y.type;
+    friend bool operator!=(const Value& x, const Value& y) { return !(x == y); }
+
+    friend bool operator<(const Value& x, const Value& y) {
+        if (x.type != y.type)
+            return x.type < y.type;
         switch (x.type) {
             case TYPE_INT:
                 return x.int_val < y.int_val;
@@ -141,19 +142,13 @@ struct Value {
         }
     }
 
-    friend bool operator>(const Value &x, const Value &y) {
-        return y < x;
-    }
+    friend bool operator>(const Value& x, const Value& y) { return y < x; }
 
-    friend bool operator<=(const Value &x, const Value &y) {
-        return !(y < x);
-    }
+    friend bool operator<=(const Value& x, const Value& y) { return !(y < x); }
 
-    friend bool operator>=(const Value &x, const Value &y) {
-        return !(x < y);
-    }
+    friend bool operator>=(const Value& x, const Value& y) { return !(x < y); }
 
-    friend Value operator+(const Value &x, const Value &y) {
+    friend Value operator+(const Value& x, const Value& y) {
         Value res;
         if (x.type == TYPE_INT && y.type == TYPE_INT) {
             res.set_int(x.int_val + y.int_val);
@@ -168,9 +163,7 @@ struct Value {
 
 enum CompOp { OP_EQ, OP_NE, OP_LT, OP_GT, OP_LE, OP_GE };
 
-enum SetOp {
-    OP_ADD, OP_SUB, OP_SET
-};
+enum SetOp { OP_ADD, OP_SUB, OP_SET };
 struct Condition {
     TabCol lhs_col;   // left-hand side column
     CompOp op;        // comparison operator

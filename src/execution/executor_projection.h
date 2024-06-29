@@ -17,14 +17,15 @@ See the Mulan PSL v2 for more details. */
 
 class ProjectionExecutor : public AbstractExecutor {
    private:
-    std::unique_ptr<AbstractExecutor> prev_;        // 投影节点的儿子节点
-    std::vector<ColMeta> cols_;                     // 需要投影的字段
-    size_t len_;                                    // 字段总长度
+    std::unique_ptr<AbstractExecutor> prev_;  // 投影节点的儿子节点
+    std::vector<ColMeta> cols_;               // 需要投影的字段
+    size_t len_;                              // 字段总长度
     std::vector<size_t> sel_idxs_;
     bool prev_is_aggr_ = false;
 
    public:
-    ProjectionExecutor(std::unique_ptr<AbstractExecutor> prev, const std::vector<TabCol> &sel_cols) {
+    ProjectionExecutor(std::unique_ptr<AbstractExecutor> prev,
+                       const std::vector<TabCol>& sel_cols) {
         std::cerr << "ProjectionExecutor" << std::endl;
         prev_ = std::move(prev);
 
@@ -33,8 +34,8 @@ class ProjectionExecutor : public AbstractExecutor {
         }
 
         size_t curr_offset = 0;
-        auto &prev_cols = prev_->cols();
-        for (auto &sel_col : sel_cols) {
+        auto& prev_cols = prev_->cols();
+        for (auto& sel_col : sel_cols) {
             auto pos = get_col(prev_cols, sel_col);
             sel_idxs_.push_back(pos - prev_cols.begin());
             auto col = *pos;
@@ -48,24 +49,21 @@ class ProjectionExecutor : public AbstractExecutor {
         len_ = curr_offset;
     }
 
-    const std::vector<ColMeta> &cols() const override {
-        return cols_;
-    }
+    const std::vector<ColMeta>& cols() const override { return cols_; }
 
     void beginTuple() override {
         std::cerr << "Projection BeginTuple" << std::endl;
-        prev_->beginTuple(); // 调用子节点的beginTuple
+        prev_->beginTuple();  // 调用子节点的beginTuple
     }
 
-    void nextTuple() override {
-        prev_->nextTuple();
-    }
+    void nextTuple() override { prev_->nextTuple(); }
 
     std::unique_ptr<RmRecord> Next() override {
         auto rec = std::make_unique<RmRecord>(len_);
         auto& prev_cols = prev_->cols();
         auto prev_rec = prev_->Next();
-        for (size_t i = 0; i < sel_idxs_.size(); i++) { // 从prev_rec中取出需要的字段
+        for (size_t i = 0; i < sel_idxs_.size();
+             i++) {  // 从prev_rec中取出需要的字段
             auto idx = sel_idxs_[i];
             if (prev_is_aggr_) {
                 idx = i;
@@ -79,13 +77,9 @@ class ProjectionExecutor : public AbstractExecutor {
         return rec;
     }
 
-    bool is_end() const override {
-        return prev_->is_end();
-    }
+    bool is_end() const override { return prev_->is_end(); }
 
-    Rid &rid() override { return _abstract_rid; }
+    Rid& rid() override { return _abstract_rid; }
 
-    ExecutorType getType() const override {
-        return ExecutorType::PROJECTION;
-    }
+    ExecutorType getType() const override { return ExecutorType::PROJECTION; }
 };

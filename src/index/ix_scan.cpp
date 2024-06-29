@@ -16,12 +16,13 @@ See the Mulan PSL v2 for more details. */
  */
 void IxScan::next() {
     assert(!is_end());
-    IxNodeHandle *node = ih_->fetch_node(iid_.page_no);
+    IxNodeHandle* node = ih_->fetch_node(iid_.page_no);
     assert(node->is_leaf_page());
     assert(iid_.slot_no < node->get_size());
     // increment slot no
     iid_.slot_no++;
-    if (iid_.page_no != ih_->file_hdr_->last_leaf_ && iid_.slot_no == node->get_size()) {
+    if (iid_.page_no != ih_->file_hdr_->last_leaf_ &&
+        iid_.slot_no == node->get_size()) {
         // go to next leaf
         iid_.slot_no = 0;
         iid_.page_no = node->get_next_leaf();

@@ -19,15 +19,17 @@ class UpdateExecutor : public AbstractExecutor {
    private:
     TabMeta tab_;
     std::vector<Condition> conds_;
-    RmFileHandle *fh_;
+    RmFileHandle* fh_;
     std::vector<Rid> rids_;
     std::string tab_name_;
     std::vector<SetClause> set_clauses_;
-    SmManager *sm_manager_;
+    SmManager* sm_manager_;
 
    public:
-    UpdateExecutor(SmManager *sm_manager, const std::string &tab_name, std::vector<SetClause> set_clauses,
-                   std::vector<Condition> conds, std::vector<Rid> rids, Context *context) {
+    UpdateExecutor(SmManager* sm_manager, const std::string& tab_name,
+                   std::vector<SetClause> set_clauses,
+                   std::vector<Condition> conds, std::vector<Rid> rids,
+                   Context* context) {
         sm_manager_ = sm_manager;
         tab_name_ = tab_name;
         set_clauses_ = set_clauses;
@@ -38,15 +40,17 @@ class UpdateExecutor : public AbstractExecutor {
         context_ = context;
     }
 
-    void delete_index(RmRecord *rec, Rid rid_) {
+    void delete_index(RmRecord* rec, Rid rid_) {
         // 删除索引
-        for (auto &index: tab_.indexes) {
-            auto ix_name = sm_manager_->get_ix_manager()->get_index_name(tab_name_, index.cols);
+        for (auto& index : tab_.indexes) {
+            auto ix_name = sm_manager_->get_ix_manager()->get_index_name(
+                tab_name_, index.cols);
             auto ih = sm_manager_->ihs_.at(ix_name).get();
-            char *key = new char[index.col_tot_len];
+            char* key = new char[index.col_tot_len];
             int offset = 0;
             for (int j = 0; j < index.col_num; ++j) {
-                memcpy(key + offset, rec->data + index.cols[j].offset, index.cols[j].len);
+                memcpy(key + offset, rec->data + index.cols[j].offset,
+                       index.cols[j].len);
                 offset += index.cols[j].len;
             }
 
@@ -55,17 +59,19 @@ class UpdateExecutor : public AbstractExecutor {
         }
     }
 
-    bool insert_index(RmRecord *rec, Rid rid_) {
+    bool insert_index(RmRecord* rec, Rid rid_) {
         // 插入索引
         int fail_p = -1;
         for (int i = 0; i < (int)tab_.indexes.size(); i++) {
-            auto &index = tab_.indexes[i];
-            auto ix_name = sm_manager_->get_ix_manager()->get_index_name(tab_name_, index.cols);
+            auto& index = tab_.indexes[i];
+            auto ix_name = sm_manager_->get_ix_manager()->get_index_name(
+                tab_name_, index.cols);
             auto ih = sm_manager_->ihs_.at(ix_name).get();
-            char *key = new char[index.col_tot_len];
+            char* key = new char[index.col_tot_len];
             int offset = 0;
             for (int j = 0; j < index.col_num; ++j) {
-                memcpy(key + offset, rec->data + index.cols[j].offset, index.cols[j].len);
+                memcpy(key + offset, rec->data + index.cols[j].offset,
+                       index.cols[j].len);
                 offset += index.cols[j].len;
             }
 
@@ -80,13 +86,15 @@ class UpdateExecutor : public AbstractExecutor {
             //说明插入失败，需要rollback
             //删掉已插入索引
             for (int i = 0; i < fail_p; i++) {
-                auto &index = tab_.indexes[i];
-                auto ix_name = sm_manager_->get_ix_manager()->get_index_name(tab_name_, index.cols);
+                auto& index = tab_.indexes[i];
+                auto ix_name = sm_manager_->get_ix_manager()->get_index_name(
+                    tab_name_, index.cols);
                 auto ih = sm_manager_->ihs_.at(ix_name).get();
-                char *key = new char[index.col_tot_len];
+                char* key = new char[index.col_tot_len];
                 int offset = 0;
                 for (int j = 0; j < index.col_num; ++j) {
-                    memcpy(key + offset, rec->data + index.cols[j].offset, index.cols[j].len);
+                    memcpy(key + offset, rec->data + index.cols[j].offset,
+                           index.cols[j].len);
                     offset += index.cols[j].len;
                 }
 
@@ -100,18 +108,18 @@ class UpdateExecutor : public AbstractExecutor {
 
     std::unique_ptr<RmRecord> Next() override {
         std::map<TabCol, ColMeta> mp;
-        for (const auto &i: set_clauses_) {
+        for (const auto& i : set_clauses_) {
             ColMeta col = *get_col(tab_.cols, i.lhs);
             mp[i.lhs] = col;
         }
         bool is_fail = false;
         int upd_cnt = 0;
-        for (auto rid: rids_) {
+        for (auto rid : rids_) {
             auto rec = fh_->get_record(rid, context_);
             auto old_rec = fh_->get_record(rid, context_);
             delete_index(rec.get(), rid);
             upd_cnt++;
-            for (const auto &i: set_clauses_) {
+            for (const auto& i : set_clauses_) {
                 auto col = mp[i.lhs];
                 std::cerr << "i type: " << i.op << "\n";
                 auto value = i.rhs;
@@ -119,22 +127,23 @@ class UpdateExecutor : public AbstractExecutor {
                     Value b = {.type = col.type};
                     convert(value, b);
                     if (value.type != col.type) {
-                        throw IncompatibleTypeError(coltype2str(col.type), coltype2str(value.type));
+                        throw IncompatibleTypeError(coltype2str(col.type),
+                                                    coltype2str(value.type));
                     }
                 }
-                char *rec_buf = rec->data + col.offset;
+                char* rec_buf = rec->data + col.offset;
                 if (col.type == TYPE_INT) {
-                    auto old_val = *(int *) rec_buf;
-                    if(i.op == SetOp::OP_ADD){
+                    auto old_val = *(int*)rec_buf;
+                    if (i.op == SetOp::OP_ADD) {
                         value.int_val += old_val;
-                    }else if(i.op == SetOp::OP_SUB){
+                    } else if (i.op == SetOp::OP_SUB) {
                         value.int_val -= old_val;
                     }
                 } else if (col.type == TYPE_FLOAT) {
-                    auto old_val = *(double *) rec_buf;
-                    if(i.op == SetOp::OP_ADD){
+                    auto old_val = *(double*)rec_buf;
+                    if (i.op == SetOp::OP_ADD) {
                         value.float_val += old_val;
-                    }else if(i.op == SetOp::OP_SUB){
+                    } else if (i.op == SetOp::OP_SUB) {
                         value.float_val -= old_val;
                     }
                 } else if (col.type == TYPE_STRING) {
@@ -153,7 +162,8 @@ class UpdateExecutor : public AbstractExecutor {
             //更新记录
             fh_->update_record(rid, rec->data, context_);
             //更新事务
-            auto *wr = new WriteRecord(WType::UPDATE_TUPLE, tab_name_, rid, *old_rec);
+            auto* wr =
+                new WriteRecord(WType::UPDATE_TUPLE, tab_name_, rid, *old_rec);
             context_->txn_->append_write_record(wr);
         }
 
@@ -178,7 +188,7 @@ class UpdateExecutor : public AbstractExecutor {
         return nullptr;
     }
 
-    Rid &rid() override { return _abstract_rid; }
+    Rid& rid() override { return _abstract_rid; }
 
     ExecutorType getType() const override { return ExecutorType::UPDATE; }
 };

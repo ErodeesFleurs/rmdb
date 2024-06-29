@@ -10,5 +10,5 @@ See the Mulan PSL v2 for more details. */
 
 #pragma once
 
-#include "ix_scan.h"
 #include "ix_manager.h"
+#include "ix_scan.h"

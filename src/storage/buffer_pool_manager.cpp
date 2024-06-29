@@ -34,13 +34,15 @@ bool BufferPoolManager::find_victim_page(frame_id_t* frame_id) {
  * @param {PageId} new_page_id 新的page_id
  * @param {frame_id_t} new_frame_id 新的帧frame_id
  */
-void BufferPoolManager::update_page(Page *page, PageId new_page_id, frame_id_t new_frame_id) {
+void BufferPoolManager::update_page(Page* page, PageId new_page_id,
+                                    frame_id_t new_frame_id) {
     // Todo:
     // 1 如果是脏页，写回磁盘，并且把dirty置为false
     // 2 更新page table
     // 3 重置page的data，更新page id
     if (page->is_dirty()) {
-        disk_manager_->write_page(page->id_.fd, page->id_.page_no, page->data_, PAGE_SIZE);
+        disk_manager_->write_page(page->id_.fd, page->id_.page_no, page->data_,
+                                  PAGE_SIZE);
         page->is_dirty_ = false;
     }
     PageId old_page = page->id_;
@@ -77,10 +79,12 @@ Page* BufferPoolManager::fetch_page(PageId page_id) {
     }
     frame_id_t frame_id = -1;
     bool ok = find_victim_page(&frame_id);
-    if (!ok || frame_id == -1) return nullptr;
+    if (!ok || frame_id == -1)
+        return nullptr;
     update_page(&pages_[frame_id], page_id, frame_id);
-    if(page_id.page_no != INVALID_PAGE_ID){
-        disk_manager_->read_page(page_id.fd, page_id.page_no, pages_[frame_id].data_, PAGE_SIZE);
+    if (page_id.page_no != INVALID_PAGE_ID) {
+        disk_manager_->read_page(page_id.fd, page_id.page_no,
+                                 pages_[frame_id].data_, PAGE_SIZE);
     }
     pages_[frame_id].pin_count_ = 1;
     replacer_->pin(frame_id);
@@ -104,10 +108,12 @@ bool BufferPoolManager::unpin_page(PageId page_id, bool is_dirty) {
     // 2.2.1 若自减后等于0，则调用replacer_的Unpin
     // 3 根据参数is_dirty，更改P的is_dirty_
     std::scoped_lock lock{latch_};
-    if (!page_table_.count(page_id)) return false;
+    if (!page_table_.count(page_id))
+        return false;
     frame_id_t frame_id = page_table_[page_id];
-    Page *P = pages_ + frame_id;
-    if (P->pin_count_ <= 0) return false;
+    Page* P = pages_ + frame_id;
+    if (P->pin_count_ <= 0)
+        return false;
     P->pin_count_--;
     P->is_dirty_ |= is_dirty;
     if (P->pin_count_ == 0) {
@@ -129,10 +135,12 @@ bool BufferPoolManager::flush_page(PageId page_id) {
     // 2. 无论P是否为脏都将其写回磁盘。
     // 3. 更新P的is_dirty_
     std::scoped_lock lock{latch_};
-    if (!page_table_.count(page_id)) return false;
-    Page *page = pages_ + page_table_[page_id];
+    if (!page_table_.count(page_id))
+        return false;
+    Page* page = pages_ + page_table_[page_id];
     if (page->get_page_id().page_no != INVALID_PAGE_ID) {
-        disk_manager_->write_page(page->id_.fd, page->id_.page_no, page->data_, PAGE_SIZE);
+        disk_manager_->write_page(page->id_.fd, page->id_.page_no, page->data_,
+                                  PAGE_SIZE);
         page->is_dirty_ = false;
         return true;
     }
@@ -153,8 +161,9 @@ Page* BufferPoolManager::new_page(PageId* page_id) {
     std::scoped_lock lock{latch_};
     frame_id_t frame_id = -1;
     bool ok = find_victim_page(&frame_id);
-    if (!ok || frame_id == -1) return nullptr;
-    Page *page = pages_ + (frame_id);
+    if (!ok || frame_id == -1)
+        return nullptr;
+    Page* page = pages_ + (frame_id);
     page_id->page_no = disk_manager_->allocate_page(page_id->fd);
     update_page(page, *page_id, frame_id);
     replacer_->pin(frame_id);
@@ -172,12 +181,15 @@ bool BufferPoolManager::delete_page(PageId page_id) {
     // 2.   若目标页的pin_count不为0，则返回false
     // 3.   将目标页数据写回磁盘，从页表中删除目标页，重置其元数据，将其加入free_list_，返回true
     std::scoped_lock lock{latch_};
-    if (!page_table_.count(page_id)) return true;
+    if (!page_table_.count(page_id))
+        return true;
     frame_id_t frame_id = page_table_[page_id];
-    Page *page = pages_ + frame_id;
-    if (page->pin_count_ != 0) return false;
+    Page* page = pages_ + frame_id;
+    if (page->pin_count_ != 0)
+        return false;
     if (page->is_dirty()) {
-        disk_manager_->write_page(page->id_.fd, page->id_.page_no, page->data_, PAGE_SIZE);
+        disk_manager_->write_page(page->id_.fd, page->id_.page_no, page->data_,
+                                  PAGE_SIZE);
         page->is_dirty_ = false;
     }
     page_table_.erase(page_id);
@@ -193,9 +205,10 @@ bool BufferPoolManager::delete_page(PageId page_id) {
 void BufferPoolManager::flush_all_pages(int fd) {
     std::scoped_lock lock{latch_};
     for (size_t i = 0; i < pool_size_; i++) {
-        Page *page = pages_ + i;
+        Page* page = pages_ + i;
         if (page->id_.fd == fd && page->id_.page_no != INVALID_PAGE_ID) {
-            disk_manager_->write_page(fd, page->id_.page_no, page->data_, PAGE_SIZE);
+            disk_manager_->write_page(fd, page->id_.page_no, page->data_,
+                                      PAGE_SIZE);
             page->is_dirty_ = false;
         }
     }
@@ -208,18 +221,18 @@ void BufferPoolManager::flush_all_pages(int fd) {
 void BufferPoolManager::delete_all_pages(int fd) {
     std::scoped_lock lock{latch_};
     std::vector<PageId> to_be_deleted;
-    for(auto& [page_id, frame] : page_table_) {
-        if(page_id.fd == fd) {
+    for (auto& [page_id, frame] : page_table_) {
+        if (page_id.fd == fd) {
             to_be_deleted.push_back(page_id);
         }
     }
 
-    for(auto page_id : to_be_deleted) {
-        auto frame = page_table_[page_id];  
+    for (auto page_id : to_be_deleted) {
+        auto frame = page_table_[page_id];
         // 如果该页面还没有unpin，则unpin
         replacer_->unpin(frame);
         // 从页表中删除该页面并添加到free_list中
-        Page *page = &(pages_[frame]);
+        Page* page = &(pages_[frame]);
         page->reset_memory();
         page->is_dirty_ = false;
         page->pin_count_ = 0;

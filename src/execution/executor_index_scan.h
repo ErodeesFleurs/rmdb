@@ -19,28 +19,31 @@ See the Mulan PSL v2 for more details. */
 extern int count_index_scan;
 class IndexScanExecutor : public AbstractExecutor {
    private:
-    std::string tab_name_;                      // 表名称
-    TabMeta tab_;                               // 表的元数据
-    std::vector<Condition> conds_;              // 扫描条件
-    RmFileHandle *fh_;                          // 表的数据文件句柄
-    std::vector<ColMeta> cols_;                 // 需要读取的字段
-    size_t len_;                                // 选取出来的一条记录的长度
-    std::vector<Condition> fed_conds_;          // 扫描条件，和conds_字段相同
+    std::string tab_name_;              // 表名称
+    TabMeta tab_;                       // 表的元数据
+    std::vector<Condition> conds_;      // 扫描条件
+    RmFileHandle* fh_;                  // 表的数据文件句柄
+    std::vector<ColMeta> cols_;         // 需要读取的字段
+    size_t len_;                        // 选取出来的一条记录的长度
+    std::vector<Condition> fed_conds_;  // 扫描条件，和conds_字段相同
 
-    std::vector<std::string> index_col_names_;  // index scan涉及到的索引包含的字段
-    IndexMeta index_meta_;                      // index scan涉及到的索引元数据
+    std::vector<std::string>
+        index_col_names_;   // index scan涉及到的索引包含的字段
+    IndexMeta index_meta_;  // index scan涉及到的索引元数据
 
     Rid rid_;
     std::unique_ptr<RecScan> scan_;
-    IxIndexHandle *ih;
-    IxManager *im;
-    int index_count;                            // index scan涉及到的索引数量
+    IxIndexHandle* ih;
+    IxManager* im;
+    int index_count;  // index scan涉及到的索引数量
 
-    SmManager *sm_manager_;
+    SmManager* sm_manager_;
 
    public:
-    IndexScanExecutor(SmManager *sm_manager, std::string tab_name, std::vector<Condition> conds, std::vector<std::string> index_col_names,
-                    Context *context) {
+    IndexScanExecutor(SmManager* sm_manager, std::string tab_name,
+                      std::vector<Condition> conds,
+                      std::vector<std::string> index_col_names,
+                      Context* context) {
         sm_manager_ = sm_manager;
         context_ = context;
         tab_name_ = std::move(tab_name);
@@ -52,20 +55,22 @@ class IndexScanExecutor : public AbstractExecutor {
         std::string ix_name = im->get_index_name(tab_name_, index_col_names);
         if (!sm_manager->ihs_.count(ix_name)) {
             //如果没有打开则打开文件
-            sm_manager->ihs_.emplace(ix_name, im->open_index(tab_name_, index_col_names));
+            sm_manager->ihs_.emplace(
+                ix_name, im->open_index(tab_name_, index_col_names));
         }
         ih = sm_manager->ihs_[ix_name].get();
-        
-        index_col_names_ = index_col_names; 
+
+        index_col_names_ = index_col_names;
         index_meta_ = *(tab_.get_index_meta(index_col_names_));
         fh_ = sm_manager_->fhs_.at(tab_name_).get();
         cols_ = tab_.cols;
         len_ = cols_.back().offset + cols_.back().len;
         std::map<CompOp, CompOp> swap_op = {
-            {OP_EQ, OP_EQ}, {OP_NE, OP_NE}, {OP_LT, OP_GT}, {OP_GT, OP_LT}, {OP_LE, OP_GE}, {OP_GE, OP_LE},
+            {OP_EQ, OP_EQ}, {OP_NE, OP_NE}, {OP_LT, OP_GT},
+            {OP_GT, OP_LT}, {OP_LE, OP_GE}, {OP_GE, OP_LE},
         };
 
-        for (auto &cond : conds_) {
+        for (auto& cond : conds_) {
             if (cond.lhs_col.tab_name != tab_name_) {
                 // lhs is on other table, now rhs must be on this table
                 assert(!cond.is_rhs_val && cond.rhs_col.tab_name == tab_name_);
@@ -75,12 +80,15 @@ class IndexScanExecutor : public AbstractExecutor {
             }
         }
         fed_conds_ = conds_;
-        context_->lock_mgr_->lock_shared_on_table(context_->txn_, sm_manager_->fhs_[tab_name_]->GetFd());
+        context_->lock_mgr_->lock_shared_on_table(
+            context_->txn_, sm_manager_->fhs_[tab_name_]->GetFd());
     }
 
     void beginTuple() override {
-        std::string ix_name = sm_manager_->get_ix_manager()->get_index_name(tab_name_, index_col_names_);
-        RmRecord lower_record(index_meta_.col_tot_len), upper_record(index_meta_.col_tot_len);
+        std::string ix_name = sm_manager_->get_ix_manager()->get_index_name(
+            tab_name_, index_col_names_);
+        RmRecord lower_record(index_meta_.col_tot_len),
+            upper_record(index_meta_.col_tot_len);
         int offset = 0;
         for (auto col : index_meta_.cols) {
             Value max_value, min_value;
@@ -151,12 +159,14 @@ class IndexScanExecutor : public AbstractExecutor {
         auto end = ih->upper_bound(upper_record.data);
         // std::cerr << start.page_no << " " << start.slot_no << '\n';
         // std::cerr << end.page_no << " " << end.slot_no << '\n';
-        scan_ = std::make_unique<IxScan>(ih, start, end, sm_manager_->get_bpm());
-        while(!is_end()){
+        scan_ =
+            std::make_unique<IxScan>(ih, start, end, sm_manager_->get_bpm());
+        while (!is_end()) {
             count_index_scan++;
             rid_ = scan_->rid();
             auto rec = fh_->get_record(rid_, context_);
-            if (fed_conds_.empty() || eval_conds(cols_, fed_conds_, rec.get())) {
+            if (fed_conds_.empty() ||
+                eval_conds(cols_, fed_conds_, rec.get())) {
                 break;
             }
             scan_->next();
@@ -173,10 +183,11 @@ class IndexScanExecutor : public AbstractExecutor {
             rid_ = scan_->rid();
             try {
                 auto record = fh_->get_record(rid_, context_);
-                if (fed_conds_.empty() || eval_conds(cols_, fed_conds_, record.get())) {
+                if (fed_conds_.empty() ||
+                    eval_conds(cols_, fed_conds_, record.get())) {
                     break;
                 }
-            } catch (RecordNotFoundError &e) {
+            } catch (RecordNotFoundError& e) {
                 std::cerr << e.what() << std::endl;
             }
             scan_->next();
@@ -189,18 +200,15 @@ class IndexScanExecutor : public AbstractExecutor {
         return fh_->get_record(rid_, context_);
     }
 
-    bool is_end() const override{
-        if(scan_->is_end()) return true;
+    bool is_end() const override {
+        if (scan_->is_end())
+            return true;
         return false;
     }
 
-    const std::vector<ColMeta> &cols() const override {
-        return cols_;
-    }
+    const std::vector<ColMeta>& cols() const override { return cols_; }
 
-    Rid &rid() override { return rid_; }
+    Rid& rid() override { return rid_; }
 
-    ExecutorType getType() const override {
-        return ExecutorType::INDEX_SCAN;
-    }
+    ExecutorType getType() const override { return ExecutorType::INDEX_SCAN; }
 };
