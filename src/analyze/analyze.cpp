@@ -72,7 +72,10 @@ std::shared_ptr<Query> Analyze::do_analyze(std::shared_ptr<ast::TreeNode> parse)
         check_clause(query->tables, query->having_conds);
         // 检查where条件中是否有聚合函数
         check_conds_with_aggregate(query->conds);
-        check_col_with_group(query->cols, query->group_cols);
+        // 检查group by和select中的列是否符合规范
+        check_col_group_and_aggr(query->cols, query->group_cols);
+        // 检测group by不存在时，是否有having条件
+        check_without_group(query->group_cols, query->having_conds);
     } else if (auto x = std::dynamic_pointer_cast<ast::UpdateStmt>(parse)) {
         /** TODO: */
         set_clause(x->tab_name, x->set_clauses, query->set_clauses);
@@ -232,22 +235,31 @@ void Analyze::check_clause(const std::vector<std::string> &tab_names, std::vecto
     }
 }
 
-void Analyze::check_col_with_group(const std::vector<TabCol> &cols, const std::vector<TabCol> &group_cols) {
-    for (auto &col : cols) {
-        if (col.aggregate != AggregateType::NONE) {
-            continue;
-        }
-        if (group_cols.empty()) {
-            return ;
-        }
-        bool found = std::any_of(group_cols.begin(), group_cols.end(), [&](const TabCol &group_col) {
-            if (col.col_name == group_col.col_name) {
-                return true;
-            }
-            return false;
+void Analyze::check_col_group_and_aggr(const std::vector<TabCol> &cols, const std::vector<TabCol> &group_cols) {
+    if (group_cols.empty()) {
+        bool has_aggr = std::any_of(cols.begin(), cols.end(), [](const TabCol &col) {
+            return col.aggregate != AggregateType::NONE;
         });
-        if (!found) {
-            throw RMDBError("Non aggregate column not in group by");
+        bool has_non_aggr = std::any_of(cols.begin(), cols.end(), [](const TabCol &col) {
+            return col.aggregate == AggregateType::NONE;
+        });
+        if (has_aggr && has_non_aggr) {
+            throw RMDBError("Non aggregate column in select list with aggregate column");
+        }
+    } else {
+        for (auto &col : cols) {
+            if (col.aggregate != AggregateType::NONE) {
+                continue;
+            }
+            bool found = std::any_of(group_cols.begin(), group_cols.end(), [&](const TabCol &group_col) {
+                if (col.col_name == group_col.col_name) {
+                    return true;
+                }
+                return false;
+            });
+            if (!found) {
+                throw RMDBError("Non aggregate column not in group by");
+            }
         }
     }
 }
@@ -274,6 +286,12 @@ void Analyze::check_group(const std::vector<TabCol> &group_cols, const std::vect
         if (!found) {
             throw RMDBError("Group by column not found");
         }
+    }
+}
+
+void Analyze::check_without_group(const std::vector<TabCol> &group_cols, const std::vector<Condition> &having_conds) {
+    if (group_cols.empty() && !having_conds.empty()) {
+        throw RMDBError("Having clause without group by");
     }
 }
 
