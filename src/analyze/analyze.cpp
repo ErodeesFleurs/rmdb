@@ -234,13 +234,15 @@ void Analyze::check_col_with_group(const std::vector<TabCol> &cols, const std::v
         std::cerr << "GCOL: " << group_col.col_name << std::endl;
     }
     for (auto &col : cols) {
-        bool found = true;
-        for (auto &group_col : group_cols) {
-            if (col.aggregate == AggregateType::NONE && col.col_name != group_col.col_name) {
-                found = false;
-                break;
-            }
+        if (col.aggregate != AggregateType::NONE) {
+            continue;
         }
+        bool found = std::any_of(group_cols.begin(), group_cols.end(), [&](const TabCol &group_col) {
+            if (col.col_name == group_col.col_name) {
+                return true;
+            }
+            return false;
+        });
         if (!found) {
             throw RMDBError("Non aggregate column not in group by");
         }
