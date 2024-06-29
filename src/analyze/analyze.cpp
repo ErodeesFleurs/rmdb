@@ -72,6 +72,8 @@ std::shared_ptr<Query> Analyze::do_analyze(std::shared_ptr<ast::TreeNode> parse)
         check_clause(query->tables, query->having_conds);
         // 检查where条件中是否有聚合函数
         check_conds_with_aggregate(query->conds);
+        // 检查having条件中是否有不是聚合函数也不是group by的列
+        check_having_conds(query->having_conds, query->group_cols);
         // 检查group by和select中的列是否符合规范
         check_col_group_and_aggr(query->cols, query->group_cols);
         // 检测group by不存在时，是否有having条件
@@ -268,6 +270,33 @@ void Analyze::check_conds_with_aggregate(const std::vector<Condition> &conds) {
     for (auto &cond : conds) {
         if (cond.lhs_col.aggregate != AggregateType::NONE || (!cond.is_rhs_val && cond.rhs_col.aggregate != AggregateType::NONE)) {
             throw RMDBError("Aggregate column in where clause");
+        }
+    }
+}
+
+void Analyze::check_having_conds(const std::vector<Condition> &having_conds, const std::vector<TabCol> &group_cols) {
+    for (auto &cond : having_conds) {
+        if (cond.lhs_col.aggregate == AggregateType::NONE) {
+            bool found = std::any_of(group_cols.begin(), group_cols.end(), [&](const TabCol &group_col) {
+                if (cond.lhs_col.col_name == group_col.col_name && cond.lhs_col.tab_name == group_col.tab_name) {
+                    return true;
+                }
+                return false;
+            });
+            if (!found) {
+                throw RMDBError("Non aggregate column not in group by");
+            }
+        }
+        if (!cond.is_rhs_val && cond.rhs_col.aggregate == AggregateType::NONE) {
+            bool found = std::any_of(group_cols.begin(), group_cols.end(), [&](const TabCol &group_col) {
+                if (cond.rhs_col.col_name == group_col.col_name && cond.rhs_col.tab_name == group_col.tab_name) {
+                    return true;
+                }
+                return false;
+            });
+            if (!found) {
+                throw RMDBError("Non aggregate column not in group by");
+            }
         }
     }
 }

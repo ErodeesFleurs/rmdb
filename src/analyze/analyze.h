@@ -61,6 +61,7 @@ private:
     void check_clause(const std::vector<std::string> &tab_names, std::vector<Condition> &conds);
     void check_col_group_and_aggr(const std::vector<TabCol> &cols, const std::vector<TabCol> &group_cols);
     void check_conds_with_aggregate(const std::vector<Condition> &conds);
+    void check_having_conds(const std::vector<Condition> &having_conds, const std::vector<TabCol> &group_cols);
     void check_group(const std::vector<TabCol> &group_cols, const std::vector<std::string> &tab_names);
     void check_without_group(const std::vector<TabCol> &group_cols, const std::vector<Condition> &having_conds);
     Value convert_sv_value(const std::shared_ptr<ast::Value> &sv_val);
