@@ -21,7 +21,7 @@ using namespace ast;
 %define parse.error verbose
 
 // keywords
-%token SHOW TABLES CREATE TABLE DROP DESC INSERT INTO VALUES DELETE FROM ASC ORDER GROUP BY HAVING SUM COUNT MAX MIN AS
+%token SHOW TABLES CREATE TABLE DROP DESC INSERT INTO VALUES DELETE FROM ASC ORDER GROUP BY HAVING SUM COUNT MAX MIN AS IN
 WHERE UPDATE SET SELECT INT CHAR FLOAT INDEX AND JOIN EXIT HELP TXN_BEGIN TXN_COMMIT TXN_ABORT TXN_ROLLBACK ORDER_BY GROUP_BY ENABLE_NESTLOOP ENABLE_SORTMERGE
 // non-keywords
 %token LEQ NEQ GEQ T_EOF
@@ -250,6 +250,14 @@ condition:
         col op expr
     {
         $$ = std::make_shared<BinaryExpr>($1, $2, $3);
+    }
+    |   col op '(' dml ')'
+    {
+        $$ = std::make_shared<BinaryExpr>($1, $2, $4);
+    }
+    |   col IN '(' dml ')'
+    {
+        $$ = std::make_shared<BinaryExpr>($1, $4);
     }
     ;
 

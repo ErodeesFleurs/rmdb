@@ -176,6 +176,7 @@ struct BinaryExpr : public TreeNode {
     SvCompOp op;
     std::shared_ptr<Expr> rhs;
     std::shared_ptr<SelectStmt> subquery;
+    bool is_in_expr;
 
     BinaryExpr(std::shared_ptr<Col> lhs_, SvCompOp op_,
                std::shared_ptr<Expr> rhs_)
@@ -186,6 +187,13 @@ struct BinaryExpr : public TreeNode {
     BinaryExpr(std::shared_ptr<Col> lhs_, SvCompOp op_,
                std::shared_ptr<SelectStmt> subquery_)
         : lhs(std::move(lhs_)), op(op_), subquery(std::move(subquery_)) {
+        is_in_expr = false;
+        rhs = nullptr;
+    }
+
+    BinaryExpr(std::shared_ptr<Col> lhs_, std::shared_ptr<SelectStmt> subquery_)
+        : lhs(std::move(lhs_)), subquery(std::move(subquery_)) {
+        is_in_expr = true;
         rhs = nullptr;
     }
 };
