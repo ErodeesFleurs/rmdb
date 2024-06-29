@@ -228,14 +228,11 @@ void Analyze::check_clause(const std::vector<std::string> &tab_names, std::vecto
 
 void Analyze::check_col_with_group(const std::vector<TabCol> &cols, const std::vector<TabCol> &group_cols) {
     for (auto &col : cols) {
-        std::cerr << "COL: " << col.col_name << " " << aggregate2str(col.aggregate) << std::endl;
-    }
-    for (auto &group_col : group_cols) {
-        std::cerr << "GCOL: " << group_col.col_name << std::endl;
-    }
-    for (auto &col : cols) {
         if (col.aggregate != AggregateType::NONE) {
             continue;
+        }
+        if (group_cols.empty()) {
+            return ;
         }
         bool found = std::any_of(group_cols.begin(), group_cols.end(), [&](const TabCol &group_col) {
             if (col.col_name == group_col.col_name) {

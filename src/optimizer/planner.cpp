@@ -336,6 +336,7 @@ std::shared_ptr<Plan> Planner::make_one_rel(std::shared_ptr<Query> query)
             if (col.name == agg->col_name) {
                 TabCol sel_col = {.tab_name = col.tab_name, .col_name = col.name};
                 sel_cols.push_back(sel_col);
+                break;
             }
         }
     }

@@ -121,6 +121,7 @@ public:
             std::cerr << "Aggregating: " << aggregate2str(agg_types_[i]) << std::endl;
             std::cerr << "Aggregating: " << cols_[i].name << " " << cols_[i].tab_name << std::endl;
             Value res = get_aggr_value(cols_, records, TabCol{.tab_name = cols_[i].tab_name, .col_name = cols_[i].name}, agg_types_[i]);
+            std::cerr << "Aggregated: " << res << std::endl;
             res.init_raw();
             result->append(res.raw->data, res.raw->size);
         }

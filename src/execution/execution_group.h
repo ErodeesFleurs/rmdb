@@ -35,7 +35,6 @@ class GroupExecutor : public AbstractExecutor {
         prev_->beginTuple();
         grouped_records.clear();
         group_iterators.clear();
-
         while (!prev_->is_end()) {
             auto tuple = prev_->Next();
             std::string group_key = generateGroupKey(tuple);
