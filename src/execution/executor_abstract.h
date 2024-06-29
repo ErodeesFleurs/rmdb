@@ -182,9 +182,7 @@ class AbstractExecutor {
 
     Value get_aggr_value(const std::vector<ColMeta>& rec_cols, const std::vector<std::unique_ptr<RmRecord>>& rec, const TabCol &tab_col, AggregateType agg_type) {
         Value val;
-        std::cerr << "GAV: " << rec_cols[0].tab_name << ", " << tab_col.tab_name << ", " << tab_col.col_name << std::endl;
         auto col_meta = *get_col(rec_cols, tab_col, false);
-        std::cerr << "CM" << std::endl;
         if (agg_type == AggregateType::NONE) {
             for (auto& col_meta : rec_cols) {
                 if (col_meta.name == tab_col.col_name) {

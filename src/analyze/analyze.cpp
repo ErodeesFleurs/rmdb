@@ -69,7 +69,11 @@ std::shared_ptr<Query> Analyze::do_analyze(std::shared_ptr<ast::TreeNode> parse)
         } else {
             // infer table name from column name
             for (auto &sel_col : query->cols) {
-                if (sel_col.aggregate == AggregateType::COUNT && sel_col.col_name.empty()) sel_col.col_name = all_cols[0].name, sel_col.tab_name = all_cols[0].tab_name;
+                // 如果是count(*)，则默认为第一个列
+                if (sel_col.aggregate == AggregateType::COUNT && sel_col.col_name.empty()) {
+                    sel_col.col_name = all_cols[0].name;
+                    sel_col.tab_name = all_cols[0].tab_name;
+                }
                 sel_col = check_column(all_cols, sel_col);  // 列元数据校验
             }
         }
@@ -78,10 +82,9 @@ std::shared_ptr<Query> Analyze::do_analyze(std::shared_ptr<ast::TreeNode> parse)
         check_clause(query->tables, query->conds);
         //处理having条件
         get_clause(x->having_conds, query->having_conds);
-        for (auto& cond : x->having_conds) {
-            std::cerr << "Cond: " << cond->lhs->tab_name << ", " << cond->lhs->col_name << ", " << cond->lhs->aggregate << ", " << cond->op << " " << std::endl;
-        }
         // check_clause(query->tables, query->having_conds);
+        check_conds_with_aggregate(query->conds);
+        check_col_with_group(query->cols, query->group_cols);
     } else if (auto x = std::dynamic_pointer_cast<ast::UpdateStmt>(parse)) {
         /** TODO: */
         set_clause(x->tab_name, x->set_clauses, query->set_clauses);
@@ -223,6 +226,34 @@ void Analyze::check_clause(const std::vector<std::string> &tab_names, std::vecto
     }
 }
 
+void Analyze::check_col_with_group(const std::vector<TabCol> &cols, const std::vector<TabCol> &group_cols) {
+    for (auto &col : cols) {
+        std::cerr << "COL: " << col.col_name << " " << aggregate2str(col.aggregate) << std::endl;
+    }
+    for (auto &group_col : group_cols) {
+        std::cerr << "GCOL: " << group_col.col_name << std::endl;
+    }
+    for (auto &col : cols) {
+        bool found = true;
+        for (auto &group_col : group_cols) {
+            if (col.aggregate == AggregateType::NONE && col.col_name != group_col.col_name) {
+                found = false;
+                break;
+            }
+        }
+        if (!found) {
+            throw RMDBError("Non aggregate column not in group by");
+        }
+    }
+}
+
+void Analyze::check_conds_with_aggregate(const std::vector<Condition> &conds) {
+    for (auto &cond : conds) {
+        if (cond.lhs_col.aggregate != AggregateType::NONE || (!cond.is_rhs_val && cond.rhs_col.aggregate != AggregateType::NONE)) {
+            throw RMDBError("Aggregate column in where clause");
+        }
+    }
+}
 
 Value Analyze::convert_sv_value(const std::shared_ptr<ast::Value> &sv_val) {
     Value val;

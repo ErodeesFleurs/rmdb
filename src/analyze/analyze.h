@@ -59,6 +59,8 @@ private:
     void get_clause(const std::vector<std::shared_ptr<ast::BinaryExpr>> &sv_conds, std::vector<Condition> &conds);
     void set_clause(const std::string &tab_name, const std::vector<std::shared_ptr<ast::SetClause>> &sv_conds, std::vector<SetClause> &conds);
     void check_clause(const std::vector<std::string> &tab_names, std::vector<Condition> &conds);
+    void check_col_with_group(const std::vector<TabCol> &cols, const std::vector<TabCol> &group_cols);
+    void check_conds_with_aggregate(const std::vector<Condition> &conds);
     Value convert_sv_value(const std::shared_ptr<ast::Value> &sv_val);
     CompOp convert_sv_comp_op(ast::SvCompOp op);
 };
