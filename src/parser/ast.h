@@ -187,13 +187,22 @@ struct SetClause : public TreeNode {
             col_name(std::move(col_name_)), val(std::move(val_)), setOp(op_) {}
 };
 
+struct SelectStmt;
 struct BinaryExpr : public TreeNode {
     std::shared_ptr<Col> lhs;
     SvCompOp op;
     std::shared_ptr<Expr> rhs;
+    std::shared_ptr<SelectStmt> subquery;
 
     BinaryExpr(std::shared_ptr<Col> lhs_, SvCompOp op_, std::shared_ptr<Expr> rhs_) :
-            lhs(std::move(lhs_)), op(op_), rhs(std::move(rhs_)) {}
+            lhs(std::move(lhs_)), op(op_), rhs(std::move(rhs_)) {
+                subquery = nullptr;
+            }
+    
+    BinaryExpr(std::shared_ptr<Col> lhs_, SvCompOp op_, std::shared_ptr<SelectStmt> subquery_) :
+            lhs(std::move(lhs_)), op(op_), subquery(std::move(subquery_)) {
+                rhs = nullptr;
+            }
 };
 
 struct OrderBy : public TreeNode
