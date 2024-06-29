@@ -266,7 +266,7 @@ void Analyze::check_group(const std::vector<TabCol> &group_cols, const std::vect
     for (auto &group_col : group_cols) {
         bool found = false;
         for (auto &col : all_cols) {
-            if (col.name == group_col.col_name) {
+            if (col.name == group_col.col_name && col.tab_name == group_col.tab_name) {
                 found = true;
                 break;
             }
