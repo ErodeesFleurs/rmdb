@@ -169,13 +169,11 @@ struct SetClause : public TreeNode {
               SvSetOp op_ = SV_OP_SET)
         : col_name(std::move(col_name_)), val(std::move(val_)), setOp(op_) {}
 };
-
-struct SelectStmt;
 struct BinaryExpr : public TreeNode {
     std::shared_ptr<Col> lhs;
     SvCompOp op;
     std::shared_ptr<Expr> rhs;
-    std::shared_ptr<SelectStmt> subquery;
+    std::shared_ptr<TreeNode> subquery;
     bool is_in_expr;
 
     BinaryExpr(std::shared_ptr<Col> lhs_, SvCompOp op_,
@@ -185,13 +183,13 @@ struct BinaryExpr : public TreeNode {
     }
 
     BinaryExpr(std::shared_ptr<Col> lhs_, SvCompOp op_,
-               std::shared_ptr<SelectStmt> subquery_)
+               std::shared_ptr<TreeNode> subquery_)
         : lhs(std::move(lhs_)), op(op_), subquery(std::move(subquery_)) {
         is_in_expr = false;
         rhs = nullptr;
     }
 
-    BinaryExpr(std::shared_ptr<Col> lhs_, std::shared_ptr<SelectStmt> subquery_)
+    BinaryExpr(std::shared_ptr<Col> lhs_, std::shared_ptr<TreeNode> subquery_)
         : lhs(std::move(lhs_)), subquery(std::move(subquery_)) {
         is_in_expr = true;
         rhs = nullptr;
