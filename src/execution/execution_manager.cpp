@@ -213,14 +213,6 @@ void QlManager::select_from(std::unique_ptr<AbstractExecutor> executorTreeRoot,
 SelectResult QlManager::select_from_and_get_return(
     std::unique_ptr<AbstractExecutor> executorTreeRoot,
     std::vector<TabCol> sel_cols, Context* context) {
-    std::vector<std::string> captions;
-    captions.reserve(sel_cols.size());
-    for (auto& sel_col : sel_cols) {
-        if (!sel_col.as_name.empty())
-            captions.push_back(sel_col.as_name);
-        else
-            captions.push_back(sel_col.col_name);
-    }
     std::vector<ColMeta> cols = executorTreeRoot->cols();
     std::vector<RmRecord> records;
     // 执行query_plan
@@ -230,7 +222,7 @@ SelectResult QlManager::select_from_and_get_return(
         RmRecord record(*Tuple);
         records.push_back(std::move(record));
     }
-    return std::make_tuple(std::move(captions), std::move(cols),
+    return std::make_pair(std::move(cols),
                            std::move(records));
 }
 

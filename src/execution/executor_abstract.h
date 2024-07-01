@@ -151,7 +151,27 @@ class AbstractExecutor {
         if (cond.is_rhs_val) {
             rhs_type = cond.rhs_val.type;
             rhs = cond.rhs_val.raw->data;
-        } else {
+        } else if (cond.is_rhs_query) {
+            if (cond.rhs_query_res.first.size() != 1) {
+                throw InternalError("sub_query::Unexpected colMetas size");
+            }
+            if (cond.op == OP_IN) {
+                auto lhs_value = get_value(lhs_type, lhs);
+                for (auto& record : cond.rhs_query_res.second) {
+                    auto value = get_value(cond.rhs_query_res.first[0].type, record.data);
+                    if (check_cond(value, lhs_value, OP_EQ)) {
+                        return true;
+                    }
+                }
+                return false;
+            }
+            if (cond.rhs_query_res.second.size() != 1) {
+                throw InternalError("sub_query::Unexpected records size");
+            }
+            rhs_type = cond.rhs_query_res.first[0].type;
+            rhs = cond.rhs_query_res.second[0].data + cond.rhs_query_res.first[0].offset;
+        }
+        else {
             auto rhs_col = get_col(rec_cols, cond.rhs_col);
             rhs_type = rhs_col->type;
             rhs = rec->data + rhs_col->offset;

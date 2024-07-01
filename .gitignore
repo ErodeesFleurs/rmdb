@@ -1,4 +1,5 @@
 /build
 /.idea
 /.vscode
+/cmake-build-debug
 /rmdb_client/build

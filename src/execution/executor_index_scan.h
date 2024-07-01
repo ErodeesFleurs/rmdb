@@ -67,7 +67,7 @@ class IndexScanExecutor : public AbstractExecutor {
         len_ = cols_.back().offset + cols_.back().len;
         std::map<CompOp, CompOp> swap_op = {
             {OP_EQ, OP_EQ}, {OP_NE, OP_NE}, {OP_LT, OP_GT},
-            {OP_GT, OP_LT}, {OP_LE, OP_GE}, {OP_GE, OP_LE},
+            {OP_GT, OP_LT}, {OP_LE, OP_GE}, {OP_GE, OP_LE}
         };
 
         for (auto& cond : conds_) {

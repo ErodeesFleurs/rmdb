@@ -20,7 +20,7 @@ See the Mulan PSL v2 for more details. */
 #include "record/rm_defs.h"
 #include "system/sm_meta.h"
 
-using SelectResult = std::tuple<std::vector<std::string>, std::vector<ColMeta>,
+using SelectResult = std::pair<std::vector<ColMeta>,
                                 std::vector<RmRecord>>;
 
 struct TabCol {
@@ -166,7 +166,7 @@ struct Value {
     }
 };
 
-enum CompOp { OP_EQ, OP_NE, OP_LT, OP_GT, OP_LE, OP_GE };
+enum CompOp { OP_EQ, OP_NE, OP_LT, OP_GT, OP_LE, OP_GE, OP_IN };
 
 enum SetOp { OP_ADD, OP_SUB, OP_SET };
 
