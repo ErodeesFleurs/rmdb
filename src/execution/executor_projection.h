@@ -54,6 +54,7 @@ class ProjectionExecutor : public AbstractExecutor {
     void beginTuple() override {
         std::cerr << "Projection BeginTuple" << std::endl;
         prev_->beginTuple();  // 调用子节点的beginTuple
+        std::cerr << "Projection BeginTuple end" << std::endl;
     }
 
     void nextTuple() override { prev_->nextTuple(); }

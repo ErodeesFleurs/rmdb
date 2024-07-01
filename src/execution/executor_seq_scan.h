@@ -35,6 +35,7 @@ class SeqScanExecutor : public AbstractExecutor {
    public:
     SeqScanExecutor(SmManager* sm_manager, std::string tab_name,
                     std::vector<Condition> conds, Context* context) {
+        std::cerr << "SeqScanExecutor" << std::endl;
         sm_manager_ = sm_manager;
         tab_name_ = std::move(tab_name);
         conds_ = std::move(conds);
@@ -64,9 +65,7 @@ class SeqScanExecutor : public AbstractExecutor {
             rid_ = scan_->rid();
             count_seq_scan++;
             auto rec = fh_->get_record(rid_, context_);
-            auto is_empty = fed_conds_.empty();
-            auto is_eval = eval_conds(cols_, fed_conds_, rec.get());
-            if (is_empty || is_eval) {
+            if (fed_conds_.empty() || eval_conds(cols_, fed_conds_, rec.get())) {
                 break;
             }
             scan_->next();

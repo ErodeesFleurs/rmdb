@@ -103,7 +103,7 @@ std::vector<Condition> pop_conds(std::vector<Condition>& conds,
     std::vector<Condition> solved_conds;
     auto it = conds.begin();
     while (it != conds.end()) {
-        if ((tab_names.compare(it->lhs_col.tab_name) == 0 && it->is_rhs_val) ||
+        if ((tab_names.compare(it->lhs_col.tab_name) == 0 && (it->is_rhs_val || it->is_rhs_query)) ||
             (it->lhs_col.tab_name.compare(it->rhs_col.tab_name) == 0)) {
             solved_conds.emplace_back(std::move(*it));
             it = conds.erase(it);

@@ -79,6 +79,7 @@ class AggregateExecutor : public AbstractExecutor {
             }
         }
         current_record_ = aggregated_records_.begin();
+        std::cerr << "Aggregated BeginTuple End" << std::endl;
     }
 
     void nextTuple() override {

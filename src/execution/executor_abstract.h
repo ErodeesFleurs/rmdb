@@ -170,6 +170,8 @@ class AbstractExecutor {
             }
             rhs_type = cond.rhs_query_res.first[0].type;
             rhs = cond.rhs_query_res.second[0].data + cond.rhs_query_res.first[0].offset;
+            Value ls = get_value(lhs_type, lhs);
+            Value rs = get_value(rhs_type, rhs);
         }
         else {
             auto rhs_col = get_col(rec_cols, cond.rhs_col);

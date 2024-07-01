@@ -179,6 +179,7 @@ void Analyze::get_clause(
         } else if (auto rhs_subquery =
                        std::dynamic_pointer_cast<ast::SelectStmt>(
                            expr->subquery)) {
+            std::cerr << "Subquery in where clause" << std::endl;
             cond.is_rhs_val = false;
             cond.is_rhs_query = true;
             auto query = do_analyze(rhs_subquery, context);
@@ -186,6 +187,7 @@ void Analyze::get_clause(
             std::shared_ptr<PortalStmt> stmt = portal_->start(plan, context);
             cond.rhs_query_res =
                 portal_->run_and_get_result(stmt, ql_manager_, context);
+            std::cerr << "Subquery in where clause end" << std::endl;
         } else if (auto rhs_col =
                        std::dynamic_pointer_cast<ast::Col>(expr->rhs)) {
             cond.is_rhs_val = false;
@@ -235,7 +237,7 @@ void Analyze::check_clause(const std::vector<std::string>& tab_names,
     for (auto& cond : conds) {
         // Infer table name from column name
         cond.lhs_col = check_column(all_cols, cond.lhs_col);
-        if (!cond.is_rhs_val) {
+        if (!cond.is_rhs_val && !cond.is_rhs_query) {
             cond.rhs_col = check_column(all_cols, cond.rhs_col);
         }
         // 如果是count(*)，则不需要检查类型
@@ -246,6 +248,8 @@ void Analyze::check_clause(const std::vector<std::string>& tab_names,
             if (cond.is_rhs_val) {
                 rhs_type = cond.rhs_val.type;
                 cond.rhs_val.init_raw();
+            } else if (cond.is_rhs_query) {
+                continue;
             } else {
                 rhs_type = sm_manager_->db_.get_table(cond.rhs_col.tab_name)
                                .get_col(cond.rhs_col.col_name)
@@ -271,6 +275,9 @@ void Analyze::check_clause(const std::vector<std::string>& tab_names,
             } else {
                 cond.rhs_val.init_raw(lhs_col->len);
             }
+        } else if (cond.is_rhs_query) {
+            // do nothing
+            continue;
         } else {
             TabMeta& rhs_tab =
                 sm_manager_->db_.get_table(cond.rhs_col.tab_name);
@@ -323,7 +330,7 @@ void Analyze::check_col_group_and_aggr(const std::vector<TabCol>& cols,
 void Analyze::check_conds_with_aggregate(const std::vector<Condition>& conds) {
     for (auto& cond : conds) {
         if (cond.lhs_col.aggregate != AggregateType::NONE ||
-            (!cond.is_rhs_val &&
+            (!cond.is_rhs_val && !cond.is_rhs_query &&
              cond.rhs_col.aggregate != AggregateType::NONE)) {
             throw RMDBError("Aggregate column in where clause");
         }
@@ -347,7 +354,7 @@ void Analyze::check_having_conds(const std::vector<Condition>& having_conds,
                 throw RMDBError("Non aggregate column not in group by");
             }
         }
-        if (!cond.is_rhs_val && cond.rhs_col.aggregate == AggregateType::NONE) {
+        if (!cond.is_rhs_val && !cond.is_rhs_query && cond.rhs_col.aggregate == AggregateType::NONE) {
             bool found = std::any_of(
                 group_cols.begin(), group_cols.end(),
                 [&](const TabCol& group_col) {
