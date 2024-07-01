@@ -174,6 +174,7 @@ void Analyze::get_clause(
         cond.op = convert_sv_comp_op(expr->op);
         if (auto rhs_val = std::dynamic_pointer_cast<ast::Value>(expr->rhs)) {
             cond.is_rhs_val = true;
+            cond.is_rhs_list = false;
             cond.is_rhs_query = false;
             cond.rhs_val = convert_sv_value(rhs_val);
         } else if (auto rhs_subquery =
@@ -181,6 +182,7 @@ void Analyze::get_clause(
                            expr->subquery)) {
             std::cerr << "Subquery in where clause" << std::endl;
             cond.is_rhs_val = false;
+            cond.is_rhs_list = false;
             cond.is_rhs_query = true;
             auto query = do_analyze(rhs_subquery, context);
             auto plan = optimizer_->plan_query(query, context);
@@ -191,11 +193,22 @@ void Analyze::get_clause(
         } else if (auto rhs_col =
                        std::dynamic_pointer_cast<ast::Col>(expr->rhs)) {
             cond.is_rhs_val = false;
+            cond.is_rhs_list = false;
             cond.is_rhs_query = false;
             cond.rhs_col = {.tab_name = rhs_col->tab_name,
                             .col_name = rhs_col->col_name,
                             .as_name = rhs_col->as_name,
                             .aggregate = rhs_col->aggregate};
+        } else if (!expr->vals.empty()) {
+            cond.is_rhs_val = false;
+            cond.is_rhs_list = true;
+            cond.is_rhs_query = false;
+            for (auto& sv_val : expr->vals) {
+                cond.rhs_val_list.push_back(convert_sv_value(sv_val));
+            }
+        } else {
+            cond.is_rhs_val = false;
+            cond.is_rhs_query = false;
         }
         conds.push_back(cond);
     }
@@ -237,7 +250,7 @@ void Analyze::check_clause(const std::vector<std::string>& tab_names,
     for (auto& cond : conds) {
         // Infer table name from column name
         cond.lhs_col = check_column(all_cols, cond.lhs_col);
-        if (!cond.is_rhs_val && !cond.is_rhs_query) {
+        if (!cond.is_rhs_val && !cond.is_rhs_query && !cond.is_rhs_list) {
             cond.rhs_col = check_column(all_cols, cond.rhs_col);
         }
         // 如果是count(*)，则不需要检查类型
@@ -250,6 +263,14 @@ void Analyze::check_clause(const std::vector<std::string>& tab_names,
                 cond.rhs_val.init_raw();
             } else if (cond.is_rhs_query) {
                 continue;
+            } else if (cond.is_rhs_list) {
+                auto type = cond.rhs_val_list[0].type;
+                for (auto& val : cond.rhs_val_list) {
+                    if (val.type != type) {
+                        throw IncompatibleTypeError(coltype2str(type),
+                                                    coltype2str(val.type));
+                    }
+                }
             } else {
                 rhs_type = sm_manager_->db_.get_table(cond.rhs_col.tab_name)
                                .get_col(cond.rhs_col.col_name)
@@ -278,6 +299,14 @@ void Analyze::check_clause(const std::vector<std::string>& tab_names,
         } else if (cond.is_rhs_query) {
             // do nothing
             continue;
+        } else if (cond.is_rhs_list) {
+            auto type = cond.rhs_val_list[0].type;
+            for (auto& val : cond.rhs_val_list) {
+                if (val.type != type) {
+                    throw IncompatibleTypeError(coltype2str(type),
+                                                coltype2str(val.type));
+                }
+            }
         } else {
             TabMeta& rhs_tab =
                 sm_manager_->db_.get_table(cond.rhs_col.tab_name);
@@ -330,7 +359,7 @@ void Analyze::check_col_group_and_aggr(const std::vector<TabCol>& cols,
 void Analyze::check_conds_with_aggregate(const std::vector<Condition>& conds) {
     for (auto& cond : conds) {
         if (cond.lhs_col.aggregate != AggregateType::NONE ||
-            (!cond.is_rhs_val && !cond.is_rhs_query &&
+            (!cond.is_rhs_val && !cond.is_rhs_query && !cond.is_rhs_list &&
              cond.rhs_col.aggregate != AggregateType::NONE)) {
             throw RMDBError("Aggregate column in where clause");
         }
@@ -354,7 +383,7 @@ void Analyze::check_having_conds(const std::vector<Condition>& having_conds,
                 throw RMDBError("Non aggregate column not in group by");
             }
         }
-        if (!cond.is_rhs_val && !cond.is_rhs_query &&
+        if (!cond.is_rhs_val && !cond.is_rhs_query && !cond.is_rhs_list &&
             cond.rhs_col.aggregate == AggregateType::NONE) {
             bool found = std::any_of(
                 group_cols.begin(), group_cols.end(),

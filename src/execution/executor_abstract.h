@@ -175,6 +175,16 @@ class AbstractExecutor {
             rhs_type = cond.rhs_query_res.first[0].type;
             rhs = cond.rhs_query_res.second[0].data +
                   cond.rhs_query_res.first[0].offset;
+        } else if (cond.is_rhs_list) {
+            if (cond.op != OP_IN) {
+                throw InternalError("eval_cond::Unexpected op type");
+            }
+            for (auto& value : cond.rhs_val_list) {
+                if (check_cond(value, lhs_value, OP_EQ)) {
+                    return true;
+                }
+            }
+            return false;
         } else {
             auto rhs_col = get_col(rec_cols, cond.rhs_col);
             rhs_type = rhs_col->type;
