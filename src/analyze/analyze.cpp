@@ -303,6 +303,17 @@ void Analyze::check_clause(const std::vector<std::string>& tab_names,
             // do nothing
             continue;
         } else if (cond.is_rhs_list) {
+            auto type = cond.rhs_val_list[0].type;
+            for (auto& val : cond.rhs_val_list) {
+                if (val.type != type) {
+                    throw IncompatibleTypeError(coltype2str(type),
+                                                coltype2str(val.type));
+                }
+            }
+            if (type != lhs_type) {
+                throw IncompatibleTypeError(coltype2str(type),
+                                            coltype2str(lhs_type));
+            }
             continue;
         } else {
             TabMeta& rhs_tab =
