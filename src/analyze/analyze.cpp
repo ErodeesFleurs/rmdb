@@ -266,13 +266,13 @@ void Analyze::check_clause(const std::vector<std::string>& tab_names,
             } else if (cond.is_rhs_query) {
                 continue;
             } else if (cond.is_rhs_list) {
-                auto type = cond.rhs_val_list[0].type;
-                for (auto& val : cond.rhs_val_list) {
-                    if (val.type != type) {
-                        throw IncompatibleTypeError(coltype2str(type),
-                                                    coltype2str(val.type));
-                    }
-                }
+                // auto type = cond.rhs_val_list[0].type;
+                // for (auto& val : cond.rhs_val_list) {
+                //     if (val.type != type) {
+                //         throw IncompatibleTypeError(coltype2str(type),
+                //                                     coltype2str(val.type));
+                //     }
+                // }
                 continue;
             } else {
                 rhs_type = sm_manager_->db_.get_table(cond.rhs_col.tab_name)
@@ -303,17 +303,17 @@ void Analyze::check_clause(const std::vector<std::string>& tab_names,
             // do nothing
             continue;
         } else if (cond.is_rhs_list) {
-            auto type = cond.rhs_val_list[0].type;
-            for (auto& val : cond.rhs_val_list) {
-                if (val.type != type) {
-                    throw IncompatibleTypeError(coltype2str(type),
-                                                coltype2str(val.type));
-                }
-            }
-            if (type != lhs_type) {
-                throw IncompatibleTypeError(coltype2str(type),
-                                            coltype2str(lhs_type));
-            }
+            // auto type = cond.rhs_val_list[0].type;
+            // for (auto& val : cond.rhs_val_list) {
+            //     if (val.type != type) {
+            //         throw IncompatibleTypeError(coltype2str(type),
+            //                                     coltype2str(val.type));
+            //     }
+            // }
+            // if (type != lhs_type) {
+            //     throw IncompatibleTypeError(coltype2str(type),
+            //                                 coltype2str(lhs_type));
+            // }
             continue;
         } else {
             TabMeta& rhs_tab =
