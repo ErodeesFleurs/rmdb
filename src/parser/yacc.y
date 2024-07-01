@@ -255,6 +255,10 @@ condition:
     {
         $$ = std::make_shared<BinaryExpr>($1, $2, $4);
     }
+    |   col op '(' valueList ')'
+    {
+        $$ = std::make_shared<BinaryExpr>($1, $2, $4);
+    }
     ;
 
 optWhereClause:
