@@ -167,8 +167,11 @@ class AbstractExecutor {
                 }
                 return false;
             }
-            if (cond.rhs_query_res.second.size() != 1) {
+            if (cond.rhs_query_res.second.size() > 1) {
                 throw InternalError("sub_query::Unexpected records size");
+            }
+            else if(cond.rhs_query_res.second.size() == 0){
+                return false;
             }
             rhs_type = cond.rhs_query_res.first[0].type;
             rhs = cond.rhs_query_res.second[0].data +
