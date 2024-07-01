@@ -174,9 +174,8 @@ class AbstractExecutor {
                 throw InternalError("eval_cond::Unexpected op type");
             }
             for (auto& record : cond.rhs_query_res.second) {
-                Value rhs_value =
-                    get_value(cond.rhs_query_res.first[0].type,
-                              record.data + cond.rhs_query_res.first[0].offset);
+                Value rhs_value = get_value(
+                    type, record.data + cond.rhs_query_res.first[0].offset);
                 if (check_cond(lhs_value, rhs_value, OP_EQ)) {
                     return true;
                 }
@@ -187,12 +186,20 @@ class AbstractExecutor {
                 throw InternalError("eval_cond::Unexpected rhs_val_list size");
             }
             if (cond.rhs_val_list.size() == 1 && cond.op != OP_IN) {
+                if (lhs_type != cond.rhs_val_list[0].type &&
+                    (lhs_type == TYPE_STRING || cond.rhs_val_list[0].type == TYPE_STRING)) {
+                    return false;
+                }
                 return check_cond(lhs_value, cond.rhs_val_list[0], cond.op);
             }
             if (cond.op != OP_IN) {
                 throw InternalError("eval_cond::Unexpected op type");
             }
             for (auto& value : cond.rhs_val_list) {
+                if (lhs_type != value.type &&
+                    (lhs_type == TYPE_STRING || value.type == TYPE_STRING)) {
+                    continue;
+                }
                 if (check_cond(lhs_value, value, OP_EQ)) {
                     return true;
                 }
