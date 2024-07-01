@@ -55,11 +55,6 @@ class SeqScanExecutor : public AbstractExecutor {
 
     void beginTuple() override {
         std::cerr << "SeqScan BeginTuple" << std::endl;
-        // auto delay = [](volatile int64_t count) {
-        //     for (volatile int64_t i = 0; i < count; i++) {
-        //     }
-        // };
-        // delay(5000000);
         scan_ = std::make_unique<RmScan>(fh_);
         while (!scan_->is_end()) {  // 从头开始扫描
             rid_ = scan_->rid();
