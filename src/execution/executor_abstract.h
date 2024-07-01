@@ -162,7 +162,7 @@ class AbstractExecutor {
                 throw InternalError("eval_cond::Unexpected type");
             }
             if (cond.rhs_query_res.second.size() == 0) {
-                return false;
+                throw InternalError("eval_cond::Unexpected rhs_query_res size");
             }
             if (cond.rhs_query_res.second.size() == 1 && cond.op != OP_IN) {
                 Value rhs_value =
