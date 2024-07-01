@@ -27,7 +27,6 @@ See the Mulan PSL v2 for more details. */
 #include "transaction/transaction_manager.h"
 
 class Planner;
-
 class QlManager {
    private:
     SmManager* sm_manager_;
@@ -44,6 +43,10 @@ class QlManager {
                          Context* context);
     void select_from(std::unique_ptr<AbstractExecutor> executorTreeRoot,
                      std::vector<TabCol> sel_cols, Context* context);
+
+    SelectResult select_from_and_get_return(
+        std::unique_ptr<AbstractExecutor> executorTreeRoot,
+        std::vector<TabCol> sel_cols, Context* context);
 
     void run_dml(std::unique_ptr<AbstractExecutor> exec);
 };

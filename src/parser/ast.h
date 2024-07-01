@@ -21,7 +21,15 @@ namespace ast {
 
 enum SvType { SV_TYPE_INT, SV_TYPE_FLOAT, SV_TYPE_STRING, SV_TYPE_BOOL };
 
-enum SvCompOp { SV_OP_EQ, SV_OP_NE, SV_OP_LT, SV_OP_GT, SV_OP_LE, SV_OP_GE };
+enum SvCompOp {
+    SV_OP_EQ,
+    SV_OP_NE,
+    SV_OP_LT,
+    SV_OP_GT,
+    SV_OP_LE,
+    SV_OP_GE,
+    SV_OP_IN
+};
 
 enum SvSetOp { SV_OP_ADD, SV_OP_SUB, SV_OP_SET };
 
@@ -174,7 +182,6 @@ struct BinaryExpr : public TreeNode {
     SvCompOp op;
     std::shared_ptr<Expr> rhs;
     std::shared_ptr<TreeNode> subquery;
-    bool is_in_expr;
 
     BinaryExpr(std::shared_ptr<Col> lhs_, SvCompOp op_,
                std::shared_ptr<Expr> rhs_)
@@ -185,13 +192,6 @@ struct BinaryExpr : public TreeNode {
     BinaryExpr(std::shared_ptr<Col> lhs_, SvCompOp op_,
                std::shared_ptr<TreeNode> subquery_)
         : lhs(std::move(lhs_)), op(op_), subquery(std::move(subquery_)) {
-        is_in_expr = false;
-        rhs = nullptr;
-    }
-
-    BinaryExpr(std::shared_ptr<Col> lhs_, std::shared_ptr<TreeNode> subquery_)
-        : lhs(std::move(lhs_)), subquery(std::move(subquery_)) {
-        is_in_expr = true;
         rhs = nullptr;
     }
 };

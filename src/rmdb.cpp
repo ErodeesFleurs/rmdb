@@ -46,7 +46,7 @@ auto ql_manager = std::make_unique<QlManager>(sm_manager.get(), txn_manager.get(
 auto log_manager = std::make_unique<LogManager>(disk_manager.get());
 auto recovery = std::make_unique<RecoveryManager>(disk_manager.get(), buffer_pool_manager.get(), sm_manager.get());
 auto portal = std::make_unique<Portal>(sm_manager.get());
-auto analyze = std::make_unique<Analyze>(sm_manager.get());
+auto analyze = std::make_unique<Analyze>(sm_manager.get(), optimizer.get(), ql_manager.get(), portal.get());
 pthread_mutex_t *buffer_mutex;
 pthread_mutex_t *sockfd_mutex;
 
@@ -129,7 +129,7 @@ void *client_handler(void *sock_fd) {
             if (ast::parse_tree != nullptr) {
                 try {
                     // analyze and rewrite
-                    std::shared_ptr<Query> query = analyze->do_analyze(ast::parse_tree);
+                    std::shared_ptr<Query> query = analyze->do_analyze(ast::parse_tree, context);
                     yy_delete_buffer(buf);
                     finish_analyze = true;
                     pthread_mutex_unlock(buffer_mutex);

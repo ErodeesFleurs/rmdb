@@ -15,8 +15,8 @@ See the Mulan PSL v2 for more details. */
  * @param {shared_ptr<ast::TreeNode>} parse parser生成的结果集
  * @return {shared_ptr<Query>} Query 
  */
-std::shared_ptr<Query> Analyze::do_analyze(
-    std::shared_ptr<ast::TreeNode> parse) {
+std::shared_ptr<Query> Analyze::do_analyze(std::shared_ptr<ast::TreeNode> parse,
+                                           Context* context) {
     std::shared_ptr<Query> query = std::make_shared<Query>();
     if (auto x = std::dynamic_pointer_cast<ast::SelectStmt>(parse)) {
         // 处理表名
@@ -76,10 +76,10 @@ std::shared_ptr<Query> Analyze::do_analyze(
             }
         }
         // 处理where条件
-        get_clause(x->conds, query->conds);
+        get_clause(x->conds, query->conds, context);
         check_clause(query->tables, query->conds);
         // 处理having条件
-        get_clause(x->having_conds, query->having_conds);
+        get_clause(x->having_conds, query->having_conds, context);
         check_clause(query->tables, query->having_conds);
         // 检查where条件中是否有聚合函数
         check_conds_with_aggregate(query->conds);
@@ -92,11 +92,11 @@ std::shared_ptr<Query> Analyze::do_analyze(
     } else if (auto x = std::dynamic_pointer_cast<ast::UpdateStmt>(parse)) {
         /** TODO: */
         set_clause(x->tab_name, x->set_clauses, query->set_clauses);
-        get_clause(x->conds, query->conds);
+        get_clause(x->conds, query->conds, context);
         check_clause({x->tab_name}, query->conds);
     } else if (auto x = std::dynamic_pointer_cast<ast::DeleteStmt>(parse)) {
         //处理where条件
-        get_clause(x->conds, query->conds);
+        get_clause(x->conds, query->conds, context);
         check_clause({x->tab_name}, query->conds);
     } else if (auto x = std::dynamic_pointer_cast<ast::InsertStmt>(parse)) {
         // 处理insert 的values值
@@ -163,7 +163,7 @@ void Analyze::get_all_cols(const std::vector<std::string>& tab_names,
 
 void Analyze::get_clause(
     const std::vector<std::shared_ptr<ast::BinaryExpr>>& sv_conds,
-    std::vector<Condition>& conds) {
+    std::vector<Condition>& conds, Context* context) {
     conds.clear();
     for (auto& expr : sv_conds) {
         Condition cond;
@@ -174,10 +174,22 @@ void Analyze::get_clause(
         cond.op = convert_sv_comp_op(expr->op);
         if (auto rhs_val = std::dynamic_pointer_cast<ast::Value>(expr->rhs)) {
             cond.is_rhs_val = true;
+            cond.is_rhs_query = false;
             cond.rhs_val = convert_sv_value(rhs_val);
+        } else if (auto rhs_subquery =
+                       std::dynamic_pointer_cast<ast::SelectStmt>(
+                           expr->subquery)) {
+            cond.is_rhs_val = false;
+            cond.is_rhs_query = true;
+            auto query = do_analyze(rhs_subquery, context);
+            auto plan = optimizer_->plan_query(query, context);
+            std::shared_ptr<PortalStmt> stmt = portal_->start(plan, context);
+            cond.rhs_query_res =
+                portal_->run_and_get_result(stmt, ql_manager_, context);
         } else if (auto rhs_col =
                        std::dynamic_pointer_cast<ast::Col>(expr->rhs)) {
             cond.is_rhs_val = false;
+            cond.is_rhs_query = false;
             cond.rhs_col = {.tab_name = rhs_col->tab_name,
                             .col_name = rhs_col->col_name,
                             .as_name = rhs_col->as_name,

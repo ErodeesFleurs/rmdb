@@ -151,6 +151,20 @@ class Portal
         }
     }
 
+    // 运行子查询并返回结果
+    SelectResult run_and_get_result(std::shared_ptr<PortalStmt> portal, QlManager* ql, Context *context){
+        switch(portal->tag) {
+            case PORTAL_ONE_SELECT:
+            {
+                return ql->select_from_and_get_return(std::move(portal->root), std::move(portal->sel_cols), context);
+            }
+            default:
+            {
+                throw InternalError("Unexpected field type");
+            }
+        }
+    }
+
     // 清空资源
     void drop(){}
 

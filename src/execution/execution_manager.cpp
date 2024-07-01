@@ -210,6 +210,30 @@ void QlManager::select_from(std::unique_ptr<AbstractExecutor> executorTreeRoot,
     RecordPrinter::print_record_count(num_rec, context);
 }
 
+SelectResult QlManager::select_from_and_get_return(
+    std::unique_ptr<AbstractExecutor> executorTreeRoot,
+    std::vector<TabCol> sel_cols, Context* context) {
+    std::vector<std::string> captions;
+    captions.reserve(sel_cols.size());
+    for (auto& sel_col : sel_cols) {
+        if (!sel_col.as_name.empty())
+            captions.push_back(sel_col.as_name);
+        else
+            captions.push_back(sel_col.col_name);
+    }
+    std::vector<ColMeta> cols = executorTreeRoot->cols();
+    std::vector<RmRecord> records;
+    // 执行query_plan
+    for (executorTreeRoot->beginTuple(); !executorTreeRoot->is_end();
+         executorTreeRoot->nextTuple()) {
+        auto Tuple = executorTreeRoot->Next();
+        RmRecord record(*Tuple);
+        records.push_back(std::move(record));
+    }
+    return std::make_tuple(std::move(captions), std::move(cols),
+                           std::move(records));
+}
+
 // 执行DML语句
 void QlManager::run_dml(std::unique_ptr<AbstractExecutor> exec) {
     exec->Next();

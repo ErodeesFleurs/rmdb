@@ -16,7 +16,6 @@ See the Mulan PSL v2 for more details. */
 #include <string>
 #include <vector>
 
-#include "analyze/analyze.h"
 #include "common/common.h"
 #include "common/context.h"
 #include "execution/execution_defs.h"

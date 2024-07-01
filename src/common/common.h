@@ -16,7 +16,12 @@ See the Mulan PSL v2 for more details. */
 #include <string>
 #include <vector>
 #include "defs.h"
+#include "parser/parser.h"
 #include "record/rm_defs.h"
+#include "system/sm_meta.h"
+
+using SelectResult = std::tuple<std::vector<std::string>, std::vector<ColMeta>,
+                                std::vector<RmRecord>>;
 
 struct TabCol {
     std::string tab_name;
@@ -164,16 +169,42 @@ struct Value {
 enum CompOp { OP_EQ, OP_NE, OP_LT, OP_GT, OP_LE, OP_GE };
 
 enum SetOp { OP_ADD, OP_SUB, OP_SET };
+
+struct Query;
 struct Condition {
-    TabCol lhs_col;   // left-hand side column
-    CompOp op;        // comparison operator
-    bool is_rhs_val;  // true if right-hand side is a value (not a column)
-    TabCol rhs_col;   // right-hand side column
-    Value rhs_val;    // right-hand side value
+    TabCol lhs_col;     // left-hand side column
+    CompOp op;          // comparison operator
+    bool is_rhs_val;    // true if right-hand side is a value (not a column)
+    bool is_rhs_query;  // true if right-hand side is a query
+    TabCol rhs_col;     // right-hand side column
+    Value rhs_val;      // right-hand side value
+    SelectResult rhs_query_res;  // right-hand side query
 };
 
 struct SetClause {
     TabCol lhs;
     Value rhs;
     SetOp op;
+};
+
+class Query {
+   public:
+    std::shared_ptr<ast::TreeNode> parse;
+    // TODO jointree
+    // where条件
+    std::vector<Condition> conds;
+    // 投影列
+    std::vector<TabCol> cols;
+    // 表名
+    std::vector<std::string> tables;
+    // update 的set 值
+    std::vector<SetClause> set_clauses;
+    //insert 的values值
+    std::vector<Value> values;
+
+    std::vector<TabCol> group_cols;
+
+    std::vector<Condition> having_conds;
+
+    Query() {}
 };

@@ -17,40 +17,27 @@ See the Mulan PSL v2 for more details. */
 #include <vector>
 
 #include "common/common.h"
+#include "optimizer/optimizer.h"
 #include "parser/parser.h"
+#include "portal.h"
 #include "system/sm.h"
-
-class Query {
-   public:
-    std::shared_ptr<ast::TreeNode> parse;
-    // TODO jointree
-    // where条件
-    std::vector<Condition> conds;
-    // 投影列
-    std::vector<TabCol> cols;
-    // 表名
-    std::vector<std::string> tables;
-    // update 的set 值
-    std::vector<SetClause> set_clauses;
-    //insert 的values值
-    std::vector<Value> values;
-
-    std::vector<TabCol> group_cols;
-
-    std::vector<Condition> having_conds;
-
-    Query() {}
-};
-
 class Analyze {
    private:
     SmManager* sm_manager_;
+    Optimizer* optimizer_;
+    QlManager* ql_manager_;
+    Portal* portal_;
 
    public:
-    Analyze(SmManager* sm_manager) : sm_manager_(sm_manager) {}
+    Analyze(SmManager* sm_manager, Optimizer* optimizer, QlManager* ql_manager,
+            Portal* portal)
+        : sm_manager_(sm_manager),
+          optimizer_(optimizer),
+          ql_manager_(ql_manager),
+          portal_(portal) {}
     ~Analyze() {}
-
-    std::shared_ptr<Query> do_analyze(std::shared_ptr<ast::TreeNode> root);
+    std::shared_ptr<Query> do_analyze(std::shared_ptr<ast::TreeNode> root,
+                                      Context* context);
 
    private:
     TabCol check_column(const std::vector<ColMeta>& all_cols, TabCol target);
@@ -58,7 +45,7 @@ class Analyze {
                       std::vector<ColMeta>& all_cols);
     void get_clause(
         const std::vector<std::shared_ptr<ast::BinaryExpr>>& sv_conds,
-        std::vector<Condition>& conds);
+        std::vector<Condition>& conds, Context* context);
     void set_clause(
         const std::string& tab_name,
         const std::vector<std::shared_ptr<ast::SetClause>>& sv_conds,
