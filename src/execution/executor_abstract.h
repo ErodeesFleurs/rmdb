@@ -144,12 +144,10 @@ class AbstractExecutor {
 
     static bool eval_cond(const std::vector<ColMeta>& rec_cols,
                           const Condition& cond, const RmRecord* rec) {
-        std::cerr << "eval_cond: " << cond.lhs_col.tab_name << "." << cond.lhs_col.col_name << " " << cond.op << " " << std::endl;
         auto lhs_col = get_col(rec_cols, cond.lhs_col);
         char* lhs = rec->data + lhs_col->offset;
         char* rhs;
         Value lhs_value = get_value(lhs_col->type, lhs);
-        std::cerr << "lhs_value: " << lhs_value << std::endl;
         ColType rhs_type, lhs_type = lhs_col->type;
         if (cond.is_rhs_val) {
             rhs_type = cond.rhs_val.type;
@@ -180,6 +178,8 @@ class AbstractExecutor {
                 throw InternalError("eval_cond::Unexpected op type");
             }
             for (auto& value : cond.rhs_val_list) {
+                std::cerr << "rhs_value: " << value
+                          << ", lhs_value: " << lhs_value << std::endl;
                 if (check_cond(value, lhs_value, OP_EQ)) {
                     return true;
                 }

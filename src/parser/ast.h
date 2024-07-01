@@ -195,9 +195,9 @@ struct BinaryExpr : public TreeNode {
         : lhs(std::move(lhs_)), op(op_), subquery(std::move(subquery_)) {
         rhs = nullptr;
     }
-    
+
     BinaryExpr(std::shared_ptr<Col> lhs_, SvCompOp op_,
-                std::vector<std::shared_ptr<Value>> vals_)
+               std::vector<std::shared_ptr<Value>> vals_)
         : lhs(std::move(lhs_)), op(op_), vals(std::move(vals_)) {
         rhs = nullptr;
     }

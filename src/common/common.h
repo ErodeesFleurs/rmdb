@@ -178,8 +178,8 @@ struct Condition {
     bool is_rhs_list;   // true if right-hand side is a value list
     TabCol rhs_col;     // right-hand side column
     Value rhs_val;      // right-hand side value
-    SelectResult rhs_query_res;  // right-hand side query
-    std::vector<Value> rhs_val_list; // right-hand side value list
+    SelectResult rhs_query_res;       // right-hand side query
+    std::vector<Value> rhs_val_list;  // right-hand side value list
 };
 
 struct SetClause {

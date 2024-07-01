@@ -200,6 +200,7 @@ void Analyze::get_clause(
                             .as_name = rhs_col->as_name,
                             .aggregate = rhs_col->aggregate};
         } else if (!expr->vals.empty()) {
+            std::cerr << "List in where clause" << std::endl;
             cond.is_rhs_val = false;
             cond.is_rhs_list = true;
             cond.is_rhs_query = false;
@@ -209,6 +210,7 @@ void Analyze::get_clause(
         } else {
             cond.is_rhs_val = false;
             cond.is_rhs_query = false;
+            cond.is_rhs_list = false;
         }
         conds.push_back(cond);
     }
@@ -271,6 +273,7 @@ void Analyze::check_clause(const std::vector<std::string>& tab_names,
                                                     coltype2str(val.type));
                     }
                 }
+                continue;
             } else {
                 rhs_type = sm_manager_->db_.get_table(cond.rhs_col.tab_name)
                                .get_col(cond.rhs_col.col_name)
@@ -307,6 +310,7 @@ void Analyze::check_clause(const std::vector<std::string>& tab_names,
                                                 coltype2str(val.type));
                 }
             }
+            continue;
         } else {
             TabMeta& rhs_tab =
                 sm_manager_->db_.get_table(cond.rhs_col.tab_name);
