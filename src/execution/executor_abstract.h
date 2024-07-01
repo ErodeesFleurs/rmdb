@@ -153,10 +153,7 @@ class AbstractExecutor {
             rhs_type = cond.rhs_val.type;
             rhs = cond.rhs_val.raw->data;
         } else if (cond.is_rhs_query) {
-            if(cond.rhs_query_res.second.size() == 0){
-                return false;
-            }
-            else if (cond.rhs_query_res.first.size() != 1) {
+            if (cond.rhs_query_res.first.size() != 1) {
                 throw InternalError("sub_query::Unexpected colMetas size");
             }
             if (cond.op == OP_IN) {
@@ -173,6 +170,9 @@ class AbstractExecutor {
             if (cond.rhs_query_res.second.size() > 1) {
                 throw InternalError("sub_query::Unexpected records size");
             }
+            else if(cond.rhs_query_res.second.size() == 0){
+                return false;
+            }
             rhs_type = cond.rhs_query_res.first[0].type;
             rhs = cond.rhs_query_res.second[0].data +
                   cond.rhs_query_res.first[0].offset;
@@ -181,12 +181,9 @@ class AbstractExecutor {
                 throw InternalError("eval_cond::Unexpected op type");
             }
             for (auto& value : cond.rhs_val_list) {
-                try {
-                    if (check_cond(value, lhs_value, OP_EQ)) {
-                        return true;
-                    }
+                if (check_cond(value, lhs_value, OP_EQ)) {
+                    return true;
                 }
-                catch(const std::exception& e) {}
             }
             return false;
         } else {
