@@ -177,6 +177,9 @@ class AbstractExecutor {
             }
             return false;
         } else if (cond.is_rhs_list) {
+            if (cond.rhs_val_list.size() == 0) {
+                throw InternalError("eval_cond::Unexpected rhs_val_list size");
+            }
             if (cond.rhs_val_list.size() == 1 && cond.op != OP_IN) {
                 return check_cond(lhs_value, cond.rhs_val_list[0], cond.op);
             }
