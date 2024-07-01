@@ -155,22 +155,27 @@ class AbstractExecutor {
         } else if (cond.is_rhs_query) {
             if (cond.rhs_query_res.first.size() != 1) {
                 throw InternalError("sub_query::Unexpected colMetas size");
+            } else if (cond.rhs_query_res.second.size() == 0) {
+                return false;
             }
-            else if(cond.rhs_query_res.second.size() == 0){
-                throw InternalError("sub_query::Unexpected record size");
+            auto type = cond.rhs_query_res.first[0].type;
+            if (type != lhs_type &&
+                (type == TYPE_STRING || lhs_type == TYPE_STRING)) {
+                throw InternalError("eval_cond::Unexpected type");
             }
             if (cond.rhs_query_res.second.size() == 1 && cond.op != OP_IN) {
-                Value rhs_value = get_value(cond.rhs_query_res.first[0].type,
-                                            cond.rhs_query_res.second[0].data +
-                                                cond.rhs_query_res.first[0].offset);
+                Value rhs_value =
+                    get_value(type, cond.rhs_query_res.second[0].data +
+                                        cond.rhs_query_res.first[0].offset);
                 return check_cond(lhs_value, rhs_value, cond.op);
             }
             if (cond.op != OP_IN) {
                 throw InternalError("eval_cond::Unexpected op type");
             }
-            for (auto &record : cond.rhs_query_res.second) {
-                Value rhs_value = get_value(cond.rhs_query_res.first[0].type,
-                                            record.data + cond.rhs_query_res.first[0].offset);
+            for (auto& record : cond.rhs_query_res.second) {
+                Value rhs_value =
+                    get_value(cond.rhs_query_res.first[0].type,
+                              record.data + cond.rhs_query_res.first[0].offset);
                 if (check_cond(lhs_value, rhs_value, OP_EQ)) {
                     return true;
                 }

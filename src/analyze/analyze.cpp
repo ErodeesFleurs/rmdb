@@ -268,7 +268,8 @@ void Analyze::check_clause(const std::vector<std::string>& tab_names,
             } else if (cond.is_rhs_list) {
                 auto type = lhs_type;
                 for (auto& val : cond.rhs_val_list) {
-                    if (val.type != type && (val.type == TYPE_STRING || type == TYPE_STRING)) {
+                    if (val.type != type &&
+                        (val.type == TYPE_STRING || type == TYPE_STRING)) {
                         throw IncompatibleTypeError(coltype2str(type),
                                                     coltype2str(val.type));
                     }
@@ -305,7 +306,8 @@ void Analyze::check_clause(const std::vector<std::string>& tab_names,
         } else if (cond.is_rhs_list) {
             auto type = lhs_col->type;
             for (auto& val : cond.rhs_val_list) {
-                if (val.type != type && (val.type == TYPE_STRING || type == TYPE_STRING)) {
+                if (val.type != type &&
+                    (val.type == TYPE_STRING || type == TYPE_STRING)) {
                     throw IncompatibleTypeError(coltype2str(type),
                                                 coltype2str(val.type));
                 }
