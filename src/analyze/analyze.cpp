@@ -264,6 +264,14 @@ void Analyze::check_clause(const std::vector<std::string>& tab_names,
                 rhs_type = cond.rhs_val.type;
                 cond.rhs_val.init_raw();
             } else if (cond.is_rhs_query) {
+                if (cond.rhs_query_res.second.empty()) {
+                    throw RMDBError("Subquery returns no result");
+                } else if (cond.op != OP_IN &&
+                           cond.rhs_query_res.second.size() > 1) {
+                    throw RMDBError("Subquery returns more than one result");
+                } else if (cond.rhs_query_res.first.size() != 1) {
+                    throw RMDBError("Subquery returns more than one column");
+                }
                 continue;
             } else if (cond.is_rhs_list) {
                 auto type = lhs_type;
@@ -301,7 +309,20 @@ void Analyze::check_clause(const std::vector<std::string>& tab_names,
                 cond.rhs_val.init_raw(lhs_col->len);
             }
         } else if (cond.is_rhs_query) {
-            // do nothing
+            if (cond.rhs_query_res.second.empty()) {
+                throw RMDBError("Subquery returns no result");
+            } else if (cond.op != OP_IN &&
+                       cond.rhs_query_res.second.size() > 1) {
+                throw RMDBError("Subquery returns more than one result");
+            } else if (cond.rhs_query_res.first.size() != 1) {
+                throw RMDBError("Subquery returns more than one column");
+            } else if (cond.rhs_query_res.first[0].type != lhs_type &&
+                       (cond.rhs_query_res.first[0].type == TYPE_STRING ||
+                        lhs_type == TYPE_STRING)) {
+                throw IncompatibleTypeError(
+                    coltype2str(lhs_type),
+                    coltype2str(cond.rhs_query_res.first[0].type));
+            }
             continue;
         } else if (cond.is_rhs_list) {
             auto type = lhs_col->type;
