@@ -222,8 +222,7 @@ SelectResult QlManager::select_from_and_get_return(
         RmRecord record(*Tuple);
         records.push_back(std::move(record));
     }
-    return std::make_pair(std::move(cols),
-                           std::move(records));
+    return std::make_pair(std::move(cols), std::move(records));
 }
 
 // 执行DML语句

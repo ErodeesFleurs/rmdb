@@ -158,7 +158,8 @@ class AbstractExecutor {
             if (cond.op == OP_IN) {
                 auto lhs_value = get_value(lhs_type, lhs);
                 for (auto& record : cond.rhs_query_res.second) {
-                    auto value = get_value(cond.rhs_query_res.first[0].type, record.data);
+                    auto value = get_value(cond.rhs_query_res.first[0].type,
+                                           record.data);
                     if (check_cond(value, lhs_value, OP_EQ)) {
                         return true;
                     }
@@ -169,11 +170,11 @@ class AbstractExecutor {
                 throw InternalError("sub_query::Unexpected records size");
             }
             rhs_type = cond.rhs_query_res.first[0].type;
-            rhs = cond.rhs_query_res.second[0].data + cond.rhs_query_res.first[0].offset;
+            rhs = cond.rhs_query_res.second[0].data +
+                  cond.rhs_query_res.first[0].offset;
             Value ls = get_value(lhs_type, lhs);
             Value rs = get_value(rhs_type, rhs);
-        }
-        else {
+        } else {
             auto rhs_col = get_col(rec_cols, cond.rhs_col);
             rhs_type = rhs_col->type;
             rhs = rec->data + rhs_col->offset;

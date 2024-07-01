@@ -354,7 +354,8 @@ void Analyze::check_having_conds(const std::vector<Condition>& having_conds,
                 throw RMDBError("Non aggregate column not in group by");
             }
         }
-        if (!cond.is_rhs_val && !cond.is_rhs_query && cond.rhs_col.aggregate == AggregateType::NONE) {
+        if (!cond.is_rhs_val && !cond.is_rhs_query &&
+            cond.rhs_col.aggregate == AggregateType::NONE) {
             bool found = std::any_of(
                 group_cols.begin(), group_cols.end(),
                 [&](const TabCol& group_col) {
@@ -417,7 +418,6 @@ CompOp Analyze::convert_sv_comp_op(ast::SvCompOp op) {
     std::map<ast::SvCompOp, CompOp> m = {
         {ast::SV_OP_EQ, OP_EQ}, {ast::SV_OP_NE, OP_NE}, {ast::SV_OP_LT, OP_LT},
         {ast::SV_OP_GT, OP_GT}, {ast::SV_OP_LE, OP_LE}, {ast::SV_OP_GE, OP_GE},
-        {ast::SV_OP_IN, OP_IN}
-    };
+        {ast::SV_OP_IN, OP_IN}};
     return m.at(op);
 }

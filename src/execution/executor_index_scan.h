@@ -65,10 +65,9 @@ class IndexScanExecutor : public AbstractExecutor {
         fh_ = sm_manager_->fhs_.at(tab_name_).get();
         cols_ = tab_.cols;
         len_ = cols_.back().offset + cols_.back().len;
-        std::map<CompOp, CompOp> swap_op = {
-            {OP_EQ, OP_EQ}, {OP_NE, OP_NE}, {OP_LT, OP_GT},
-            {OP_GT, OP_LT}, {OP_LE, OP_GE}, {OP_GE, OP_LE}
-        };
+        std::map<CompOp, CompOp> swap_op = {{OP_EQ, OP_EQ}, {OP_NE, OP_NE},
+                                            {OP_LT, OP_GT}, {OP_GT, OP_LT},
+                                            {OP_LE, OP_GE}, {OP_GE, OP_LE}};
 
         for (auto& cond : conds_) {
             if (cond.lhs_col.tab_name != tab_name_) {

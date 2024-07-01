@@ -65,7 +65,8 @@ class SeqScanExecutor : public AbstractExecutor {
             rid_ = scan_->rid();
             count_seq_scan++;
             auto rec = fh_->get_record(rid_, context_);
-            if (fed_conds_.empty() || eval_conds(cols_, fed_conds_, rec.get())) {
+            if (fed_conds_.empty() ||
+                eval_conds(cols_, fed_conds_, rec.get())) {
                 break;
             }
             scan_->next();

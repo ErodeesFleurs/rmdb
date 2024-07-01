@@ -20,8 +20,7 @@ See the Mulan PSL v2 for more details. */
 #include "record/rm_defs.h"
 #include "system/sm_meta.h"
 
-using SelectResult = std::pair<std::vector<ColMeta>,
-                                std::vector<RmRecord>>;
+using SelectResult = std::pair<std::vector<ColMeta>, std::vector<RmRecord>>;
 
 struct TabCol {
     std::string tab_name;
