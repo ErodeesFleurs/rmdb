@@ -155,13 +155,14 @@ class AbstractExecutor {
         } else if (cond.is_rhs_query) {
             if (cond.rhs_query_res.first.size() != 1) {
                 throw InternalError("sub_query::Unexpected colMetas size");
-            } else if (cond.rhs_query_res.second.size() == 0) {
-                return false;
             }
             auto type = cond.rhs_query_res.first[0].type;
             if (type != lhs_type &&
                 (type == TYPE_STRING || lhs_type == TYPE_STRING)) {
                 throw InternalError("eval_cond::Unexpected type");
+            }
+            if (cond.rhs_query_res.second.size() == 0) {
+                return false;
             }
             if (cond.rhs_query_res.second.size() == 1 && cond.op != OP_IN) {
                 Value rhs_value =
