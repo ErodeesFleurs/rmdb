@@ -181,12 +181,12 @@ class AbstractExecutor {
                 throw InternalError("eval_cond::Unexpected op type");
             }
             for (auto& value : cond.rhs_val_list) {
-                // try {
-                if (check_cond(value, lhs_value, OP_EQ)) {
-                    return true;
+                try {
+                    if (check_cond(value, lhs_value, OP_EQ)) {
+                        return true;
+                    }
                 }
-                // }
-                // catch(const std::exception& e) {}
+                catch(const std::exception& e) {}
             }
             return false;
         } else {
