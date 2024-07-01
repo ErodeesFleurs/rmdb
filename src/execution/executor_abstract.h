@@ -157,7 +157,7 @@ class AbstractExecutor {
                 throw InternalError("sub_query::Unexpected colMetas size");
             }
             else if(cond.rhs_query_res.second.size() == 0){
-                return false;
+                throw InternalError("sub_query::Unexpected record size");
             }
             if (cond.rhs_query_res.second.size() == 1 && cond.op != OP_IN) {
                 Value rhs_value = get_value(cond.rhs_query_res.first[0].type,
