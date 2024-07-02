@@ -103,6 +103,8 @@ std::shared_ptr<Query> Analyze::do_analyze(std::shared_ptr<ast::TreeNode> parse,
         for (auto& sv_val : x->vals) {
             query->values.push_back(convert_sv_value(sv_val));
         }
+    } else if (auto x = std::dynamic_pointer_cast<ast::SetStmt>(parse)) {
+        query->parse = x;
     } else {
         // do nothing
     }
