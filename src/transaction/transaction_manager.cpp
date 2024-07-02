@@ -60,12 +60,12 @@ void TransactionManager::commit(Transaction* txn, LogManager* log_manager) {
     }
     txn->clear();
 
-    // auto *log = new CommitLogRecord(txn->get_transaction_id());
-    // log->prev_lsn_ = txn->get_prev_lsn();
-    // log_manager->add_log_to_buffer(log);
-    // txn->set_prev_lsn(log->lsn_);
+    auto* log = new CommitLogRecord(txn->get_transaction_id());
+    log->prev_lsn_ = txn->get_prev_lsn();
+    log_manager->add_log_to_buffer(log);
+    txn->set_prev_lsn(log->lsn_);
 
-    // txn->set_state(TransactionState::COMMITTED);
+    txn->set_state(TransactionState::COMMITTED);
 }
 
 /**
@@ -73,11 +73,128 @@ void TransactionManager::commit(Transaction* txn, LogManager* log_manager) {
  * @param {Transaction *} txn 需要回滚的事务
  * @param {LogManager} *log_manager 日志管理器指针
  */
-void TransactionManager::abort(Transaction* txn, LogManager* log_manager) {
+void TransactionManager::abort(Context* context, LogManager* log_manager) {
     // Todo:
     // 1. 回滚所有写操作
     // 2. 释放所有锁
     // 3. 清空事务相关资源，eg.锁集
     // 4. 把事务日志刷入磁盘中
     // 5. 更新事务状态
+    auto txn = context->txn_;
+    auto write_set = txn->get_write_set();
+    while (!write_set->empty()) {
+        auto write_record = write_set->back();
+        write_set->pop_back();
+        auto write_type = write_record->GetWriteType();
+        auto table_name = write_record->GetTableName();
+        auto record = write_record->GetRecord();
+        auto rid = write_record->GetRid();
+        if (!sm_manager_->contains_table(table_name)) {
+            throw TableExistsError(table_name);
+        }
+        auto file_handle = sm_manager_->get_file_handle(table_name);
+        // 皆反
+        switch (write_type) {
+            case WType::INSERT_TUPLE: {
+                auto log_record = std::make_unique<DeleteLogRecord>(
+                    txn->get_transaction_id(), record, rid, table_name);
+                log_record->prev_lsn_ = txn->get_prev_lsn();
+                log_manager->add_log_to_buffer(log_record.get());
+                txn->set_prev_lsn(log_record->lsn_);
+
+                delete_record_in_index(txn, table_name, &record, rid);
+                file_handle->delete_record(rid, context);
+                break;
+            }
+            case WType::UPDATE_TUPLE: {
+                auto old_record = file_handle->get_record(rid, context);
+
+                auto log_record = std::make_unique<UpdateLogRecord>(
+                    txn->get_transaction_id(), *old_record, record, rid,
+                    table_name);
+                log_record->prev_lsn_ = txn->get_prev_lsn();
+                log_manager->add_log_to_buffer(log_record.get());
+                txn->set_prev_lsn(log_record->lsn_);
+
+                delete_record_in_index(txn, table_name, old_record.get(), rid);
+                file_handle->update_record(rid, record.data, context);
+                insert_record_in_index(txn, table_name, &record, rid);
+                break;
+            }
+            case WType::DELETE_TUPLE: {
+                auto log_record = std::make_unique<InsertLogRecord>(
+                    txn->get_transaction_id(), record, rid, table_name);
+                log_record->prev_lsn_ = txn->get_prev_lsn();
+                log_manager->add_log_to_buffer(log_record.get());
+                txn->set_prev_lsn(log_record->lsn_);
+
+                insert_record_in_index(txn, table_name, &record, rid);
+                file_handle->insert_record(rid, record.data);
+                break;
+            }
+            default:
+                throw InternalError("Unexpected write type");
+        }
+    }
+    auto lock_set = txn->get_lock_set();
+    for (auto i : *lock_set) {
+        lock_manager_->unlock(txn, i);
+    }
+    txn->clear();
+
+    auto log = std::make_unique<AbortLogRecord>(txn->get_transaction_id());
+    log->prev_lsn_ = txn->get_prev_lsn();
+    log_manager->add_log_to_buffer(log.get());
+    txn->set_prev_lsn(log->lsn_);
+    txn->set_state(TransactionState::ABORTED);
+}
+
+/**
+ * @description: 删除索引中的记录
+ * @param {const std::string&} table_name 表名
+ * @param {RmRecord*} rec 记录指针
+ * @param {Rid} rid_ 记录的Rid
+ */
+void TransactionManager::delete_record_in_index(Transaction* transaction,
+                                                const std::string& table_name,
+                                                RmRecord* rec, Rid rid_) {
+    auto& tab = sm_manager_->db_.get_table(table_name);
+    for (auto& index : tab.indexes) {
+        auto index_name = sm_manager_->get_ix_manager()->get_index_name(
+            table_name, index.cols);
+        auto index_handle = sm_manager_->get_index_handle(index_name);
+        auto key = std::make_unique<char[]>(index.col_tot_len);
+        int offset = 0;
+        for (int j = 0; j < index.col_num; ++j) {
+            memcpy(key.get() + offset, rec->data + index.cols[j].offset,
+                   index.cols[j].len);
+            offset += index.cols[j].len;
+        }
+        index_handle->delete_entry(key.get(), transaction);
+    }
+}
+
+/**
+ * @description: 在索引中插入记录
+ * @param {const std::string&} table_name 表名
+ * @param {RmRecord*} rec 记录指针
+ * @param {Rid} rid_ 记录的Rid
+ */
+void TransactionManager::insert_record_in_index(Transaction* transaction,
+                                                const std::string& table_name,
+                                                RmRecord* rec, Rid rid_) {
+    auto& tab = sm_manager_->db_.get_table(table_name);
+    for (auto& index : tab.indexes) {
+        auto index_name = sm_manager_->get_ix_manager()->get_index_name(
+            table_name, index.cols);
+        auto index_handle = sm_manager_->get_index_handle(index_name);
+        auto key = std::make_unique<char[]>(index.col_tot_len);
+        int offset = 0;
+        for (int j = 0; j < index.col_num; ++j) {
+            memcpy(key.get() + offset, rec->data + index.cols[j].offset,
+                   index.cols[j].len);
+            offset += index.cols[j].len;
+        }
+        index_handle->insert_entry(key.get(), rid_, transaction);
+    }
 }

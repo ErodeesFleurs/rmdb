@@ -147,7 +147,7 @@ void *client_handler(void *sock_fd) {
                     offset = str.length();
 
                     // 回滚事务
-                    txn_manager->abort(context->txn_, log_manager.get());
+                    txn_manager->abort(context, log_manager.get());
                     std::cout << e.GetInfo() << std::endl;
 
                     std::fstream outfile;

@@ -382,3 +382,16 @@ void SmManager::show_index(const std::string& tab_name, Context* context) {
 
     outfile.close();
 }
+
+bool SmManager::contains_table(const std::string& tab_name) const {
+    return db_.is_table(tab_name);
+}
+
+RmFileHandle* SmManager::get_file_handle(const std::string& tab_name) const {
+    return fhs_.at(tab_name).get();
+}
+
+IxIndexHandle* SmManager::get_index_handle(
+    const std::string& index_name) const {
+    return ihs_.at(index_name).get();
+}
