@@ -59,7 +59,7 @@ struct Value {
         } else if constexpr (std::is_same_v<std::decay_t<T>, std::string>) {
             set_str(val);
         } else {
-            static_assert(always_false<T>::value, "unsupported type");
+            throw std::runtime_error("Invalid value type");
         }
         return *this;
     }
