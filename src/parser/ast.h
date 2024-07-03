@@ -308,6 +308,14 @@ struct SetStmt : public TreeNode {
         : set_knob_type_(type), bool_val_(bool_value) {}
 };
 
+struct LoadData : public TreeNode {
+    std::string file_path_;
+    std::string tab_name_;
+
+    LoadData(std::string file_path, std::string tab_name)
+        : file_path_(std::move(file_path)), tab_name_(std::move(tab_name)) {}
+};
+
 // Semantic value
 struct SemValue {
     int sv_int;
@@ -345,8 +353,6 @@ struct SemValue {
 
     std::shared_ptr<GroupBy> sv_groupby;
     std::vector<std::shared_ptr<GroupBy>> sv_groupbys;
-
-    std::vector<std::shared_ptr<BinaryExpr>> sv_having_conds;
 
     SetKnobType sv_setKnobType;
 };

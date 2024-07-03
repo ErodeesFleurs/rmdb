@@ -45,7 +45,8 @@ typedef enum PlanTag {
     T_Group,
     T_SortMerge,  // sort merge join
     T_Sort,
-    T_Projection
+    T_Projection,
+    T_LoadData
 } PlanTag;
 
 // 查询执行计划
@@ -189,11 +190,21 @@ class DDLPlan : public Plan {
     DDLPlan(PlanTag tag, std::string tab_name,
             std::vector<std::string> col_names, std::vector<ColDef> cols) {
         Plan::tag = tag;
+        file_path_ = std::string();
+        tab_name_ = std::move(tab_name);
+        cols_ = std::move(cols);
+        tab_col_names_ = std::move(col_names);
+    }
+    DDLPlan(PlanTag tag, std::string file_path, std::string tab_name,
+            std::vector<std::string> col_names, std::vector<ColDef> cols) {
+        Plan::tag = tag;
+        file_path_ = std::move(file_path);
         tab_name_ = std::move(tab_name);
         cols_ = std::move(cols);
         tab_col_names_ = std::move(col_names);
     }
     ~DDLPlan() {}
+    std::string file_path_;
     std::string tab_name_;
     std::vector<std::string> tab_col_names_;
     std::vector<ColDef> cols_;

@@ -37,8 +37,8 @@ new_line "\r"|"\n"|"\r\n"
 sign "+"|"-"
 identifier {alpha}(_|{alpha}|{digit})*
 value_int {sign}?{digit}+
-value_float {sign}?{digit}+\.({digit}+)?
 value_string '[^']*'
+value_float {sign}?{digit}+\.({digit}+)?
 single_op ";"|"("|")"|","|"*"|"="|">"|"<"|"."|"+"|"-"
 
 %x STATE_COMMENT

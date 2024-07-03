@@ -459,6 +459,11 @@ std::shared_ptr<Plan> Planner::do_planner(std::shared_ptr<Query> query,
                                                 std::vector<std::string>(),
                                                 std::vector<ColDef>());
     } else if (auto x =
+                   std::dynamic_pointer_cast<ast::LoadData>(query->parse)) {
+        plannerRoot = std::make_shared<DDLPlan>(
+            T_LoadData, x->file_path_, x->tab_name_, std::vector<std::string>(),
+            std::vector<ColDef>());
+    } else if (auto x =
                    std::dynamic_pointer_cast<ast::InsertStmt>(query->parse)) {
         // insert;
         plannerRoot = std::make_shared<DMLPlan>(

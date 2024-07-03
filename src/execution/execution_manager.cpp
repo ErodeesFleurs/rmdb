@@ -73,6 +73,10 @@ void QlManager::run_mutli_query(std::shared_ptr<Plan> plan, Context* context) {
                 sm_manager_->show_index(x->tab_name_, context);
                 break;
             }
+            case T_LoadData: {
+                sm_manager_->load_record(x->file_path_, x->tab_name_, context);
+                break;
+            }
             default:
                 throw InternalError("Unexpected field type");
                 break;
@@ -182,11 +186,11 @@ void QlManager::select_from(std::unique_ptr<AbstractExecutor> executorTreeRoot,
         for (auto& col : executorTreeRoot->cols()) {
             std::string col_str;
             if (col.type == TYPE_INT) {
-                col_str = std::to_string(Tuple->import<int>(col.offset));
+                col_str = std::to_string(Tuple->import <int>(col.offset));
             } else if (col.type == TYPE_FLOAT) {
-                col_str = std::to_string(Tuple->import<double>(col.offset));
+                col_str = std::to_string(Tuple->import <double>(col.offset));
             } else if (col.type == TYPE_STRING) {
-                col_str = Tuple->import<std::string>(col.offset);
+                col_str = Tuple->import <std::string>(col.offset);
                 col_str.resize(strlen(col_str.c_str()));
             }
             columns.push_back(col_str);
@@ -203,7 +207,7 @@ void QlManager::select_from(std::unique_ptr<AbstractExecutor> executorTreeRoot,
         }
         num_rec++;
     }
-    if (!context->output_ellipsis_) {   
+    if (!context->output_ellipsis_) {
         outfile.close();
     }
     // Print footer into buffer

@@ -15,6 +15,7 @@ See the Mulan PSL v2 for more details. */
 
 #include <fstream>
 
+#include "common/common.h"
 #include "index/ix.h"
 #include "record/rm.h"
 #include "record_printer.h"
@@ -136,19 +137,25 @@ void SmManager::close_db() {
  */
 void SmManager::show_tables(Context* context) {
     std::fstream outfile;
-    outfile.open("output.txt", std::ios::out | std::ios::app);
-    outfile << "| Tables |\n";
+    if (!context->output_ellipsis_) {
+        outfile.open("output.txt", std::ios::out | std::ios::app);
+        outfile << "| Tables |\n";
+    }
     RecordPrinter printer(1);
     printer.print_separator(context);
     printer.print_record({"Tables"}, context);
     printer.print_separator(context);
-    for (auto& entry : db_.tabs_) {
-        auto& tab = entry.second;
-        printer.print_record({tab.name}, context);
-        outfile << "| " << tab.name << " |\n";
+    if (!context->output_ellipsis_) {
+        for (const auto& entry : db_.tabs_) {
+            auto& tab = entry.second;
+            printer.print_record({tab.name}, context);
+            outfile << "| " << tab.name << " |\n";
+        }
     }
     printer.print_separator(context);
-    outfile.close();
+    if (!context->output_ellipsis_) {
+        outfile.close();
+    }
 }
 
 /**
@@ -358,28 +365,86 @@ void SmManager::drop_index(const std::string& tab_name,
  */
 void SmManager::show_index(const std::string& tab_name, Context* context) {
     std::fstream outfile;
-    outfile.open("output.txt", std::ios::out | std::ios::app);
+    if (!context->output_ellipsis_) {
+        outfile.open("output.txt", std::ios::out | std::ios::app);
+    }
 
     RecordPrinter printer(3);
 
     printer.print_separator(context);
-    TabMeta& tab = db_.get_table(tab_name);
-    for (const auto& i : tab.indexes) {
-        std::string col;
-        col += "(";
-        for (const auto& icol : i.cols) {
-            col += icol.name + ",";
+    if (!context->output_ellipsis_) {
+        TabMeta& tab = db_.get_table(tab_name);
+        for (const auto& i : tab.indexes) {
+            std::string col = "(";
+            for (const auto& icol : i.cols) {
+                col += icol.name + ",";
+            }
+            if (col.back() == ',')
+                col.pop_back();
+            col += ")";
+            std::vector<std::string> v = {tab_name, "unique", col};
+            printer.print_record(v, context);
+            outfile << "| " << tab_name << " | unique | " << col << " |\n";
         }
-        if (col.back() == ',')
-            col.pop_back();
-        col += ")";
-        std::vector<std::string> v = {tab_name, "unique", col};
-        printer.print_record(v, context);
-        outfile << "| " << tab_name << " | unique | " << col << " |\n";
     }
     printer.print_separator(context);
+    if (!context->output_ellipsis_) {
+        outfile.close();
+    }
+}
 
-    outfile.close();
+void SmManager::load_record(const std::string& file_path,
+                            const std::string& tab_name, Context* context) {
+    std::fstream infile(file_path, std::ios::in);
+    if (!contains_table(tab_name)) {
+        throw TableExistsError(tab_name);
+    }
+    auto file_handle = get_file_handle(tab_name);
+    auto& tab_meta = db_.get_table(tab_name);
+    std::string input;
+    std::getline(infile, input);
+    while (std::getline(infile, input)) {
+        RmRecord record(file_handle->get_file_hdr().record_size);
+        std::istringstream ss(input);
+        std::string value{};
+        int idx = 0;
+        while (std::getline(ss, value, ',')) {
+            Value x;
+            if (tab_meta.cols[idx].type == ColType::TYPE_INT) {
+                x = std::stoi(value);
+            } else if (tab_meta.cols[idx].type == ColType::TYPE_FLOAT) {
+                x = std::stod(value);
+            } else {
+                x = value;
+            }
+            x.init_raw(tab_meta.cols[idx].len);
+            idx++;
+            record.append(x.raw->data, x.raw->size);
+        }
+        auto rid = file_handle->insert_record(record.data, context);
+
+        auto logRecord = std::make_shared<InsertLogRecord>(
+            context->txn_->get_transaction_id(), record, rid, tab_name);
+        logRecord->prev_lsn_ = context->txn_->get_prev_lsn();
+        context->log_mgr_->add_log_to_buffer(logRecord.get());
+        context->txn_->set_prev_lsn(logRecord->lsn_);
+        // 更新索引
+        for (const auto& index : tab_meta.indexes) {
+            auto index_name = ix_manager_->get_index_name(tab_name, index.cols);
+            auto index_handle = get_index_handle(index_name);
+            auto key = std::make_unique<char[]>(index.col_tot_len);
+            int offset = 0;
+            for (const auto& col : index.cols) {
+                memcpy(key.get() + offset, record.data + col.offset, col.len);
+                offset += col.len;
+            }
+            index_handle->insert_entry(key.get(), rid, context->txn_);
+        }
+        auto write_record =
+            new WriteRecord(WType::INSERT_TUPLE, tab_name, rid, record);
+        context->txn_->append_write_record(write_record);
+    }
+    infile.close();
 }
 
 bool SmManager::contains_table(const std::string& tab_name) const {

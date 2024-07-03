@@ -88,6 +88,9 @@ class SmManager {
 
     void show_index(const std::string& tab_name, Context* context);
 
+    void load_record(const std::string& file_path, const std::string& tab_name,
+                     Context* context);
+
     bool contains_table(const std::string& tab_name) const;
 
     RmFileHandle* get_file_handle(const std::string& tab_name) const;

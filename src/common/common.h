@@ -50,6 +50,20 @@ struct Value {
 
     std::shared_ptr<RmRecord> raw;  // raw record buffer
 
+    template <typename T>
+    Value& operator=(T&& val) {
+        if constexpr (std::is_same_v<std::decay_t<T>, int>) {
+            set_int(val);
+        } else if constexpr (std::is_same_v<std::decay_t<T>, double>) {
+            set_float(val);
+        } else if constexpr (std::is_same_v<std::decay_t<T>, std::string>) {
+            set_str(val);
+        } else {
+            static_assert(always_false<T>::value, "unsupported type");
+        }
+        return *this;
+    }
+
     void set_int(int int_val_) {
         type = TYPE_INT;
         int_val = int_val_;

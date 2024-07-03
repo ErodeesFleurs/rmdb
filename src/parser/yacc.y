@@ -21,13 +21,13 @@ using namespace ast;
 %define parse.error verbose
 
 // keywords
-%token SHOW TABLES CREATE TABLE DROP DESC INSERT INTO VALUES DELETE FROM ASC ORDER GROUP BY HAVING SUM COUNT MAX MIN AS
+%token SHOW TABLES CREATE TABLE DROP DESC INSERT INTO VALUES DELETE FROM ASC ORDER GROUP BY HAVING SUM COUNT MAX MIN AS LOAD
 WHERE UPDATE SET SELECT INT CHAR FLOAT INDEX AND JOIN EXIT HELP TXN_BEGIN TXN_COMMIT TXN_ABORT TXN_ROLLBACK ORDER_BY GROUP_BY ENABLE_NESTLOOP ENABLE_SORTMERGE
 // non-keywords
 %token LEQ NEQ GEQ IN T_EOF
 
 // type-specific tokens
-%token <sv_str> IDENTIFIER VALUE_STRING
+%token <sv_str> IDENTIFIER VALUE_STRING FILE_PATH
 %token <sv_int> VALUE_INT
 %token <sv_float> VALUE_FLOAT
 %token <sv_bool> VALUE_BOOL
@@ -41,20 +41,19 @@ WHERE UPDATE SET SELECT INT CHAR FLOAT INDEX AND JOIN EXIT HELP TXN_BEGIN TXN_CO
 %type <sv_expr> expr
 %type <sv_val> value
 %type <sv_vals> valueList
-%type <sv_str> tbName colName
+%type <sv_str> tbName colName filePath
 %type <sv_strs> tableList colNameList
 %type <sv_col> col
 %type <sv_cols> colList selector
 %type <sv_set_clause> setClause
 %type <sv_set_clauses> setClauses
 %type <sv_cond> condition
-%type <sv_conds> whereClause optWhereClause
+%type <sv_conds> whereClause optWhereClause having_conds opt_having_conds
 %type <sv_orderby> order_clause
 %type <sv_orderbys> order_clauses opt_order_clause
 %type <sv_orderby_dir> opt_asc_desc
 %type <sv_groupby> group_clause
 %type <sv_groupbys> group_clauses opt_group_clause
-%type <sv_having_conds> having_conds opt_having_conds
 %type <sv_setKnobType> set_knob_type
 
 %%
@@ -146,6 +145,10 @@ ddl:
     |   SHOW INDEX FROM tbName
     {
         $$ = std::make_shared<ShowIndex>($4);
+    }
+    |   LOAD filePath INTO tbName
+    {
+        $$ = std::make_shared<LoadData>($2, $4);
     }
     ;
 
@@ -556,4 +559,6 @@ set_knob_type:
 tbName: IDENTIFIER;
 
 colName: IDENTIFIER;
+
+filePath: VALUE_STRING;
 %%
