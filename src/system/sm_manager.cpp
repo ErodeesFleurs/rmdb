@@ -396,6 +396,9 @@ void SmManager::show_index(const std::string& tab_name, Context* context) {
 void SmManager::load_record(const std::string& file_path,
                             const std::string& tab_name, Context* context) {
     std::fstream infile(file_path, std::ios::in);
+    if (!infile.is_open()) {
+        throw std::runtime_error("file not found");
+    }
     if (!contains_table(tab_name)) {
         throw TableExistsError(tab_name);
     }
@@ -418,8 +421,9 @@ void SmManager::load_record(const std::string& file_path,
                 x = value;
             }
             x.init_raw(tab_meta.cols[idx].len);
+            record.rewrite(x.raw->data, tab_meta.cols[idx].offset,
+                           tab_meta.cols[idx].len);
             idx++;
-            record.append(x.raw->data, x.raw->size);
         }
         auto rid = file_handle->insert_record(record.data, context);
 

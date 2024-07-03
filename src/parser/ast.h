@@ -316,6 +316,10 @@ struct LoadData : public TreeNode {
         : file_path_(std::move(file_path)), tab_name_(std::move(tab_name)) {}
 };
 
+struct SetOutputFileOff : public TreeNode {
+    SetOutputFileOff() {}
+};
+
 // Semantic value
 struct SemValue {
     int sv_int;

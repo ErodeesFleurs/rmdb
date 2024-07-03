@@ -23,7 +23,7 @@ class Context {
    public:
     Context(LockManager* lock_mgr, LogManager* log_mgr, Transaction* txn,
             char* data_send = nullptr, int* offset = &const_offset,
-            bool output_ellipsis = true)
+            bool output_ellipsis = false)
         : lock_mgr_(lock_mgr),
           log_mgr_(log_mgr),
           txn_(txn),

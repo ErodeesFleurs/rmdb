@@ -36,6 +36,8 @@ white_space [ \t]+
 new_line "\r"|"\n"|"\r\n"
 sign "+"|"-"
 identifier {alpha}(_|{alpha}|{digit})*
+path_part ".."|"."|[a-zA-Z0-9_]+
+file_path ({path_part}"/")+{identifier}".csv"
 value_int {sign}?{digit}+
 value_string '[^']*'
 value_float {sign}?{digit}+\.({digit}+)?
@@ -76,6 +78,7 @@ single_op ";"|"("|")"|","|"*"|"="|">"|"<"|"."|"+"|"-"
 "SELECT" { return SELECT; }
 "INT" { return INT; }
 "CHAR" { return CHAR; }
+"DATETIME" { return DATETIME; }
 "FLOAT" { return FLOAT; }
 "INDEX" { return INDEX; }
 "AND" { return AND; }
@@ -93,8 +96,10 @@ single_op ";"|"("|")"|","|"*"|"="|">"|"<"|"."|"+"|"-"
 "COUNT" { return COUNT; }
 "AS" { return AS; }
 "IN" { return IN; }
+"LOAD" { return LOAD; }
 "ENABLE_NESTLOOP" { return ENABLE_NESTLOOP; }
 "ENABLE_SORTMERGE" { return ENABLE_SORTMERGE; }
+"SET OUTPUT_FILE OFF" { return SET_OUTPUT_FILE_OFF; }
 "TRUE" { 
     yylval->sv_bool = true;
     return VALUE_BOOL; 
@@ -126,6 +131,10 @@ single_op ";"|"("|")"|","|"*"|"="|">"|"<"|"."|"+"|"-"
 {value_string} {
     yylval->sv_str = std::string(yytext + 1, strlen(yytext) - 2);
     return VALUE_STRING;
+}
+{file_path} {
+    yylval->sv_str = std::string(yytext);
+    return FILE_PATH;
 }
     /* EOF */
 <<EOF>> { return T_EOF; }

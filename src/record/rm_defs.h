@@ -91,6 +91,10 @@ struct RmRecord {
         data = new_data;
     }
 
+    void rewrite(const char* data_, int start, int size_) {
+        memcpy(data + start, data_, size_);
+    }
+
     // 从offset位置开始，导出一位T类型的数据
     template <typename T>
     T import(int offset) const {

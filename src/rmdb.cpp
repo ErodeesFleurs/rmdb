@@ -144,20 +144,32 @@ void* client_handler(void* sock_fd) {
         if (yyparse() == 0) {
             if (ast::parse_tree != nullptr) {
                 try {
-                    // analyze and rewrite
-                    std::shared_ptr<Query> query =
-                        analyze->do_analyze(ast::parse_tree, context);
-                    yy_delete_buffer(buf);
-                    finish_analyze = true;
-                    pthread_mutex_unlock(buffer_mutex);
-                    // 优化器
-                    std::shared_ptr<Plan> plan =
-                        optimizer->plan_query(query, context);
-                    // portal
-                    std::shared_ptr<PortalStmt> portalStmt =
-                        portal->start(plan, context);
-                    portal->run(portalStmt, ql_manager.get(), &txn_id, context);
-                    portal->drop();
+                    if (std::dynamic_pointer_cast<ast::SetOutputFileOff>(
+                            ast::parse_tree)) {
+                        // 显式事务
+                        yy_delete_buffer(buf);
+                        output_ellipsis = true;
+                        finish_analyze = true;
+                        pthread_mutex_unlock(buffer_mutex);
+                        ast::parse_tree.reset();
+                        ast::parse_tree = nullptr;
+                    } else {
+                        // analyze and rewrite
+                        std::shared_ptr<Query> query =
+                            analyze->do_analyze(ast::parse_tree, context);
+                        yy_delete_buffer(buf);
+                        finish_analyze = true;
+                        pthread_mutex_unlock(buffer_mutex);
+                        // 优化器
+                        std::shared_ptr<Plan> plan =
+                            optimizer->plan_query(query, context);
+                        // portal
+                        std::shared_ptr<PortalStmt> portalStmt =
+                            portal->start(plan, context);
+                        portal->run(portalStmt, ql_manager.get(), &txn_id,
+                                    context);
+                        portal->drop();
+                    }
                 } catch (TransactionAbortException& e) {
                     // 事务需要回滚，需要把abort信息返回给客户端并写入output.txt文件中
                     std::string str = "abort\n";
@@ -169,10 +181,13 @@ void* client_handler(void* sock_fd) {
                     txn_manager->abort(context, log_manager.get());
                     std::cout << e.GetInfo() << std::endl;
 
-                    std::fstream outfile;
-                    outfile.open("output.txt", std::ios::out | std::ios::app);
-                    outfile << str;
-                    outfile.close();
+                    if (!output_ellipsis) {
+                        std::fstream outfile;
+                        outfile.open("output.txt",
+                                     std::ios::out | std::ios::app);
+                        outfile << str;
+                        outfile.close();
+                    }
                 } catch (RMDBError& e) {
                     // 遇到异常，需要打印failure到output.txt文件中，并发异常信息返回给客户端
                     std::cerr << e.what() << std::endl;
@@ -183,13 +198,16 @@ void* client_handler(void* sock_fd) {
                     offset = e.get_msg_len() + 1;
 
                     // 将报错信息写入output.txt
-                    std::fstream outfile;
-                    outfile.open("output.txt", std::ios::out | std::ios::app);
-                    outfile << "failure\n";
-                    outfile.close();
+                    if (!output_ellipsis) {
+                        std::fstream outfile;
+                        outfile.open("output.txt",
+                                     std::ios::out | std::ios::app);
+                        outfile << "failure\n";
+                        outfile.close();
+                    }
                 }
             }
-        } else {
+        } else if (!output_ellipsis) {
             // 语法解析失败，需要返回给客户端failure信息
             std::fstream outfile;
             outfile.open("output.txt", std::ios::out | std::ios::app);

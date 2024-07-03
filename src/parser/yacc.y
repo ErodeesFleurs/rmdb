@@ -22,7 +22,8 @@ using namespace ast;
 
 // keywords
 %token SHOW TABLES CREATE TABLE DROP DESC INSERT INTO VALUES DELETE FROM ASC ORDER GROUP BY HAVING SUM COUNT MAX MIN AS LOAD
-WHERE UPDATE SET SELECT INT CHAR FLOAT INDEX AND JOIN EXIT HELP TXN_BEGIN TXN_COMMIT TXN_ABORT TXN_ROLLBACK ORDER_BY GROUP_BY ENABLE_NESTLOOP ENABLE_SORTMERGE
+WHERE UPDATE SET SELECT INT CHAR FLOAT DATETIME INDEX AND JOIN EXIT HELP TXN_BEGIN TXN_COMMIT TXN_ABORT TXN_ROLLBACK ORDER_BY GROUP_BY ENABLE_NESTLOOP ENABLE_SORTMERGE
+SET_OUTPUT_FILE_OFF
 // non-keywords
 %token LEQ NEQ GEQ IN T_EOF
 
@@ -76,6 +77,11 @@ start:
     |   T_EOF
     {
         parse_tree = nullptr;
+        YYACCEPT;
+    }
+    | SET_OUTPUT_FILE_OFF
+    {
+        parse_tree = std::make_shared<SetOutputFileOff>();
         YYACCEPT;
     }
     ;
@@ -216,6 +222,10 @@ type:
     |   FLOAT
     {
         $$ = std::make_shared<TypeLen>(SV_TYPE_FLOAT, sizeof(double));
+    }
+    | DATETIME
+    {
+        $$ = std::make_shared<TypeLen>(SV_TYPE_STRING, 25);
     }
     ;
 
@@ -560,5 +570,5 @@ tbName: IDENTIFIER;
 
 colName: IDENTIFIER;
 
-filePath: VALUE_STRING;
+filePath: FILE_PATH;
 %%
