@@ -20,11 +20,12 @@ class SortExecutor : public AbstractExecutor {
     std::unique_ptr<AbstractExecutor> prev_;
     std::vector<ColMeta>
         cols_;  // 框架中只支持一个键排序，需要自行修改数据结构支持多个键排序
-    size_t tuple_num;
-    size_t tuple_total_num;
     std::vector<bool> is_desc_;
     std::vector<size_t> used_tuple;
     std::unique_ptr<RmRecord> current_tuple;
+    std::vector<std::unique_ptr<RmRecord>> all_records;
+    std::vector<std::unique_ptr<RmRecord>>::iterator records_iterator;
+    
 
    public:
     SortExecutor(std::unique_ptr<AbstractExecutor> prev,
@@ -37,8 +38,6 @@ class SortExecutor : public AbstractExecutor {
         }
         is_desc_ = std::move(is_desc);
         is_desc_ = is_desc;
-        tuple_num = 0;
-        tuple_total_num = 0;
         used_tuple.clear();
         current_tuple = nullptr;
     }
@@ -46,46 +45,87 @@ class SortExecutor : public AbstractExecutor {
     void beginTuple() override {
         std::cerr << "Sort BeginTuple" << std::endl;
         prev_->beginTuple();
-        int cnt = 0;
-        int now = -1;
-        current_tuple = nullptr;
+        // int cnt = 0;
+        // int now = -1;
+        // current_tuple = nullptr;
+        // while (!prev_->is_end()) {
+        //     if (cmp(prev_->Next(), current_tuple)) {
+        //         current_tuple = prev_->Next();
+        //         now = cnt;
+        //     }
+        //     prev_->nextTuple();
+        //     cnt++;
+        // }
+        // tuple_num++;
+        // tuple_total_num = cnt;
+        // used_tuple.push_back(now);
+
         while (!prev_->is_end()) {
-            if (cmp(prev_->Next(), current_tuple)) {
-                current_tuple = prev_->Next();
-                now = cnt;
-            }
+            all_records.emplace_back(std::move(prev_->Next()));
             prev_->nextTuple();
-            cnt++;
         }
-        tuple_num++;
-        tuple_total_num = cnt;
-        used_tuple.push_back(now);
+        std::vector<std::unique_ptr<RmRecord>> tmp_v(all_records.size());
+        std::function<void(int, int)> merge_sort = [&](int l, int r) -> void {
+            if (l >= r) return;
+            int mid = l + r >> 1;
+            merge_sort(l, mid);
+            merge_sort(mid + 1, r);
+            int p = l, q = mid + 1, s = l;
+            while (p != mid + 1 && q != r + 1) {
+                if (cmp(all_records[p], all_records[q])) {
+                    tmp_v[s++] = std::move(all_records[p++]);
+                } else {
+                    tmp_v[s++] = std::move(all_records[q++]);
+                }
+            }
+            while (p != mid + 1) {
+                tmp_v[s++] = std::move(all_records[p++]);
+            }
+            while (q != r + 1) {
+                tmp_v[s++] = std::move(all_records[q++]);
+            }
+            for (int i = l; i <= r; i++) {
+                all_records[i] = std::move(tmp_v[i]);
+            }
+        };
+        merge_sort(0, (int)all_records.size() - 1);
+        records_iterator = all_records.begin();
+        current_tuple = all_records.size() ? std::move(*records_iterator) : nullptr;
+        
 
         std::cerr << "BBBBB " << (current_tuple != nullptr) << std::endl;
     }
 
     void nextTuple() override {
-        prev_->beginTuple();
-        int cnt = 0;
-        int now = -1;
-        current_tuple = nullptr;
-        while (!prev_->is_end()) {
-            if (std::find(used_tuple.begin(), used_tuple.end(), cnt) ==
-                    used_tuple.end() &&
-                cmp(prev_->Next(), current_tuple)) {
-                current_tuple = prev_->Next();
-                now = cnt;
+        // prev_->beginTuple();
+        // int cnt = 0;
+        // int now = -1;
+        // current_tuple = nullptr;
+        // while (!prev_->is_end()) {
+        //     if (std::find(used_tuple.begin(), used_tuple.end(), cnt) ==
+        //             used_tuple.end() &&
+        //         cmp(prev_->Next(), current_tuple)) {
+        //         current_tuple = prev_->Next();
+        //         now = cnt;
+        //     }
+        //     prev_->nextTuple();
+        //     cnt++;
+        // }
+        // tuple_num++;
+        // used_tuple.push_back(now);
+        
+        if (records_iterator != all_records.end()) {
+            records_iterator++;
+            if (records_iterator != all_records.end()) {
+                current_tuple = std::move(*records_iterator);
             }
-            prev_->nextTuple();
-            cnt++;
         }
-        tuple_num++;
-        used_tuple.push_back(now);
+
         std::cerr << "NNNNNN " << (current_tuple != nullptr) << std::endl;
     }
 
     bool is_end() const override {
-        return tuple_total_num == 0 || tuple_num == tuple_total_num + 1;
+        records_iterator == all_records.end();
     }
 
     std::unique_ptr<RmRecord> Next() override {
@@ -97,7 +137,7 @@ class SortExecutor : public AbstractExecutor {
 
     Rid& rid() override { return _abstract_rid; }
 
-    bool cmp(std::unique_ptr<RmRecord> a, std::unique_ptr<RmRecord>& b) {
+    bool cmp(std::unique_ptr<RmRecord> &a, std::unique_ptr<RmRecord>& b) {
         if (b == nullptr) {
             return true;
         }
