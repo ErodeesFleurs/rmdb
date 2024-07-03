@@ -29,7 +29,6 @@ class GroupExecutor : public AbstractExecutor {
                   const std::vector<TabCol>& sel_cols,
                   const std::vector<TabCol>& group_cols,
                   std::vector<Condition> conds) {
-        std::cerr << "GroupExecutor" << std::endl;
         prev_ = std::move(prev);
         for (const auto& sel_col : sel_cols) {
             if (sel_col.col_name == "*" &&
@@ -51,7 +50,6 @@ class GroupExecutor : public AbstractExecutor {
     }
 
     void beginTuple() override {
-        std::cerr << "Group BeginTuple" << std::endl;
         prev_->beginTuple();
         grouped_records.clear();
         group_iterators.clear();
@@ -92,7 +90,6 @@ class GroupExecutor : public AbstractExecutor {
                 std::make_unique<RmRecord>(front->size, front->data);
             current_tuple = std::move(temp_tuple);
         }
-        std::cerr << "Group BeginTuple End" << std::endl;
     }
 
     void nextTuple() override {

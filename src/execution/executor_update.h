@@ -121,7 +121,6 @@ class UpdateExecutor : public AbstractExecutor {
             upd_cnt++;
             for (const auto& i : set_clauses_) {
                 auto col = mp[i.lhs];
-                std::cerr << "i type: " << i.op << "\n";
                 auto value = i.rhs;
                 if (value.type != col.type) {
                     Value b = {.type = col.type};

@@ -26,7 +26,6 @@ class AggregateExecutor : public AbstractExecutor {
                       const std::vector<TabCol>& sel_cols,
                       const std::vector<AggregateType>& agg_types)
         : prev_(std::move(prev)), agg_types_(agg_types) {
-        std::cerr << "AggregateExecutor" << std::endl;
         // 构造输出列
         for (const auto& sel_col : sel_cols) {
             if (sel_col.col_name == "*" &&
@@ -58,7 +57,6 @@ class AggregateExecutor : public AbstractExecutor {
     }
 
     void beginTuple() override {
-        std::cerr << "Aggregate BeginTuple" << std::endl;
         prev_->beginTuple();
         if (auto group_executor = dynamic_cast<GroupExecutor*>(prev_.get())) {
             for (const auto& group : group_executor->group_iterators) {
@@ -79,7 +77,6 @@ class AggregateExecutor : public AbstractExecutor {
             }
         }
         current_record_ = aggregated_records_.begin();
-        std::cerr << "Aggregated BeginTuple End" << std::endl;
     }
 
     void nextTuple() override {
@@ -127,19 +124,13 @@ class AggregateExecutor : public AbstractExecutor {
         }
         auto result = std::make_unique<RmRecord>();
         for (size_t i = 0; i < agg_types_.size(); ++i) {
-            std::cerr << "Aggregating: " << aggregate2str(agg_types_[i])
-                      << std::endl;
-            std::cerr << "Aggregating: " << cols_[i].name << " "
-                      << cols_[i].tab_name << std::endl;
             Value res = get_aggr_value(cols_, records,
                                        TabCol{.tab_name = cols_[i].tab_name,
                                               .col_name = cols_[i].name},
                                        agg_types_[i]);
-            std::cerr << "Aggregated: " << res << std::endl;
             res.init_raw();
             result->append(res.raw->data, res.raw->size);
         }
-        std::cerr << "result size: " << result->size << std::endl;
         return result;
     }
 };

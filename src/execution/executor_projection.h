@@ -26,7 +26,6 @@ class ProjectionExecutor : public AbstractExecutor {
    public:
     ProjectionExecutor(std::unique_ptr<AbstractExecutor> prev,
                        const std::vector<TabCol>& sel_cols) {
-        std::cerr << "ProjectionExecutor" << std::endl;
         prev_ = std::move(prev);
 
         if (prev_->getType() == ExecutorType::AGGREGATE) {
@@ -52,9 +51,7 @@ class ProjectionExecutor : public AbstractExecutor {
     const std::vector<ColMeta>& cols() const override { return cols_; }
 
     void beginTuple() override {
-        std::cerr << "Projection BeginTuple" << std::endl;
         prev_->beginTuple();  // 调用子节点的beginTuple
-        std::cerr << "Projection BeginTuple end" << std::endl;
     }
 
     void nextTuple() override { prev_->nextTuple(); }

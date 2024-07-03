@@ -122,7 +122,6 @@ void IxNodeHandle::insert_pairs(int pos, const char* key, const Rid* rid,
     // 2. 通过key获取n个连续键值对的key值，并把n个key值插入到pos位置
     // 3. 通过rid获取n个连续键值对的rid值，并把n个rid值插入到pos位置
     // 4. 更新当前节点的键数量
-    // std::cerr << "insert_pairs: " << get_size() << " " << pos << " " << n << std::endl;
     if (pos < 0 || pos > get_size()) {
         throw std::runtime_error("Error: insert_pairs() pos is out of range #" +
                                  std::to_string(pos) + " " +
@@ -153,7 +152,6 @@ int IxNodeHandle::insert(const char* key, const Rid& value) {
     // 3. 如果key不重复则插入键值对
     // 4. 返回完成插入操作之后的键值对数量
     int pos = lower_bound(key);
-    // std::cerr << "pos: " << pos << '\n';
     if (pos < get_size() && ix_compare(key, get_key(pos), file_hdr->col_types_,
                                        file_hdr->col_lens_) == 0) {  // key重复
         return get_size();

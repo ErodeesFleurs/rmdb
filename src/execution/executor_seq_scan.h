@@ -35,7 +35,6 @@ class SeqScanExecutor : public AbstractExecutor {
    public:
     SeqScanExecutor(SmManager* sm_manager, std::string tab_name,
                     std::vector<Condition> conds, Context* context) {
-        std::cerr << "SeqScanExecutor" << std::endl;
         sm_manager_ = sm_manager;
         tab_name_ = std::move(tab_name);
         conds_ = std::move(conds);
@@ -54,7 +53,6 @@ class SeqScanExecutor : public AbstractExecutor {
     const std::vector<ColMeta>& cols() const override { return cols_; }
 
     void beginTuple() override {
-        std::cerr << "SeqScan BeginTuple" << std::endl;
         scan_ = std::make_unique<RmScan>(fh_);
         while (!scan_->is_end()) {  // 从头开始扫描
             rid_ = scan_->rid();
@@ -66,7 +64,6 @@ class SeqScanExecutor : public AbstractExecutor {
             }
             scan_->next();
         }
-        std::cerr << "SeqScan BeginTuple end" << std::endl;
     }
 
     void nextTuple() override {

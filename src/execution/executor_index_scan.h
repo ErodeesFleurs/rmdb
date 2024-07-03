@@ -156,8 +156,6 @@ class IndexScanExecutor : public AbstractExecutor {
         }
         auto start = ih->lower_bound(lower_record.data);
         auto end = ih->upper_bound(upper_record.data);
-        // std::cerr << start.page_no << " " << start.slot_no << '\n';
-        // std::cerr << end.page_no << " " << end.slot_no << '\n';
         scan_ =
             std::make_unique<IxScan>(ih, start, end, sm_manager_->get_bpm());
         while (!is_end()) {
@@ -173,7 +171,6 @@ class IndexScanExecutor : public AbstractExecutor {
     }
 
     void nextTuple() override {
-        // std::cerr << "nextTuple 1" << std::endl;
         if (!is_end()) {
             scan_->next();
         }
@@ -191,11 +188,9 @@ class IndexScanExecutor : public AbstractExecutor {
             }
             scan_->next();
         }
-        // std::cerr << "nextTuple 2" << std::endl;
     }
 
     std::unique_ptr<RmRecord> Next() override {
-        // std::cout << "Next: " << rid_.page_no << " " << rid_.slot_no << std::endl;
         return fh_->get_record(rid_, context_);
     }
 

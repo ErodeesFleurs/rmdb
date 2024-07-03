@@ -180,7 +180,6 @@ void Analyze::get_clause(
         } else if (auto rhs_subquery =
                        std::dynamic_pointer_cast<ast::SelectStmt>(
                            expr->subquery)) {
-            std::cerr << "Subquery in where clause" << std::endl;
             cond.is_rhs_val = false;
             cond.is_rhs_list = false;
             cond.is_rhs_query = true;
@@ -189,7 +188,6 @@ void Analyze::get_clause(
             std::shared_ptr<PortalStmt> stmt = portal_->start(plan, context);
             cond.rhs_query_res =
                 portal_->run_and_get_result(stmt, ql_manager_, context);
-            std::cerr << "Subquery in where clause end" << std::endl;
         } else if (auto rhs_col =
                        std::dynamic_pointer_cast<ast::Col>(expr->rhs)) {
             cond.is_rhs_val = false;
@@ -200,7 +198,6 @@ void Analyze::get_clause(
                             .as_name = rhs_col->as_name,
                             .aggregate = rhs_col->aggregate};
         } else if (!expr->vals.empty()) {
-            std::cerr << "List in where clause" << std::endl;
             cond.is_rhs_val = false;
             cond.is_rhs_list = true;
             cond.is_rhs_query = false;

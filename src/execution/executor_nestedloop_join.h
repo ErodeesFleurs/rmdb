@@ -29,7 +29,6 @@ class NestedLoopJoinExecutor : public AbstractExecutor {
     NestedLoopJoinExecutor(std::unique_ptr<AbstractExecutor> left,
                            std::unique_ptr<AbstractExecutor> right,
                            std::vector<Condition> conds) {
-        std::cerr << "NestedLoopJoinExecutor" << std::endl;
         left_ = std::move(left);
         right_ = std::move(right);
         len_ = left_->tupleLen() + right_->tupleLen();
@@ -47,7 +46,6 @@ class NestedLoopJoinExecutor : public AbstractExecutor {
     const std::vector<ColMeta>& cols() const override { return cols_; }
 
     void beginTuple() override {
-        std::cerr << "NestedLoopJoin BeginTuple" << std::endl;
         left_->beginTuple();
         right_->beginTuple();
         if (left_->is_end() || right_->is_end()) {
