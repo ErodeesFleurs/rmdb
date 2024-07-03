@@ -59,8 +59,11 @@ class Analyze {
                             const std::vector<TabCol>& group_cols);
     void check_group(const std::vector<TabCol>& group_cols,
                      const std::vector<std::string>& tab_names);
+    void check_order(const std::vector<Order>& orders,
+                          const std::vector<std::string>& tab_names);
     void check_without_group(const std::vector<TabCol>& group_cols,
                              const std::vector<Condition>& having_conds);
     Value convert_sv_value(const std::shared_ptr<ast::Value>& sv_val);
     CompOp convert_sv_comp_op(ast::SvCompOp op);
+    OrderDir convert_sv_order_by_dir(ast::OrderByDir dbd);
 };
