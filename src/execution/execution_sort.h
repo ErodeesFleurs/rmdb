@@ -21,6 +21,7 @@ class SortExecutor : public AbstractExecutor {
     std::vector<ColMeta>
         cols_;  // 框架中只支持一个键排序，需要自行修改数据结构支持多个键排序
     size_t tuple_num;
+    size_t tuple_total_num;
     std::vector<bool> is_desc_;
     std::vector<size_t> used_tuple;
     std::unique_ptr<RmRecord> current_tuple;
@@ -29,6 +30,7 @@ class SortExecutor : public AbstractExecutor {
     SortExecutor(std::unique_ptr<AbstractExecutor> prev,
                  const std::vector<TabCol>& sel_cols,
                  std::vector<bool> is_desc) {
+        std::cerr << "SortExecutor" << std::endl;
         prev_ = std::move(prev);
         for (const auto& sel_col : sel_cols) {
             cols_.push_back(*prev_->get_col(prev_->cols(), sel_col));
@@ -36,17 +38,18 @@ class SortExecutor : public AbstractExecutor {
         is_desc_ = std::move(is_desc);
         is_desc_ = is_desc;
         tuple_num = 0;
+        tuple_total_num = 0;
         used_tuple.clear();
         current_tuple = nullptr;
     }
 
     void beginTuple() override {
+        std::cerr << "Sort BeginTuple" << std::endl;
         prev_->beginTuple();
         int cnt = 0;
         int now = -1;
         current_tuple = nullptr;
         while (!prev_->is_end()) {
-            ;
             if (cmp(prev_->Next(), current_tuple)) {
                 current_tuple = prev_->Next();
                 now = cnt;
@@ -55,7 +58,10 @@ class SortExecutor : public AbstractExecutor {
             cnt++;
         }
         tuple_num++;
+        tuple_total_num = cnt;
         used_tuple.push_back(now);
+
+        std::cerr << "BBBBB " << (current_tuple != nullptr) << std::endl;
     }
 
     void nextTuple() override {
@@ -75,9 +81,15 @@ class SortExecutor : public AbstractExecutor {
         }
         tuple_num++;
         used_tuple.push_back(now);
+        std::cerr << "NNNNNN " << (current_tuple != nullptr) << std::endl;
+    }
+
+    bool is_end() const override {
+        return tuple_total_num == 0 || tuple_num == tuple_total_num + 1;
     }
 
     std::unique_ptr<RmRecord> Next() override {
+        // std::cerr << "???->" << (current_tuple == nullptr) << std::endl;
         return std::move(current_tuple);
     }
 
