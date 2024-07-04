@@ -27,10 +27,10 @@ Transaction* TransactionManager::begin(Transaction* txn,
     // 2. 如果为空指针，创建新事务
     // 3. 把开始事务加入到全局事务表中
     // 4. 返回当前事务指针
+    std::scoped_lock lock(latch_);
     if (txn == nullptr) {
         txn = new Transaction(next_txn_id_++);
     }
-    std::unique_lock<std::mutex> lock(latch_);
     txn_map.emplace(txn->get_transaction_id(), txn);
 
     auto* log = new BeginLogRecord(txn->get_transaction_id());
@@ -38,6 +38,7 @@ Transaction* TransactionManager::begin(Transaction* txn,
     log_manager->add_log_to_buffer(log);
 
     txn->set_prev_lsn(log->lsn_);
+    txn->set_state(TransactionState::DEFAULT);
 
     return txn;
 }
@@ -54,6 +55,8 @@ void TransactionManager::commit(Transaction* txn, LogManager* log_manager) {
     // 3. 释放事务相关资源，eg.锁集
     // 4. 把事务日志刷入磁盘中
     // 5. 更新事务状态
+    std::scoped_lock lock(latch_);
+
     auto lock_set = txn->get_lock_set();
     for (auto i : *lock_set) {
         lock_manager_->unlock(txn, i);
@@ -80,6 +83,8 @@ void TransactionManager::abort(Context* context, LogManager* log_manager) {
     // 3. 清空事务相关资源，eg.锁集
     // 4. 把事务日志刷入磁盘中
     // 5. 更新事务状态
+    std::scoped_lock lock(latch_);
+
     auto txn = context->txn_;
     auto write_set = txn->get_write_set();
     while (!write_set->empty()) {

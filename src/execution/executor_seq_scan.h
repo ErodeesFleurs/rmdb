@@ -43,11 +43,13 @@ class SeqScanExecutor : public AbstractExecutor {
         cols_ = tab.cols;
         len_ = cols_.back().offset + cols_.back().len;
 
-        context_ = context;
-        context_->lock_mgr_->lock_shared_on_table(
-            context_->txn_, sm_manager_->fhs_[tab_name_]->GetFd());
-
         fed_conds_ = conds_;
+
+        context_ = context;
+        if (context_->txn_ != nullptr) {
+            context_->lock_mgr_->lock_shared_on_table(
+                context_->txn_, sm_manager_->fhs_[tab_name_]->GetFd());
+        }
     }
 
     size_t tupleLen() const override { return len_; }
