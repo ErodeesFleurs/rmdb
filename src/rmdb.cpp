@@ -130,14 +130,18 @@ void *client_handler(void *sock_fd) {
                 try {
                     // analyze and rewrite
                     std::shared_ptr<Query> query = analyze->do_analyze(ast::parse_tree, context);
+                    std::cerr << "---------------finish analization---------------" << std::endl;
                     yy_delete_buffer(buf);
                     finish_analyze = true;
                     pthread_mutex_unlock(buffer_mutex);
                     // 优化器
                     std::shared_ptr<Plan> plan = optimizer->plan_query(query, context);
+                    std::cerr << "---------------finish getting plan---------------" << std::endl;
                     // portal
                     std::shared_ptr<PortalStmt> portalStmt = portal->start(plan, context);
+                    std::cerr << "---------------finish get protalStmt-------------" << std::endl;
                     portal->run(portalStmt, ql_manager.get(), &txn_id, context);
+                    std::cerr << "---------------finish running--------------------" << std::endl;
                     portal->drop();
                 } catch (TransactionAbortException &e) {
                     // 事务需要回滚，需要把abort信息返回给客户端并写入output.txt文件中

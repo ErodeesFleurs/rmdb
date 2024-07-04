@@ -209,5 +209,7 @@ class IndexScanExecutor : public AbstractExecutor {
 
     Rid& rid() override { return rid_; }
 
+    size_t tupleLen() const override { return len_; }
+
     ExecutorType getType() const override { return ExecutorType::INDEX_SCAN; }
 };

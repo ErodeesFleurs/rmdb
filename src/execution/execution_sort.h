@@ -17,6 +17,7 @@ See the Mulan PSL v2 for more details. */
 
 class SortExecutor : public AbstractExecutor {
    private:
+    size_t len_;
     std::unique_ptr<AbstractExecutor> prev_;
     std::vector<ColMeta>
         cols_;  // 框架中只支持一个键排序，需要自行修改数据结构支持多个键排序
@@ -36,6 +37,7 @@ class SortExecutor : public AbstractExecutor {
         for (const auto& sel_col : sel_cols) {
             cols_.push_back(*prev_->get_col(prev_->cols(), sel_col));
         }
+        len_ = prev_->tupleLen();
         is_desc_ = std::move(is_desc);
         is_desc_ = is_desc;
         used_tuple.clear();
@@ -93,7 +95,7 @@ class SortExecutor : public AbstractExecutor {
         current_tuple = all_records.size() ? std::move(*records_iterator) : nullptr;
         
 
-        std::cerr << "BBBBB " << (current_tuple != nullptr) << std::endl;
+        std::cerr << "Sort BeginTuple end " << (current_tuple != nullptr) << std::endl;
     }
 
     void nextTuple() override {
@@ -121,7 +123,7 @@ class SortExecutor : public AbstractExecutor {
             }
         }
 
-        std::cerr << "NNNNNN " << (current_tuple != nullptr) << std::endl;
+        std::cerr << "sort nextTuple " << (current_tuple != nullptr) << std::endl;
     }
 
     bool is_end() const override {
@@ -136,6 +138,9 @@ class SortExecutor : public AbstractExecutor {
     const std::vector<ColMeta>& cols() const override { return prev_->cols(); }
 
     Rid& rid() override { return _abstract_rid; }
+
+    size_t tupleLen() const override { return len_; }
+
 
     bool cmp(std::unique_ptr<RmRecord> &a, std::unique_ptr<RmRecord>& b) {
         if (b == nullptr) {
