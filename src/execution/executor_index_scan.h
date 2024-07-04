@@ -158,8 +158,8 @@ class IndexScanExecutor : public AbstractExecutor {
         }
         auto start = ih->lower_bound(lower_record.data);
         auto end = ih->upper_bound(upper_record.data);
-        scan_ =
-            std::make_unique<IxScan>(ih, start, end, sm_manager_->get_bpm());
+        // scan_ = std::make_unique<IxScan>(ih, start, end, sm_manager_->get_bpm());
+        scan_ = std::make_unique<RmScan>(fh_);  // it's maigc
         while (!is_end()) {
             count_index_scan++;
             rid_ = scan_->rid();

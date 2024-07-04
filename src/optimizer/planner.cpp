@@ -27,7 +27,7 @@ bool Planner::get_index_cols(std::string tab_name,
                              std::vector<Condition> curr_conds,
                              std::vector<std::string>& index_col_names) {
     index_col_names.clear();
-    std::map<std::string, std::pair<int, int>>
+    std::unordered_map<std::string, std::pair<int, int>>
         mp;  // 存储列名 -> 比较方法、curr_conds中所在下标
     for (int i = 0; i < (int)curr_conds.size(); i++) {
         auto cond = curr_conds[i];

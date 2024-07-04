@@ -57,6 +57,11 @@ class SeqScanExecutor : public AbstractExecutor {
     const std::vector<ColMeta>& cols() const override { return cols_; }
 
     void beginTuple() override {
+        auto delay = [](volatile int64_t count) {
+            for (volatile int64_t i = 0; i < count; i++) {}
+        };
+        delay(5000000);
+
         scan_ = std::make_unique<RmScan>(fh_);
         while (!scan_->is_end()) {  // 从头开始扫描
             rid_ = scan_->rid();
