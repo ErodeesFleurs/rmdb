@@ -59,39 +59,8 @@ struct Value {
             set_float(val);
         } else if constexpr (std::is_same_v<std::decay_t<T>, std::string>) {
             set_str(val);
-        } else if constexpr (std::is_same_v<std::decay_t<T>, Value>) {
-            this->type = val.type;
-            switch (val.type) {
-                case TYPE_INT:
-                    this->int_val = val.int_val;
-                    break;
-                case TYPE_FLOAT:
-                    this->float_val = val.float_val;
-                    break;
-                case TYPE_STRING:
-                    this->str_val = val.str_val;
-                    break;
-                default:
-                    break;
-            }
-        }
-        return *this;
-    }
-
-    Value& operator=(const Value& val) {
-        type = val.type;
-        switch (type) {
-            case TYPE_INT:
-                int_val = val.int_val;
-                break;
-            case TYPE_FLOAT:
-                float_val = val.float_val;
-                break;
-            case TYPE_STRING:
-                str_val = val.str_val;
-                break;
-            default:
-                break;
+        } else {
+            throw std::runtime_error("Invalid value type");
         }
         return *this;
     }

@@ -130,6 +130,8 @@ class IndexScanExecutor : public AbstractExecutor {
                 }
                 break;
             }
+            min_value.raw = nullptr;
+            max_value.raw = nullptr;
             syncType(min_value, col.type, false);
             syncType(max_value, col.type, true);
             if (min_value.raw == nullptr) {
