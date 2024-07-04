@@ -34,8 +34,8 @@ class MergeSortJoinExecutor : public AbstractExecutor {
 
    public:
     MergeSortJoinExecutor(std::unique_ptr<AbstractExecutor> left,
-                           std::unique_ptr<AbstractExecutor> right,
-                           std::vector<Condition> conds) {
+                          std::unique_ptr<AbstractExecutor> right,
+                          std::vector<Condition> conds) {
         std::cerr << "MergeSortJoinExecutor" << std::endl;
         left_ = std::move(left);
         right_ = std::move(right);
@@ -72,23 +72,31 @@ class MergeSortJoinExecutor : public AbstractExecutor {
             right_records.emplace_back(right_->Next());
             right_->nextTuple();
         }
-        
-        
-        for (int i = 0, p = 0; i < left_records.size() && p < right_records.size(); i++) {
-            std::unique_ptr<RmRecord> now_joined_record = get_joined_record(left_records[i], right_records[p]);
+
+        for (int i = 0, p = 0;
+             i < (int)left_records.size() && p < (int)right_records.size();
+             i++) {
+            std::unique_ptr<RmRecord> now_joined_record =
+                get_joined_record(left_records[i], right_records[p]);
             while (comp_cond(cols_, fed_cond_, now_joined_record.get()) == 1) {
                 p++;
-                if (p >= right_records.size()) break;
-                now_joined_record = get_joined_record(left_records[i], right_records[p]);
+                if (p >= (int)right_records.size())
+                    break;
+                now_joined_record =
+                    get_joined_record(left_records[i], right_records[p]);
             }
-            if (p >= right_records.size()) break;
+            if (p >= (int)right_records.size())
+                break;
             int rem = p;
             if (comp_cond(cols_, fed_cond_, now_joined_record.get()) == 0) {
-                while (comp_cond(cols_, fed_cond_, now_joined_record.get()) == 0) {
+                while (comp_cond(cols_, fed_cond_, now_joined_record.get()) ==
+                       0) {
                     joined_records.emplace_back(std::move(now_joined_record));
                     p++;
-                    if (p >= right_records.size()) break;
-                    now_joined_record = get_joined_record(left_records[i], right_records[p]);
+                    if (p >= (int)right_records.size())
+                        break;
+                    now_joined_record =
+                        get_joined_record(left_records[i], right_records[p]);
                 }
             }
             p = rem;
@@ -96,11 +104,11 @@ class MergeSortJoinExecutor : public AbstractExecutor {
 
         // std::cerr << joined_records.size() << "!!!" << std::endl;
         joined_records_iterator = joined_records.begin();
-        
 
         if (!is_end()) {
             // std::cerr << "[][][] -> " << joined_records.begin()->get()->size << ' ' << joined_records_iterator->get()->data << std::endl;
-            current_tuple = std::make_unique<RmRecord>(*((*joined_records_iterator).get()));
+            current_tuple =
+                std::make_unique<RmRecord>(*((*joined_records_iterator).get()));
         }
     }
 
@@ -108,24 +116,27 @@ class MergeSortJoinExecutor : public AbstractExecutor {
         if (!is_end()) {
             joined_records_iterator++;
             if (!is_end()) {
-                current_tuple = std::make_unique<RmRecord>(*((*joined_records_iterator).get()));
+                current_tuple = std::make_unique<RmRecord>(
+                    *((*joined_records_iterator).get()));
             }
         }
     }
 
-    std::unique_ptr<RmRecord> get_joined_record(std::unique_ptr<RmRecord>& left_record, std::unique_ptr<RmRecord>& right_record) {
+    std::unique_ptr<RmRecord> get_joined_record(
+        std::unique_ptr<RmRecord>& left_record,
+        std::unique_ptr<RmRecord>& right_record) {
         auto record = std::make_unique<RmRecord>(len_);
         memcpy(record->data, left_record->data, left_->tupleLen());
         memcpy(record->data + left_->tupleLen(), right_record->data,
                right_->tupleLen());
-        return std::move(record);
+        return record;
     }
 
     std::unique_ptr<RmRecord> Next() override {
         return std::move(current_tuple);
     }
 
-    bool is_end() const override { 
+    bool is_end() const override {
         return joined_records_iterator == joined_records.end();
     }
 

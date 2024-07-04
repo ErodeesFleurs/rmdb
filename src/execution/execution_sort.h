@@ -15,6 +15,8 @@ See the Mulan PSL v2 for more details. */
 #include "index/ix.h"
 #include "system/sm.h"
 
+#include <functional>
+
 class SortExecutor : public AbstractExecutor {
    private:
     size_t len_;
@@ -26,7 +28,6 @@ class SortExecutor : public AbstractExecutor {
     std::unique_ptr<RmRecord> current_tuple;
     std::vector<std::unique_ptr<RmRecord>> all_records;
     std::vector<std::unique_ptr<RmRecord>>::iterator records_iterator;
-    
 
    public:
     SortExecutor(std::unique_ptr<AbstractExecutor> prev,
@@ -68,8 +69,9 @@ class SortExecutor : public AbstractExecutor {
         }
         std::vector<std::unique_ptr<RmRecord>> tmp_v(all_records.size());
         std::function<void(int, int)> merge_sort = [&](int l, int r) -> void {
-            if (l >= r) return;
-            int mid = l + r >> 1;
+            if (l >= r)
+                return;
+            int mid = (l + r) >> 1;
             merge_sort(l, mid);
             merge_sort(mid + 1, r);
             int p = l, q = mid + 1, s = l;
@@ -92,10 +94,11 @@ class SortExecutor : public AbstractExecutor {
         };
         merge_sort(0, (int)all_records.size() - 1);
         records_iterator = all_records.begin();
-        current_tuple = all_records.size() ? std::move(*records_iterator) : nullptr;
-        
+        current_tuple =
+            all_records.size() ? std::move(*records_iterator) : nullptr;
 
-        std::cerr << "Sort BeginTuple end " << (current_tuple != nullptr) << std::endl;
+        std::cerr << "Sort BeginTuple end " << (current_tuple != nullptr)
+                  << std::endl;
     }
 
     void nextTuple() override {
@@ -115,7 +118,7 @@ class SortExecutor : public AbstractExecutor {
         // }
         // tuple_num++;
         // used_tuple.push_back(now);
-        
+
         if (records_iterator != all_records.end()) {
             records_iterator++;
             if (records_iterator != all_records.end()) {
@@ -123,11 +126,12 @@ class SortExecutor : public AbstractExecutor {
             }
         }
 
-        std::cerr << "sort nextTuple " << (current_tuple != nullptr) << std::endl;
+        std::cerr << "sort nextTuple " << (current_tuple != nullptr)
+                  << std::endl;
     }
 
     bool is_end() const override {
-        records_iterator == all_records.end();
+        return records_iterator == all_records.end();
     }
 
     std::unique_ptr<RmRecord> Next() override {
@@ -141,8 +145,7 @@ class SortExecutor : public AbstractExecutor {
 
     size_t tupleLen() const override { return len_; }
 
-
-    bool cmp(std::unique_ptr<RmRecord> &a, std::unique_ptr<RmRecord>& b) {
+    bool cmp(std::unique_ptr<RmRecord>& a, std::unique_ptr<RmRecord>& b) {
         if (b == nullptr) {
             return true;
         }

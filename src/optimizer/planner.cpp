@@ -30,7 +30,12 @@ bool Planner::get_index_cols(std::string tab_name,
     auto& tab = sm_manager_->db_.get_table(tab_name);
     std::unordered_map<std::string, std::pair<int, int>>
         col_2_op_idx;  // 存储列名 -> 比较方法、curr_conds中所在下标
-    for (int idx = 0; const auto& cond : curr_conds) {
+    int idx = 0;
+    for (const auto& cond : curr_conds) {
+        idx++;
+        std::cerr << "cond.lhs_col.tab_name -> " << cond.lhs_col.tab_name
+                  << std::endl;
+        std::cerr << "tab_name -> " << tab_name << std::endl;
         if (cond.lhs_col.tab_name != tab_name)
             continue;
         int op = -1;
@@ -74,11 +79,12 @@ bool Planner::get_index_cols(std::string tab_name,
         return false;
     }
     std::unordered_map<int, bool> vis;
-    for (auto idx : idxs) {
-        res.push_back(curr_conds[idx]);
-        vis[idx] = true;
+    for (auto id : idxs) {
+        res.push_back(curr_conds[id]);
+        vis[id] = true;
     }
-    for (int idx{}; const auto& cond : curr_conds) {
+    idx = 0;
+    for (const auto& cond : curr_conds) {
         if (vis.count(idx++)) {
             continue;
         }
@@ -112,7 +118,7 @@ std::vector<TabCol> Planner::get_sel_cols(std::string tab_name,
 
     assert(ok);
 
-    return std::move(sel_cols);
+    return sel_cols;
 }
 
 /**
@@ -230,7 +236,8 @@ std::shared_ptr<Plan> Planner::physical_optimization(
     std::shared_ptr<Query> query, Context* context) {
 
     std::shared_ptr<Plan> plan;
-
+    std::cerr << "enable_sortmerge_join -> " << enable_sortmerge_join
+              << std::endl;
     if (enable_sortmerge_join) {
         //处理扫描+各自sort+连接
         plan = make_merge_sort_one_rel(query);
@@ -267,6 +274,7 @@ std::shared_ptr<Plan> Planner::make_merge_sort_one_rel(
         std::vector<std::string> index_col_names;
         bool index_exist =
             get_index_cols(tables[i], curr_conds, index_col_names);
+        std::cerr << "index_exist -> " << index_exist << std::endl;
         if (index_exist == false) {  // 该表没有索引
             index_col_names.clear();
             table_scan_executors[i] = std::make_shared<ScanPlan>(
