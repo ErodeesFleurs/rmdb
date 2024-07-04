@@ -366,7 +366,6 @@ bool LockManager::unlock(Transaction* txn, LockDataId lock_data_id) {
     for (auto it = request_q.request_queue_.begin();
          it != request_q.request_queue_.end(); it++) {
         if (it->txn_id_ == txn->get_transaction_id()) {
-            std::cout << it->lock_mode_ << std::endl;
             request_q.request_queue_.erase(it);
             break;
         }

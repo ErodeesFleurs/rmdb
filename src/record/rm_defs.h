@@ -97,13 +97,13 @@ struct RmRecord {
 
     // 从offset位置开始，导出一位T类型的数据
     template <typename T>
-    T import(int offset) const {
+    T import(int offset, int len = 0) const {
         if constexpr (std::is_same_v<T, int>) {
             return *reinterpret_cast<int*>(data + offset);
         } else if constexpr (std::is_same_v<T, double>) {
             return *reinterpret_cast<double*>(data + offset);
         } else if constexpr (std::is_same_v<T, std::string>) {
-            return std::string(data + offset, size);
+            return std::string(data + offset, len);
         }
         throw std::runtime_error("Unsupported type");
     }

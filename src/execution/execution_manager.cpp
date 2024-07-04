@@ -190,7 +190,7 @@ void QlManager::select_from(std::unique_ptr<AbstractExecutor> executorTreeRoot,
             } else if (col.type == TYPE_FLOAT) {
                 col_str = std::to_string(Tuple->import <double>(col.offset));
             } else if (col.type == TYPE_STRING) {
-                col_str = Tuple->import <std::string>(col.offset);
+                col_str = Tuple->import <std::string>(col.offset, col.len);
                 col_str.resize(strlen(col_str.c_str()));
             }
             columns.push_back(col_str);
