@@ -11,6 +11,7 @@ See the Mulan PSL v2 for more details. */
 #pragma once
 
 #include <cassert>
+#include <cmath>
 #include <cstring>
 #include <memory>
 #include <string>
@@ -58,8 +59,39 @@ struct Value {
             set_float(val);
         } else if constexpr (std::is_same_v<std::decay_t<T>, std::string>) {
             set_str(val);
-        } else {
-            throw std::runtime_error("Invalid value type");
+        } else if constexpr (std::is_same_v<std::decay_t<T>, Value>) {
+            this->type = val.type;
+            switch (val.type) {
+                case TYPE_INT:
+                    this->int_val = val.int_val;
+                    break;
+                case TYPE_FLOAT:
+                    this->float_val = val.float_val;
+                    break;
+                case TYPE_STRING:
+                    this->str_val = val.str_val;
+                    break;
+                default:
+                    break;
+            }
+        }
+        return *this;
+    }
+
+    Value& operator=(const Value& val) {
+        type = val.type;
+        switch (type) {
+            case TYPE_INT:
+                int_val = val.int_val;
+                break;
+            case TYPE_FLOAT:
+                float_val = val.float_val;
+                break;
+            case TYPE_STRING:
+                str_val = val.str_val;
+                break;
+            default:
+                break;
         }
         return *this;
     }
@@ -77,6 +109,40 @@ struct Value {
     void set_str(std::string str_val_) {
         type = TYPE_STRING;
         str_val = std::move(str_val_);
+    }
+
+    bool to_floor() {
+        if (type == TYPE_FLOAT) {
+            float_val = std::floor(float_val);
+            return true;
+        }
+        return false;
+    }
+
+    bool to_cell() {
+        if (type == TYPE_FLOAT) {
+            float_val = std::ceil(float_val);
+            return true;
+        }
+        return false;
+    }
+
+    bool to_int() {
+        if (type == TYPE_FLOAT) {
+            int_val = (int)float_val;
+            type = TYPE_INT;
+            return true;
+        }
+        return false;
+    }
+
+    bool to_float() {
+        if (type == TYPE_INT) {
+            float_val = (double)int_val;
+            type = TYPE_FLOAT;
+            return true;
+        }
+        return false;
     }
 
     void init_raw(int len) {

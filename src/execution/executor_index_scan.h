@@ -104,36 +104,34 @@ class IndexScanExecutor : public AbstractExecutor {
                 min_value.set_str(std::string(col.len, 0));
             }
             for (const auto& cond : fed_conds_) {
-                if (cond.lhs_col.col_name == col.name && cond.is_rhs_val) {
-                    if (cond.op == OP_EQ) {
-                        if (check_cond(cond.rhs_val, min_value, OP_GT)) {
-                            min_value = cond.rhs_val;
-                        }
-                        if (check_cond(cond.rhs_val, max_value, OP_LT)) {
-                            max_value = cond.rhs_val;
-                        }
-                    } else if (cond.op == OP_LT) {
-                        if (check_cond(cond.rhs_val, max_value, OP_LT)) {
-                            max_value = cond.rhs_val;
-                        }
-                    } else if (cond.op == OP_LE) {
-                        if (check_cond(cond.rhs_val, max_value, OP_LT)) {
-                            max_value = cond.rhs_val;
-                        }
-                    } else if (cond.op == OP_GT) {
-                        if (check_cond(cond.rhs_val, min_value, OP_GT)) {
-                            min_value = cond.rhs_val;
-                        }
-                    } else if (cond.op == OP_GE) {
-                        if (check_cond(cond.rhs_val, min_value, OP_GT)) {
-                            min_value = cond.rhs_val;
-                        }
-                    } else if (cond.op == OP_NE) {
-                        // do nothing
+                if (cond.lhs_col.col_name != col.name || !cond.is_rhs_val)
+                    continue;
+                if (cond.op == OP_EQ) {
+                    if (check_cond(cond.rhs_val, min_value, OP_GT)) {
+                        min_value = cond.rhs_val;
                     }
-                    break;
+                    if (check_cond(cond.rhs_val, max_value, OP_LT)) {
+                        max_value = cond.rhs_val;
+                    }
+                } else if (cond.op == OP_LT &&
+                           check_cond(cond.rhs_val, max_value, OP_LT)) {
+                    max_value = cond.rhs_val;
+                } else if (cond.op == OP_LE &&
+                           check_cond(cond.rhs_val, max_value, OP_LT)) {
+                    max_value = cond.rhs_val;
+                } else if (cond.op == OP_GT &&
+                           check_cond(cond.rhs_val, min_value, OP_GT)) {
+                    min_value = cond.rhs_val;
+                } else if (cond.op == OP_GE &&
+                           check_cond(cond.rhs_val, min_value, OP_GT)) {
+                    min_value = cond.rhs_val;
+                } else if (cond.op == OP_NE) {
+                    // do nothing
                 }
+                break;
             }
+            syncType(min_value, col.type, false);
+            syncType(max_value, col.type, true);
             if (min_value.raw == nullptr) {
                 if (min_value.type == TYPE_STRING) {
                     min_value.init_raw(col.len);
@@ -207,4 +205,17 @@ class IndexScanExecutor : public AbstractExecutor {
     Rid& rid() override { return rid_; }
 
     ExecutorType getType() const override { return ExecutorType::INDEX_SCAN; }
+
+    static void syncType(Value& lhs, ColType need_type, bool is_cell = false) {
+        if (lhs.type == TYPE_FLOAT && need_type == TYPE_INT) {
+            if (is_cell) {
+                lhs.to_cell();
+            } else {
+                lhs.to_floor();
+            }
+            lhs.to_int();
+        } else if (lhs.type == TYPE_INT && need_type == TYPE_FLOAT) {
+            lhs.to_float();
+        }
+    }
 };
