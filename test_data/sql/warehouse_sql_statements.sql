@@ -9000,3 +9000,4 @@ select * from warehouse where w_id = 2997;
 select * from warehouse where w_id = 2998;
 select * from warehouse where w_id = 2999;
 select * from warehouse where w_id = 3000;
+drop table warehouse;

@@ -87,6 +87,16 @@ class Transaction {
         return lock_set_;
     }
 
+    inline void append_lock_set(LockDataId lock_data_id) {
+        lock_set_->insert(lock_data_id);
+    }
+
+    inline bool delete_lock_set(LockDataId lock_data_id) {
+        return lock_set_->erase(lock_data_id);
+    }
+
+    inline void clear_lock_set() { lock_set_->clear(); }
+
    private:
     bool txn_mode_;  // 用于标识当前事务为显式事务还是单条SQL语句的隐式事务
     TransactionState state_;  // 事务状态

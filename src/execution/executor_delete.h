@@ -35,8 +35,8 @@ class DeleteExecutor : public AbstractExecutor {
         conds_ = conds;
         rids_ = rids;
         context_ = context;
-        context_->lock_mgr_->lock_shared_on_table(
-            context_->txn_, sm_manager_->fhs_[tab_name_]->GetFd());
+        context_->lock_mgr_->lock_IX_on_table(
+            context->txn_, sm_manager_->fhs_[tab_name_]->GetFd());
     }
 
     void delete_index(RmRecord* rec, Rid rid_) {
@@ -45,16 +45,15 @@ class DeleteExecutor : public AbstractExecutor {
             auto ix_name = sm_manager_->get_ix_manager()->get_index_name(
                 tab_name_, index.cols);
             auto ih = sm_manager_->ihs_.at(ix_name).get();
-            char* key = new char[index.col_tot_len];
+            auto key = std::make_unique<char[]>(index.col_tot_len);
             int offset = 0;
             for (int j = 0; j < index.col_num; ++j) {
-                memcpy(key + offset, rec->data + index.cols[j].offset,
+                memcpy(key.get() + offset, rec->data + index.cols[j].offset,
                        index.cols[j].len);
                 offset += index.cols[j].len;
             }
             //删除索引
-            ih->delete_entry(key, context_->txn_);
-            delete[] key;
+            ih->delete_entry(key.get(), context_->txn_);
         }
     }
 

@@ -74,8 +74,7 @@ bool IxNodeHandle::leaf_lookup(const char* key, Rid** value) {
     // 3. 如果存在，获取key对应的Rid，并赋值给传出参数value
     // 提示：可以调用lower_bound()和get_rid()函数。
     if (!is_leaf_page()) {
-        throw std::runtime_error(
-            "Error: leaf_lookup() is called on a non-leaf node");
+        throw RMDBError("Error: leaf_lookup() is called on a non-leaf node");
     }
     int key_idx = lower_bound(key);
     if (key_idx == get_size() ||
@@ -123,15 +122,14 @@ void IxNodeHandle::insert_pairs(int pos, const char* key, const Rid* rid,
     // 3. 通过rid获取n个连续键值对的rid值，并把n个rid值插入到pos位置
     // 4. 更新当前节点的键数量
     if (pos < 0 || pos > get_size()) {
-        throw std::runtime_error("Error: insert_pairs() pos is out of range #" +
-                                 std::to_string(pos) + " " +
-                                 std::to_string(get_size()));
+        throw RMDBError("Error: insert_pairs() pos is out of range #" +
+                        std::to_string(pos) + " " + std::to_string(get_size()));
     }
     auto pos_key = get_key(pos);
+    auto pos_rid = (char*)get_rid(pos);
     memmove(pos_key + n * file_hdr->col_tot_len_, pos_key,
             (get_size() - pos) * file_hdr->col_tot_len_);
     memcpy(pos_key, key, n * file_hdr->col_tot_len_);
-    auto pos_rid = (char*)get_rid(pos);
     memmove(pos_rid + n * sizeof(Rid), pos_rid,
             (get_size() - pos) * sizeof(Rid));
     memcpy(pos_rid, rid, n * sizeof(Rid));
@@ -172,7 +170,7 @@ void IxNodeHandle::erase_pairs(int pos, int n) {
     // 2. 删除该位置的rid
     // 3. 更新结点的键值对数量
     if (pos < 0 || pos >= get_size()) {
-        throw std::runtime_error("Error: erase_pair() pos is out of range");
+        throw RMDBError("Error: erase_pair() pos is out of range");
     }
     auto pos_key = get_key(pos);
     memmove(pos_key, pos_key + file_hdr->col_tot_len_,

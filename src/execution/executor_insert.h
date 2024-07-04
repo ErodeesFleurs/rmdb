@@ -60,7 +60,6 @@ class InsertExecutor : public AbstractExecutor {
         }
 
         // 插入记录, 获取rid
-        //实际插入
         rid_ = fh_->insert_record(rec.data, context_);
         // 更新索引
         for (int i = 0; i < (int)tab_.indexes.size(); i++) {
