@@ -47,7 +47,7 @@ class SeqScanExecutor : public AbstractExecutor {
 
         context_ = context;
         if (context_->txn_ != nullptr) {
-            context_->lock_mgr_->lock_shared_on_table(
+            context_->lock_mgr_->lock_shared_on_table_wait(
                 context_->txn_, sm_manager_->fhs_[tab_name_]->GetFd());
         }
     }

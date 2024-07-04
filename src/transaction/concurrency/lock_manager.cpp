@@ -44,8 +44,9 @@ bool LockManager::lock_shared_on_record(Transaction* txn, const Rid& rid,
         request_q.group_lock_mode_ = GroupLockMode::S;
         request_q.request_queue_.emplace_back(request);
     } else {
-        throw TransactionAbortException(txn->get_transaction_id(),
-                                        AbortReason::DEADLOCK_PREVENTION);
+        // throw TransactionAbortException(txn->get_transaction_id(),
+        //                                 AbortReason::DEADLOCK_PREVENTION);
+        return false;
     }
     return true;
 }
@@ -82,9 +83,10 @@ bool LockManager::lock_exclusive_on_record(Transaction* txn, const Rid& rid,
                     request_q.group_lock_mode_ = GroupLockMode::X;
                     return true;
                 } else {  // 有其他锁
-                    throw TransactionAbortException(
-                        txn->get_transaction_id(),
-                        AbortReason::DEADLOCK_PREVENTION);
+                    // throw TransactionAbortException(
+                    //     txn->get_transaction_id(),
+                    //     AbortReason::DEADLOCK_PREVENTION);
+                    return false;
                 }
             }
         }
@@ -98,8 +100,9 @@ bool LockManager::lock_exclusive_on_record(Transaction* txn, const Rid& rid,
         request_q.group_lock_mode_ = GroupLockMode::X;
         request_q.request_queue_.emplace_back(request);
     } else {
-        throw TransactionAbortException(txn->get_transaction_id(),
-                                        AbortReason::DEADLOCK_PREVENTION);
+        // throw TransactionAbortException(txn->get_transaction_id(),
+        //                                 AbortReason::DEADLOCK_PREVENTION);
+        return false;
     }
     return true;
 }
@@ -138,9 +141,10 @@ bool LockManager::lock_shared_on_table(Transaction* txn, int tab_fd) {
                     request_q.group_lock_mode_ = GroupLockMode::S;
                     return true;
                 } else {
-                    throw TransactionAbortException(
-                        txn->get_transaction_id(),
-                        AbortReason::DEADLOCK_PREVENTION);
+                    // throw TransactionAbortException(
+                    //     txn->get_transaction_id(),
+                    //     AbortReason::DEADLOCK_PREVENTION);
+                    return false;
                 }
             } else {  // 事务已加IX锁
                 int num = 0;
@@ -154,9 +158,10 @@ bool LockManager::lock_shared_on_table(Transaction* txn, int tab_fd) {
                     request_q.group_lock_mode_ = GroupLockMode::SIX;
                     return true;
                 } else {
-                    throw TransactionAbortException(
-                        txn->get_transaction_id(),
-                        AbortReason::DEADLOCK_PREVENTION);
+                    // throw TransactionAbortException(
+                    //     txn->get_transaction_id(),
+                    //     AbortReason::DEADLOCK_PREVENTION);
+                    return false;
                 }
             }
         }
@@ -175,8 +180,9 @@ bool LockManager::lock_shared_on_table(Transaction* txn, int tab_fd) {
         request_q.request_queue_.emplace_back(request);
         return true;
     } else {  // 不允许加锁
-        throw TransactionAbortException(txn->get_transaction_id(),
-                                        AbortReason::DEADLOCK_PREVENTION);
+        // throw TransactionAbortException(txn->get_transaction_id(),
+        //                                 AbortReason::DEADLOCK_PREVENTION);
+        return false;
     }
     return true;
 }
@@ -210,9 +216,10 @@ bool LockManager::lock_exclusive_on_table(Transaction* txn, int tab_fd) {
                     request_q.group_lock_mode_ = GroupLockMode::X;
                     return true;
                 } else {
-                    throw TransactionAbortException(
-                        txn->get_transaction_id(),
-                        AbortReason::DEADLOCK_PREVENTION);
+                    // throw TransactionAbortException(
+                    //     txn->get_transaction_id(),
+                    //     AbortReason::DEADLOCK_PREVENTION);
+                    return false;
                 }
             }
         }
@@ -226,8 +233,9 @@ bool LockManager::lock_exclusive_on_table(Transaction* txn, int tab_fd) {
         request_q.request_queue_.emplace_back(request);
         return true;
     } else {
-        throw TransactionAbortException(txn->get_transaction_id(),
-                                        AbortReason::DEADLOCK_PREVENTION);
+        // throw TransactionAbortException(txn->get_transaction_id(),
+        //                                 AbortReason::DEADLOCK_PREVENTION);
+        return false;
     }
     return true;
 }
@@ -268,8 +276,9 @@ bool LockManager::lock_IS_on_table(Transaction* txn, int tab_fd) {
         request_q.request_queue_.emplace_back(request);
         return true;
     } else {
-        throw TransactionAbortException(txn->get_transaction_id(),
-                                        AbortReason::DEADLOCK_PREVENTION);
+        // throw TransactionAbortException(txn->get_transaction_id(),
+        //                                 AbortReason::DEADLOCK_PREVENTION);
+        return false;
     }
     return true;
 }
@@ -313,9 +322,10 @@ bool LockManager::lock_IX_on_table(Transaction* txn, int tab_fd) {
                     request_q.group_lock_mode_ = GroupLockMode::SIX;
                     return true;
                 } else {
-                    throw TransactionAbortException(
-                        txn->get_transaction_id(),
-                        AbortReason::DEADLOCK_PREVENTION);
+                    // throw TransactionAbortException(
+                    //     txn->get_transaction_id(),
+                    //     AbortReason::DEADLOCK_PREVENTION);
+                    return false;
                 }
             } else {  // 事务已加IS锁
                 if (request_q.group_lock_mode_ == GroupLockMode::IS ||
@@ -324,9 +334,10 @@ bool LockManager::lock_IX_on_table(Transaction* txn, int tab_fd) {
                     request_q.group_lock_mode_ = GroupLockMode::IX;
                     return true;
                 } else {
-                    throw TransactionAbortException(
-                        txn->get_transaction_id(),
-                        AbortReason::DEADLOCK_PREVENTION);
+                    // throw TransactionAbortException(
+                    //     txn->get_transaction_id(),
+                    //     AbortReason::DEADLOCK_PREVENTION);
+                    return false;
                 }
             }
         }
@@ -342,8 +353,9 @@ bool LockManager::lock_IX_on_table(Transaction* txn, int tab_fd) {
         request_q.request_queue_.emplace_back(request);
         return true;
     } else {
-        throw TransactionAbortException(txn->get_transaction_id(),
-                                        AbortReason::DEADLOCK_PREVENTION);
+        // throw TransactionAbortException(txn->get_transaction_id(),
+        //                                 AbortReason::DEADLOCK_PREVENTION);
+        return false;
     }
     return true;
 }
@@ -443,4 +455,74 @@ bool LockManager::is_unlock(Transaction* txn) {
             throw RMDBError("Unknown transaction state");
     }
     return true;
+}
+
+//wait-die
+
+bool LockManager::lock_shared_on_record_wait(Transaction* txn, const Rid& rid,
+                                             int tab_fd) {
+    for (int i = 0; i < RESTART_COUNT; i++) {
+        if (lock_shared_on_record(txn, rid, tab_fd)) {
+            return true;
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(INTERVAL_TIME));
+    }
+    throw TransactionAbortException(txn->get_transaction_id(),
+                                    AbortReason::DEADLOCK_PREVENTION);
+}
+
+bool LockManager::lock_exclusive_on_record_wait(Transaction* txn,
+                                                const Rid& rid, int tab_fd) {
+    for (int i = 0; i < RESTART_COUNT; i++) {
+        if (lock_exclusive_on_record(txn, rid, tab_fd)) {
+            return true;
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(INTERVAL_TIME));
+    }
+    throw TransactionAbortException(txn->get_transaction_id(),
+                                    AbortReason::DEADLOCK_PREVENTION);
+}
+
+bool LockManager::lock_shared_on_table_wait(Transaction* txn, int tab_fd) {
+    for (int i = 0; i < RESTART_COUNT; i++) {
+        if (lock_shared_on_table(txn, tab_fd)) {
+            return true;
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(INTERVAL_TIME));
+    }
+    throw TransactionAbortException(txn->get_transaction_id(),
+                                    AbortReason::DEADLOCK_PREVENTION);
+}
+
+bool LockManager::lock_exclusive_on_table_wait(Transaction* txn, int tab_fd) {
+    for (int i = 0; i < RESTART_COUNT; i++) {
+        if (lock_exclusive_on_table(txn, tab_fd)) {
+            return true;
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(INTERVAL_TIME));
+    }
+    throw TransactionAbortException(txn->get_transaction_id(),
+                                    AbortReason::DEADLOCK_PREVENTION);
+}
+
+bool LockManager::lock_IS_on_table_wait(Transaction* txn, int tab_fd) {
+    for (int i = 0; i < RESTART_COUNT; i++) {
+        if (lock_IS_on_table(txn, tab_fd)) {
+            return true;
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(INTERVAL_TIME));
+    }
+    throw TransactionAbortException(txn->get_transaction_id(),
+                                    AbortReason::DEADLOCK_PREVENTION);
+}
+
+bool LockManager::lock_IX_on_table_wait(Transaction* txn, int tab_fd) {
+    for (int i = 0; i < RESTART_COUNT; i++) {
+        if (lock_IX_on_table(txn, tab_fd)) {
+            return true;
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(INTERVAL_TIME));
+    }
+    throw TransactionAbortException(txn->get_transaction_id(),
+                                    AbortReason::DEADLOCK_PREVENTION);
 }

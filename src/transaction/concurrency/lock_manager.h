@@ -74,6 +74,20 @@ class LockManager {
 
     bool is_unlock(Transaction* txn);
 
+    bool lock_shared_on_record_wait(Transaction* txn, const Rid& rid,
+                                    int tab_fd);
+
+    bool lock_exclusive_on_record_wait(Transaction* txn, const Rid& rid,
+                                       int tab_fd);
+
+    bool lock_shared_on_table_wait(Transaction* txn, int tab_fd);
+
+    bool lock_exclusive_on_table_wait(Transaction* txn, int tab_fd);
+
+    bool lock_IS_on_table_wait(Transaction* txn, int tab_fd);
+
+    bool lock_IX_on_table_wait(Transaction* txn, int tab_fd);
+
    private:
     std::mutex latch_;  // 用于锁表的并发
     std::unordered_map<LockDataId, LockRequestQueue> lock_table_;  // 全局锁表
