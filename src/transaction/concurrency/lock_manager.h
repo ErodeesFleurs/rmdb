@@ -74,19 +74,14 @@ class LockManager {
 
     bool is_unlock(Transaction* txn);
 
-    bool lock_shared_on_record_wait(Transaction* txn, const Rid& rid,
-                                    int tab_fd);
+    bool GrantLock(LockRequestQueue& request_queue, LockRequest& request);
 
-    bool lock_exclusive_on_record_wait(Transaction* txn, const Rid& rid,
-                                       int tab_fd);
+    bool CanGrantLock(const LockRequestQueue& request_queue, LockMode mode);
 
-    bool lock_shared_on_table_wait(Transaction* txn, int tab_fd);
+    LockManager::GroupLockMode CalculateGroupLockMode(
+        const LockRequestQueue& request_queue);
 
-    bool lock_exclusive_on_table_wait(Transaction* txn, int tab_fd);
-
-    bool lock_IS_on_table_wait(Transaction* txn, int tab_fd);
-
-    bool lock_IX_on_table_wait(Transaction* txn, int tab_fd);
+    bool WaitDie(LockRequestQueue& request_queue, LockRequest& request);
 
    private:
     std::mutex latch_;  // 用于锁表的并发

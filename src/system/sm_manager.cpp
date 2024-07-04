@@ -217,8 +217,8 @@ void SmManager::create_table(const std::string& tab_name,
     fhs_.emplace(tab_name, rm_manager_->open_file(tab_name));
 
     if (context != nullptr)
-        context->lock_mgr_->lock_exclusive_on_table_wait(
-            context->txn_, fhs_[tab_name]->GetFd());
+        context->lock_mgr_->lock_exclusive_on_table(context->txn_,
+                                                    fhs_[tab_name]->GetFd());
 
     flush_meta();
 }
@@ -231,8 +231,8 @@ void SmManager::create_table(const std::string& tab_name,
 void SmManager::drop_table(const std::string& tab_name, Context* context) {
 
     if (context != nullptr)
-        context->lock_mgr_->lock_exclusive_on_table_wait(
-            context->txn_, fhs_[tab_name]->GetFd());
+        context->lock_mgr_->lock_exclusive_on_table(context->txn_,
+                                                    fhs_[tab_name]->GetFd());
 
     if (!db_.is_table(tab_name)) {  // 如果表不存在
         throw TableNotFoundError(tab_name);
@@ -265,8 +265,8 @@ void SmManager::create_index(const std::string& tab_name,
                              const std::vector<std::string>& col_names,
                              Context* context) {
     if (context != nullptr)
-        context->lock_mgr_->lock_shared_on_table_wait(context->txn_,
-                                                      fhs_[tab_name]->GetFd());
+        context->lock_mgr_->lock_shared_on_table(context->txn_,
+                                                 fhs_[tab_name]->GetFd());
 
     if (!db_.is_table(tab_name)) {
         throw TableNotFoundError(tab_name);
@@ -335,8 +335,8 @@ void SmManager::drop_index(const std::string& tab_name,
                            const std::vector<std::string>& col_names,
                            Context* context) {
     if (context != nullptr)
-        context->lock_mgr_->lock_shared_on_table_wait(context->txn_,
-                                                      fhs_[tab_name]->GetFd());
+        context->lock_mgr_->lock_shared_on_table(context->txn_,
+                                                 fhs_[tab_name]->GetFd());
 
     // 检查表名
     if (!db_.is_table(tab_name)) {

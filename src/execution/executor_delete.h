@@ -36,7 +36,7 @@ class DeleteExecutor : public AbstractExecutor {
         rids_ = rids;
         context_ = context;
         if (context_->txn_ != nullptr) {
-            context_->lock_mgr_->lock_IX_on_table_wait(
+            context_->lock_mgr_->lock_IX_on_table(
                 context->txn_, sm_manager_->fhs_[tab_name_]->GetFd());
         }
     }
