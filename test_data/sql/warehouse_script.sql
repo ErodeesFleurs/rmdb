@@ -5999,7 +5999,7 @@ select * from warehouse where w_id = 2997 and flo = 724.900000;
 select * from warehouse where w_id = 2998 and flo = 724.800000;
 select * from warehouse where w_id = 2999 and flo = 724.700000;
 select * from warehouse where w_id = 3000 and flo = 724.600000;
-create unique index idx_warehouse on warehouse(w_id, flo);
+create index warehouse(w_id, flo);
 select * from warehouse where w_id = 1 and flo = 1024.500000;
 select * from warehouse where w_id = 2 and flo = 1024.400000;
 select * from warehouse where w_id = 3 and flo = 1024.300000;

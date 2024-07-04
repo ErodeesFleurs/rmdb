@@ -268,49 +268,58 @@ void SmManager::create_index(const std::string& tab_name,
         context->lock_mgr_->lock_shared_on_table(context->txn_,
                                                  fhs_[tab_name]->GetFd());
 
-    TabMeta& tab = db_.get_table(tab_name);
+    if (!db_.is_table(tab_name)) {
+        throw TableNotFoundError(tab_name);
+    }
+    auto& tab = db_.get_table(tab_name);
+    for (auto& col_name : col_names) {
+        if (!tab.is_col(col_name)) {
+            throw ColumnNotFoundError(col_name);
+        }
+    }
+    if (ix_manager_->exists(tab_name, col_names)) {
+        throw IndexExistsError(tab_name, col_names);
+    }
+    std::string ix_file_name = tab_name;
     std::vector<ColMeta> cols;
-    int tot_len = 0;
-    for (const auto& i : col_names) {
-        auto col = *tab.get_col(i);
+    IndexMeta ix_meta;
+    ix_meta.tab_name = tab_name;
+    ix_meta.col_tot_len = 0;
+    ix_meta.col_num = col_names.size();
+    for (auto& col_name : col_names) {
+        ColMeta& col = tab.get_col(col_name)[0];
+        col.index = true;
+        ix_meta.col_tot_len += col.len;
+        ix_meta.cols.push_back(col);
         cols.push_back(col);
-        tot_len += col.len;
     }
-    ix_manager_->create_index(tab_name, cols);
-    auto ix_name = ix_manager_->get_index_name(tab_name, cols);
-    IndexMeta im = {tab_name, tot_len, (int)col_names.size(), cols};
-    tab.indexes.push_back(im);
-    ihs_.emplace(ix_name, ix_manager_->open_index(tab_name, cols));
-    if (!fhs_.count(tab_name)) {
-        //如果没有打开表文件则打开
-        fhs_.emplace(tab_name, rm_manager_->open_file(tab_name));
-    }
-    //将已有数据插入b+树中
-    auto rfh = fhs_[tab_name].get();
-    auto ih = ihs_[ix_name].get();
-    auto scan_ = std::make_unique<RmScan>(rfh);
-    bool is_fail = false;
-    if (context != nullptr)
-        context->lock_mgr_->lock_shared_on_table(context->txn_, rfh->GetFd());
-    while (!scan_->is_end()) {
-        auto rid_ = scan_->rid();
-        auto rec = rfh->get_record(rid_, context);
-        char* key = new char[tot_len];
-        int offset = 0;
-        for (auto& col : cols) {
-            memcpy(key + offset, rec->data + col.offset, col.len);
-            offset += col.len;
+    ix_manager_->create_index(ix_file_name, cols);
+    tab.indexes.push_back(ix_meta);
+    std::string index_name = ix_manager_->get_index_name(tab_name, col_names);
+    int fd = disk_manager_->open_file(index_name);
+    auto page = buffer_pool_manager_->fetch_page(PageId{fd, IX_FILE_HDR_PAGE});
+    IxFileHdr ix_file_hdl;
+    ix_file_hdl.deserialize(page->get_data());
+    char* key = new char[ix_meta.col_tot_len];
+    buffer_pool_manager_->unpin_page(page->get_page_id(), false);
+    disk_manager_->close_file(fd);
+    ihs_.emplace(index_name, ix_manager_->open_index(tab_name, col_names));
+    auto ix_hdl = ihs_.at(index_name).get();
+    auto file_hdl = fhs_.at(tab_name).get();
+    try {
+        for (RmScan rm_scan(file_hdl); !rm_scan.is_end(); rm_scan.next()) {
+            auto rec = file_hdl->get_record(rm_scan.rid(), context);
+            int offset = 0;
+            for (int i = 0; i < ix_meta.col_num; ++i) {
+                memcpy(key + offset, rec->data + ix_meta.cols[i].offset,
+                       ix_meta.cols[i].len);
+                offset += ix_meta.cols[i].len;
+            }
+            ix_hdl->insert_entry(key, rm_scan.rid(), context->txn_);
         }
-        auto result = ih->insert_entry(key, rid_, context->txn_);
-        if (result == INVALID_PAGE_ID) {
-            is_fail = true;
-            break;
-        }
-        scan_->next();
-    }
-    if (is_fail) {
+    } catch (InternalError& error) {
         drop_index(tab_name, col_names, context);
-        return;
+        throw InternalError("Non-unique index!");
     }
 
     flush_meta();
