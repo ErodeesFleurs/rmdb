@@ -30,6 +30,8 @@ class UpdateExecutor : public AbstractExecutor {
                    std::vector<SetClause> set_clauses,
                    std::vector<Condition> conds, std::vector<Rid> rids,
                    Context* context) {
+        std::cerr << "UpdateExecutor::UpdateExecutor() should be called "
+                  << context->txn_->get_transaction_id() << std::endl;
         sm_manager_ = sm_manager;
         tab_name_ = tab_name;
         set_clauses_ = set_clauses;
@@ -43,6 +45,8 @@ class UpdateExecutor : public AbstractExecutor {
             context_->lock_mgr_->lock_IX_on_table(
                 context->txn_, sm_manager_->fhs_[tab_name_]->GetFd());
         }
+        std::cerr << "UpdateExecutor::UpdateExecutor() should be called end"
+                  << std::endl;
     }
 
     void delete_index(RmRecord* rec, Rid rid_) {
@@ -112,6 +116,7 @@ class UpdateExecutor : public AbstractExecutor {
     }
 
     std::unique_ptr<RmRecord> Next() override {
+        std::cerr << "UpdateExecutor::Next() should be called" << std::endl;
         std::map<TabCol, ColMeta> mp;
         for (const auto& i : set_clauses_) {
             ColMeta col = *get_col(tab_.cols, i.lhs);
@@ -189,6 +194,7 @@ class UpdateExecutor : public AbstractExecutor {
             }
             throw RMDBError("Update Error");
         }
+        std::cerr << "UpdateExecutor::Next() should be called end" << std::endl;
         return nullptr;
     }
 

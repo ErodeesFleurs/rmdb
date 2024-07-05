@@ -25,10 +25,18 @@ bool LockManager::lock_shared_on_record(Transaction* txn, const Rid& rid,
     LockRequest request(txn->get_transaction_id(), LockMode::SHARED);
     request_queue.request_queue_.push_back(request);
 
+    if (txn->get_state() == TransactionState::DEFAULT) {
+        txn->set_state(TransactionState::GROWING);
+    }
+
     if (!WaitDie(request_queue, request)) {
         while (!GrantLock(request_queue, request)) {
             request_queue.cv_.wait(lock);
         }
+        txn->append_lock_set(lock_data_id);
+    } else {
+        throw TransactionAbortException(txn->get_transaction_id(),
+                                        AbortReason::DEADLOCK_PREVENTION);
     }
 
     return true;
@@ -49,10 +57,18 @@ bool LockManager::lock_exclusive_on_record(Transaction* txn, const Rid& rid,
     LockRequest request(txn->get_transaction_id(), LockMode::EXLUCSIVE);
     request_queue.request_queue_.push_back(request);
 
+    if (txn->get_state() == TransactionState::DEFAULT) {
+        txn->set_state(TransactionState::GROWING);
+    }
+
     if (!WaitDie(request_queue, request)) {
         while (!GrantLock(request_queue, request)) {
             request_queue.cv_.wait(lock);
         }
+        txn->append_lock_set(lock_data_id);
+    } else {
+        throw TransactionAbortException(txn->get_transaction_id(),
+                                        AbortReason::DEADLOCK_PREVENTION);
     }
 
     return true;
@@ -71,10 +87,18 @@ bool LockManager::lock_shared_on_table(Transaction* txn, int tab_fd) {
     LockRequest request(txn->get_transaction_id(), LockMode::SHARED);
     request_queue.request_queue_.push_back(request);
 
+    if (txn->get_state() == TransactionState::DEFAULT) {
+        txn->set_state(TransactionState::GROWING);
+    }
+
     if (!WaitDie(request_queue, request)) {
         while (!GrantLock(request_queue, request)) {
             request_queue.cv_.wait(lock);
         }
+        txn->append_lock_set(lock_data_id);
+    } else {
+        throw TransactionAbortException(txn->get_transaction_id(),
+                                        AbortReason::DEADLOCK_PREVENTION);
     }
 
     return true;
@@ -93,10 +117,18 @@ bool LockManager::lock_exclusive_on_table(Transaction* txn, int tab_fd) {
     LockRequest request(txn->get_transaction_id(), LockMode::EXLUCSIVE);
     request_queue.request_queue_.push_back(request);
 
+    if (txn->get_state() == TransactionState::DEFAULT) {
+        txn->set_state(TransactionState::GROWING);
+    }
+
     if (!WaitDie(request_queue, request)) {
         while (!GrantLock(request_queue, request)) {
             request_queue.cv_.wait(lock);
         }
+        txn->append_lock_set(lock_data_id);
+    } else {
+        throw TransactionAbortException(txn->get_transaction_id(),
+                                        AbortReason::DEADLOCK_PREVENTION);
     }
 
     return true;
@@ -114,10 +146,18 @@ bool LockManager::lock_IS_on_table(Transaction* txn, int tab_fd) {
     LockRequest request(txn->get_transaction_id(), LockMode::INTENTION_SHARED);
     request_queue.request_queue_.push_back(request);
 
+    if (txn->get_state() == TransactionState::DEFAULT) {
+        txn->set_state(TransactionState::GROWING);
+    }
+
     if (!WaitDie(request_queue, request)) {
         while (!GrantLock(request_queue, request)) {
             request_queue.cv_.wait(lock);
         }
+        txn->append_lock_set(lock_data_id);
+    } else {
+        throw TransactionAbortException(txn->get_transaction_id(),
+                                        AbortReason::DEADLOCK_PREVENTION);
     }
 
     return true;
@@ -137,10 +177,20 @@ bool LockManager::lock_IX_on_table(Transaction* txn, int tab_fd) {
                         LockMode::INTENTION_EXCLUSIVE);
     request_queue.request_queue_.push_back(request);
 
+    if (txn->get_state() == TransactionState::DEFAULT) {
+        txn->set_state(TransactionState::GROWING);
+    }
+    std::cerr << "lock_IX_on_table: wait die: "
+              << WaitDie(request_queue, request) << std::endl;
     if (!WaitDie(request_queue, request)) {
+        std::cerr << "lock_IX_on_table: grant lock" << std::endl;
         while (!GrantLock(request_queue, request)) {
             request_queue.cv_.wait(lock);
         }
+        txn->append_lock_set(lock_data_id);
+    } else {
+        throw TransactionAbortException(txn->get_transaction_id(),
+                                        AbortReason::DEADLOCK_PREVENTION);
     }
 
     return true;
@@ -177,6 +227,9 @@ bool LockManager::unlock(Transaction* txn, LockDataId lock_data_id) {
     if (request_queue.request_queue_.empty()) {
         lock_table_.erase(it);
     }
+
+    // 更新事务状态为 SHRINKING
+    txn->set_state(TransactionState::SHRINKING);
     return true;
 }
 
@@ -206,12 +259,21 @@ bool LockManager::is_lock(Transaction* txn) {
 bool LockManager::is_unlock(Transaction* txn) {
     return !is_lock(txn);
 }
-
+/**
+ * @description: 授予锁
+ * @return {bool} 返回是否授予锁
+ * @param {LockRequestQueue&} request_queue
+ * @param {LockRequest&} request
+ */
 bool LockManager::GrantLock(LockRequestQueue& request_queue,
                             LockRequest& request) {
-    if (CanGrantLock(request_queue, request.lock_mode_)) {
+    std::cerr << "GrantLock: " << request_queue.group_lock_mode_ << std::endl;
+    if (request_queue.group_lock_mode_ == GroupLockMode::NON_LOCK ||
+        request_queue.group_lock_mode_ == GroupLockMode::IS) {
         request.granted_ = true;
-        request_queue.group_lock_mode_ = CalculateGroupLockMode(request_queue);
+        request_queue.group_lock_mode_ =
+            (request.lock_mode_ == LockMode::SHARED) ? GroupLockMode::S
+                                                     : GroupLockMode::X;
         return true;
     }
     return false;
@@ -240,43 +302,41 @@ bool LockManager::CanGrantLock(const LockRequestQueue& request_queue,
 
 LockManager::GroupLockMode LockManager::CalculateGroupLockMode(
     const LockRequestQueue& request_queue) {
-    bool hasS = false, hasX = false, hasIS = false, hasIX = false;
-    for (const auto& request : request_queue.request_queue_) {
-        switch (request.lock_mode_) {
-            case LockMode::SHARED:
-                hasS = true;
-                break;
-            case LockMode::EXLUCSIVE:
-                hasX = true;
-                break;
-            case LockMode::INTENTION_SHARED:
-                hasIS = true;
-                break;
-            case LockMode::INTENTION_EXCLUSIVE:
-                hasIX = true;
-                break;
-            case LockMode::S_IX:
-                hasS = true;
-                hasIX = true;
-                break;
+    GroupLockMode mode = GroupLockMode::NON_LOCK;
+    for (const auto& req : request_queue.request_queue_) {
+        if (req.granted_) {
+            switch (req.lock_mode_) {
+                case LockMode::SHARED:
+                    mode = GroupLockMode::S;
+                    break;
+                case LockMode::EXLUCSIVE:
+                    mode = GroupLockMode::X;
+                    break;
+                case LockMode::INTENTION_SHARED:
+                    mode = GroupLockMode::IS;
+                    break;
+                case LockMode::INTENTION_EXCLUSIVE:
+                    mode = GroupLockMode::IX;
+                    break;
+                case LockMode::S_IX:
+                    mode = GroupLockMode::SIX;
+                    break;
+            }
         }
     }
-    if (hasX)
-        return GroupLockMode::X;
-    if (hasS && hasIX)
-        return GroupLockMode::SIX;
-    if (hasS)
-        return GroupLockMode::S;
-    if (hasIX)
-        return GroupLockMode::IX;
-    if (hasIS)
-        return GroupLockMode::IS;
-    return GroupLockMode::NON_LOCK;
+    return mode;
 }
-
+/** 
+ * @description: 等待图死锁检测, 如果当前请求的事务ID小于已经获得锁的事务ID，则返回true，否则返回false
+ * @param {LockRequestQueue&} request_queue
+ * @param {LockRequest&} request
+ * @return {bool}
+ */
 bool LockManager::WaitDie(LockRequestQueue& request_queue,
                           LockRequest& request) {
+    std::cerr << "WaitDie: " << request.txn_id_ << std::endl;
     for (const auto& req : request_queue.request_queue_) {
+        std::cerr << "WaitDie REQ: " << req.txn_id_ << std::endl;
         if (req.granted_ && req.txn_id_ < request.txn_id_) {
             return true;
         } else if (req.granted_ && req.txn_id_ > request.txn_id_) {
