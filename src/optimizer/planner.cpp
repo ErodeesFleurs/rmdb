@@ -31,7 +31,12 @@ bool Planner::get_index_cols(std::string tab_name,
     auto& tab = sm_manager_->db_.get_table(tab_name);
     std::unordered_map<std::string, std::pair<int, int>>
         col_2_op_idx;  // 存储列名 -> 比较方法、curr_conds中所在下标
-    for (int idx = 0; const auto& cond : curr_conds) {
+    int idx = 0;
+    for (const auto& cond : curr_conds) {
+        idx++;
+        std::cerr << "cond.lhs_col.tab_name -> " << cond.lhs_col.tab_name
+                  << std::endl;
+        std::cerr << "tab_name -> " << tab_name << std::endl;
         if (cond.lhs_col.tab_name != tab_name)
             continue;
         int op = -1;
@@ -76,11 +81,12 @@ bool Planner::get_index_cols(std::string tab_name,
         return false;
     }
     std::unordered_map<int, bool> vis;
-    for (auto idx : idxs) {
-        res.push_back(curr_conds[idx]);
-        vis[idx] = true;
+    for (auto id : idxs) {
+        res.push_back(curr_conds[id]);
+        vis[id] = true;
     }
-    for (int idx{}; const auto& cond : curr_conds) {
+    idx = 0;
+    for (const auto& cond : curr_conds) {
         if (vis.count(idx++)) {
             continue;
         }
@@ -94,7 +100,7 @@ bool Planner::get_index_cols(std::string tab_name,
 }
 
 std::vector<TabCol> Planner::get_sel_cols(std::string tab_name,
-                             std::vector<Condition>& curr_conds) {
+                                          std::vector<Condition>& curr_conds) {
     std::vector<TabCol> sel_cols;
     bool ok = 0;
     auto it = curr_conds.begin();
@@ -114,7 +120,7 @@ std::vector<TabCol> Planner::get_sel_cols(std::string tab_name,
 
     assert(ok);
 
-    return std::move(sel_cols);
+    return sel_cols;
 }
 
 /**
@@ -145,7 +151,7 @@ std::vector<Condition> pop_conds(std::vector<Condition>& conds,
 }
 
 std::vector<Condition> pop_or_conds(std::vector<Condition>& conds,
-                                 std::string tab_names) {
+                                    std::string tab_names) {
     // auto has_tab = [&](const std::string &tab_name) {
     //     return std::find(tab_names.begin(), tab_names.end(), tab_name) != tab_names.end();
     // };
@@ -155,7 +161,8 @@ std::vector<Condition> pop_or_conds(std::vector<Condition>& conds,
     assert(!((it->is_rhs_val || it->is_rhs_query || it->is_rhs_list)));
     while (it != conds.end()) {
         // std::cerr << "??? -> " << it->lhs_col.tab_name << ' ' << it->rhs_col.tab_name << ' ' << tab_names << std::endl;
-        if (tab_names.compare(it->lhs_col.tab_name) == 0 || tab_names.compare(it->rhs_col.tab_name) == 0) {
+        if (tab_names.compare(it->lhs_col.tab_name) == 0 ||
+            tab_names.compare(it->rhs_col.tab_name) == 0) {
             solved_conds.emplace_back(*it);
             break;
         } else {
@@ -276,7 +283,6 @@ std::shared_ptr<Plan> Planner::physical_optimization(
         // 处理orderby
         plan = generate_sort_plan(query, std::move(plan));
     }
-    
 
     return plan;
 }
@@ -316,19 +322,19 @@ std::shared_ptr<Plan> Planner::make_merge_sort_one_rel(std::shared_ptr<Query> qu
         // std::cerr << "curr_conds.size() -> " << curr_conds.size() << std::endl;
         std::vector<TabCol> sel_cols = get_sel_cols(tables[i], curr_conds);
         std::vector<bool> is_desc(sel_cols.size(), 0);
-        table_sort_executors[i] = 
-                std::make_shared<SortPlan>(T_SortMerge, table_scan_executors[i], sel_cols, is_desc);
+        table_sort_executors[i] = std::make_shared<SortPlan>(
+            T_SortMerge, table_scan_executors[i], sel_cols, is_desc);
     }
 
-    if (query->conds.front().lhs_col.tab_name != query->tables.front()) 
+    if (query->conds.front().lhs_col.tab_name != query->tables.front())
         std::swap(query->conds.front().lhs_col, query->conds.front().rhs_col);
-        
+
     std::vector<Condition> join_conds{query->conds.front()};
-    std::shared_ptr<Plan> table_join_executors = 
-                            std::make_shared<JoinPlan>(T_SortMerge, std::move(table_sort_executors.front()), std::move(table_sort_executors.back()), join_conds);
+    std::shared_ptr<Plan> table_join_executors = std::make_shared<JoinPlan>(
+        T_SortMerge, std::move(table_sort_executors.front()),
+        std::move(table_sort_executors.back()), join_conds);
 
     return table_join_executors;
-
 }
 
 std::shared_ptr<Plan> Planner::make_one_rel(std::shared_ptr<Query> query, std::vector<std::shared_ptr<Plan>>& table_scan_executors) {
@@ -360,7 +366,8 @@ std::shared_ptr<Plan> Planner::make_one_rel(std::shared_ptr<Query> query, std::v
                              table_scan_executors);
             std::vector<Condition> join_conds{*it};
             //建立join
-            table_join_executors = std::make_shared<JoinPlan>(T_NestLoop, std::move(left), std::move(right), join_conds);
+            table_join_executors = std::make_shared<JoinPlan>(
+                T_NestLoop, std::move(left), std::move(right), join_conds);
             it = conds.erase(it);
             break;
         }
