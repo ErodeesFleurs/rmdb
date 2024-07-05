@@ -14,6 +14,8 @@ See the Mulan PSL v2 for more details. */
 #include "executor_abstract.h"
 #include "index/ix.h"
 #include "system/sm.h"
+#include "system/sm_manager.h"
+#include <string>
 
 class MergeSortJoinExecutor : public AbstractExecutor {
    private:
@@ -72,8 +74,11 @@ class MergeSortJoinExecutor : public AbstractExecutor {
             right_records.emplace_back(right_->Next());
             right_->nextTuple();
         }
-        
-        
+
+        std::cerr << "begin print_table_into_one_file_respectively" << std::endl;
+        print_table_into_one_file_respectively();
+        std::cerr << "end print_table_into_one_file_respectively" << std::endl;
+
         for (int i = 0, p = 0; i < left_records.size() && p < right_records.size(); i++) {
             std::unique_ptr<RmRecord> now_joined_record = get_joined_record(left_records[i], right_records[p]);
             while (comp_cond(cols_, fed_cond_, now_joined_record.get()) == 1) {
@@ -132,6 +137,53 @@ class MergeSortJoinExecutor : public AbstractExecutor {
     Rid& rid() override { return _abstract_rid; }
 
     size_t tupleLen() const override { return len_; }
+
+    void print_table_into_one_file_respectively() {
+        std::fstream outfile;
+        outfile.open("sorted_results.txt", std::ios::out | std::ios::app);
+
+        auto print_one_table = [&](std::unique_ptr<AbstractExecutor>& prev_, std::vector<std::unique_ptr<RmRecord>>& records) {
+            const auto& cols = prev_->cols();
+            std::vector<std::string> captions;
+            captions.reserve(cols.size());
+            for (auto& col : cols) {
+                captions.push_back(col.name);
+            }
+            outfile << "|";
+            for (int i = 0; i < (int)captions.size(); ++i) {
+                outfile << " " << captions[i] << " |";
+            }
+            outfile << "\n";
+
+            for (int i = 0; i < records.size(); i++) {
+                
+                std::vector<std::string> columns;
+                for (auto& col : prev_->cols()) {
+                    std::string col_str;
+                    char* rec_buf = records[i]->data + col.offset;
+                    if (col.type == TYPE_INT) {
+                        col_str = std::to_string(*(int*)rec_buf);
+                    } else if (col.type == TYPE_FLOAT) {
+                        col_str = std::to_string(*(double*)rec_buf);
+                    } else if (col.type == TYPE_STRING) {
+                        col_str = std::string((char*)rec_buf, col.len);
+                        col_str.resize(strlen(col_str.c_str()));
+                    }
+                    columns.push_back(col_str);
+                }
+                outfile << "|";
+                for (int i = 0; i < (int)columns.size(); ++i) {
+                    outfile << " " << columns[i] << " |";
+                }
+                outfile << "\n";
+            }
+        };
+
+        print_one_table(left_, left_records);
+        print_one_table(right_, right_records);
+        
+        outfile.close();
+    }
 
     ExecutorType getType() const override {
         return ExecutorType::NESTED_LOOP_JOIN;

@@ -11,6 +11,7 @@ See the Mulan PSL v2 for more details. */
 #include "planner.h"
 
 #include <memory>
+#include <set>
 
 #include "execution/executor_delete.h"
 #include "execution/executor_index_scan.h"
@@ -27,11 +28,11 @@ bool Planner::get_index_cols(std::string tab_name,
                              std::vector<Condition> curr_conds,
                              std::vector<std::string>& index_col_names) {
     index_col_names.clear();
-    std::map<std::string, std::pair<int, int>>
-        mp;  // 存储列名 -> 比较方法、curr_conds中所在下标
-    for (int i = 0; i < (int)curr_conds.size(); i++) {
-        auto cond = curr_conds[i];
-        if (cond.lhs_col.tab_name != tab_name || !cond.is_rhs_val)
+    auto& tab = sm_manager_->db_.get_table(tab_name);
+    std::unordered_map<std::string, std::pair<int, int>>
+        col_2_op_idx;  // 存储列名 -> 比较方法、curr_conds中所在下标
+    for (int idx = 0; const auto& cond : curr_conds) {
+        if (cond.lhs_col.tab_name != tab_name)
             continue;
         int op = -1;
         if (cond.op == OP_EQ)
@@ -40,48 +41,52 @@ bool Planner::get_index_cols(std::string tab_name,
             op = 0;
         else if (cond.op == OP_LE || cond.op == OP_LT)
             op = 2;
-        if (op == -1)
-            continue;
-        if (mp.count(cond.lhs_col.col_name) && op == 2)
-            continue;
-        mp[cond.lhs_col.col_name] = {op, i};
+        if (op != -1) {
+            if (col_2_op_idx.count(cond.lhs_col.col_name) && op == 2)
+                continue;
+            col_2_op_idx[cond.lhs_col.col_name] = {op, idx};
+        }
+        idx++;
     }
-    TabMeta& tab = sm_manager_->db_.get_table(tab_name);
-    int mx = 0;                  //最左匹配中最多匹配数
+    std::cerr << col_2_op_idx.size() << "jgioersdjgo;iserdjgserdgersgresgeswtgoierhgoretsh" << std::endl;
+    int matches = 0;             //最左匹配中最多匹配数
     std::vector<Condition> res;  //最左匹配时条件顺序
-    std::vector<int> ids;        //最左匹配时下标顺序
+    std::vector<int> idxs;       //最左匹配时下标顺序
     std::vector<ColMeta> cols;   //最左匹配时index列
     for (const auto& index : tab.indexes) {
         int cnt = 0;
-        std::vector<int> tmp;
+        std::vector<int> tmp_idx;
         for (const auto& col : index.cols) {
-            if (!mp.count(col.name))
+            if (!col_2_op_idx.count(col.name))
                 break;
-            std::pair<int, int> val = mp[col.name];
+            auto val = col_2_op_idx[col.name];
             cnt++;
-            tmp.push_back(val.second);
-            if (!val.first)
+            tmp_idx.push_back(val.second);
+            if (val.first == 0) {
                 break;  // 说明是范围查询
+            }
         }
-        if (cnt > mx) {  // 匹配数更多
-            mx = cnt;
-            ids = tmp;
+        if (cnt > matches) {  // 匹配数更多
+            matches = cnt;
+            idxs = std::move(tmp_idx);
             cols = index.cols;
         }
     }
-    if (!mx)
+    if (!matches) {
         return false;
+    }
     std::unordered_map<int, bool> vis;
-    for (int i : ids) {
-        res.push_back(curr_conds[i]);
-        vis[i] = true;
+    for (auto idx : idxs) {
+        res.push_back(curr_conds[idx]);
+        vis[idx] = true;
     }
-    for (int i = 0; i < (int)curr_conds.size(); i++) {
-        if (vis.count(i))
+    for (int idx{}; const auto& cond : curr_conds) {
+        if (vis.count(idx++)) {
             continue;
-        res.push_back(curr_conds[i]);
+        }
+        res.push_back(cond);
     }
-    curr_conds = res;
+    curr_conds = std::move(res);
     for (const auto& col : cols) {
         index_col_names.push_back(col.name);
     }
@@ -225,18 +230,42 @@ std::shared_ptr<Query> Planner::logical_optimization(
 std::shared_ptr<Plan> Planner::physical_optimization(
     std::shared_ptr<Query> query, Context* context) {
 
+    auto tmp_query = query;
+
     std::shared_ptr<Plan> plan;
+    
+    std::vector<std::string> index_col_names;
+    std::vector<std::shared_ptr<Plan>> scan_plans = std::move(generate_scan_plan(tmp_query, index_col_names));
+    if (!index_col_names.empty()) {
+        auto conds = query->conds;
+        std::set<std::string> st;
+        for (auto &str : index_col_names) {
+            st.insert(str);
+            std::cerr << "index str -> " << str << std::endl;
+        }
+        for (auto &cond : conds) {
+            std::cerr << "cond str -> " << cond.lhs_col.tab_name << ' ' << cond.rhs_col.tab_name << std::endl;
+        }
+        if (std::all_of(conds.begin(), conds.end(), [&](Condition cond) {
+            return st.count(cond.lhs_col.tab_name) && st.count(cond.rhs_col.tab_name);
+        })) {
+            enable_sortmerge_join = true;
+            enable_nestedloop_join = false;
+        }
+    }
 
     if (enable_sortmerge_join) {
+        std::cerr << "planner: go sortmerge_join" << std::endl;
         //处理扫描+各自sort+连接
-        plan = make_merge_sort_one_rel(query);
+        plan = make_merge_sort_one_rel(tmp_query, scan_plans);
         // 处理groupby
         plan = generate_group_plan(query, std::move(plan));
         // 处理聚合
         plan = generate_aggregate_plan(query, std::move(plan));
     } else {
+        std::cerr << "planner: go nestedloop_join" << std::endl;
         //处理扫描+连接
-        plan = make_one_rel(query);
+        plan = make_one_rel(tmp_query, scan_plans);
 
         // 其他物理优化
 
@@ -252,7 +281,7 @@ std::shared_ptr<Plan> Planner::physical_optimization(
     return plan;
 }
 
-std::shared_ptr<Plan> Planner::make_merge_sort_one_rel(std::shared_ptr<Query> query) {
+std::vector<std::shared_ptr<Plan>> Planner::generate_scan_plan(std::shared_ptr<Query>& query, std::vector<std::string>& index_col_names) {
     auto x = std::dynamic_pointer_cast<ast::SelectStmt>(query->parse);
     std::vector<std::string> tables = query->tables;
     // // Scan table , 生成表算子列表tab_nodes
@@ -260,9 +289,9 @@ std::shared_ptr<Plan> Planner::make_merge_sort_one_rel(std::shared_ptr<Query> qu
     for (size_t i = 0; i < tables.size(); i++) {
         auto curr_conds = pop_conds(query->conds, tables[i]);
         // int index_no = get_indexNo(tables[i], curr_conds);
-        std::vector<std::string> index_col_names;
         bool index_exist =
             get_index_cols(tables[i], curr_conds, index_col_names);
+        std::cerr << index_exist << "<-- ? index exist ?" << std::endl;
         if (index_exist == false) {  // 该表没有索引
             index_col_names.clear();
             table_scan_executors[i] = std::make_shared<ScanPlan>(
@@ -273,7 +302,12 @@ std::shared_ptr<Plan> Planner::make_merge_sort_one_rel(std::shared_ptr<Query> qu
                                            curr_conds, index_col_names);
         }
     }
+    return table_scan_executors;
+}
 
+
+std::shared_ptr<Plan> Planner::make_merge_sort_one_rel(std::shared_ptr<Query> query, std::vector<std::shared_ptr<Plan>>& table_scan_executors) {
+    std::vector<std::string> tables = query->tables;
     /** added hear: turn each ScanPlan to SortPlan */
     std::vector<std::shared_ptr<Plan>> table_sort_executors(tables.size());
     for (size_t i = 0; i < tables.size(); i++) {
@@ -297,27 +331,8 @@ std::shared_ptr<Plan> Planner::make_merge_sort_one_rel(std::shared_ptr<Query> qu
 
 }
 
-std::shared_ptr<Plan> Planner::make_one_rel(std::shared_ptr<Query> query) {
-    auto x = std::dynamic_pointer_cast<ast::SelectStmt>(query->parse);
+std::shared_ptr<Plan> Planner::make_one_rel(std::shared_ptr<Query> query, std::vector<std::shared_ptr<Plan>>& table_scan_executors) {
     std::vector<std::string> tables = query->tables;
-    // // Scan table , 生成表算子列表tab_nodes
-    std::vector<std::shared_ptr<Plan>> table_scan_executors(tables.size());
-    for (size_t i = 0; i < tables.size(); i++) {
-        auto curr_conds = pop_conds(query->conds, tables[i]);
-        // int index_no = get_indexNo(tables[i], curr_conds);
-        std::vector<std::string> index_col_names;
-        bool index_exist =
-            get_index_cols(tables[i], curr_conds, index_col_names);
-        if (index_exist == false) {  // 该表没有索引
-            index_col_names.clear();
-            table_scan_executors[i] = std::make_shared<ScanPlan>(
-                T_SeqScan, sm_manager_, tables[i], curr_conds, index_col_names);
-        } else {  // 存在索引
-            table_scan_executors[i] =
-                std::make_shared<ScanPlan>(T_IndexScan, sm_manager_, tables[i],
-                                           curr_conds, index_col_names);
-        }
-    }
     // 只有一个表，不需要join。
     if (tables.size() == 1) {
         return table_scan_executors[0];
