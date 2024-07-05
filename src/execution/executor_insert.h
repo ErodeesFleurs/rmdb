@@ -80,7 +80,7 @@ class InsertExecutor : public AbstractExecutor {
 
             auto result = ih->insert_entry(key, rid_, context_->txn_);
             delete[] key;
-            if (result == -1) {
+            if (result.second == false) {
                 //说明插入失败
                 fail_pos = i;
                 break;

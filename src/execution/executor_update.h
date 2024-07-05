@@ -86,7 +86,7 @@ class UpdateExecutor : public AbstractExecutor {
 
             auto result = ih->insert_entry(key, rid_, context_->txn_);
             delete[] key;
-            if (result == -1) {
+            if (result.second == false) {
                 fail_p = i;
                 break;
             }

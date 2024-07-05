@@ -19,7 +19,7 @@ enum class Operation {
     DELETE
 };  // 三种操作：查找、插入、删除
 
-static const bool binary_search = false;
+static const bool binary_search = true;
 
 inline int ix_compare(const char* a, const char* b, ColType type, int col_len) {
     switch (type) {
@@ -133,16 +133,17 @@ class IxNodeHandle {
 
     bool leaf_lookup(const char* key, Rid** value);
 
+    int get_key_pos(const char* key);
+
     int insert(const char* key, const Rid& value);
+
+    void erase_pairs(int pos, int n);
+    void erase_pair(int pos) { erase_pairs(pos, 1); }
 
     // 用于在结点中的指定位置插入单个键值对
     void insert_pair(int pos, const char* key, const Rid& rid) {
         insert_pairs(pos, key, &rid, 1);
     }
-
-    void erase_pair(int pos) { return erase_pairs(pos, 1); }
-
-    void erase_pairs(int pos, int n);
 
     int remove(const char* key);
 
@@ -220,8 +221,10 @@ class IxIndexHandle {
                                                   bool find_first = false);
 
     // for insert
-    page_id_t insert_entry(const char* key, const Rid& value,
-                           Transaction* transaction);
+    std::pair<page_id_t, bool> insert_entry(const char* key, const Rid& value,
+                                            Transaction* transaction);
+
+    bool check_entry(const char* key, Transaction* transaction);
 
     IxNodeHandle* split(IxNodeHandle* node);
 
