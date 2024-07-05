@@ -166,6 +166,7 @@ class AbstractExecutor {
     }
     static bool eval_cond(const std::vector<ColMeta>& rec_cols,
                           const Condition& cond, const RmRecord* rec) {
+        std::cerr << rec_cols[0].tab_name << " " << cond.lhs_col.tab_name << " <--------!!!!!" << std::endl;
         auto lhs_col = get_col(rec_cols, cond.lhs_col);
         char* lhs = rec->data + lhs_col->offset;
         char* rhs;
@@ -228,6 +229,7 @@ class AbstractExecutor {
             }
             return false;
         } else {
+            if (cond.rhs_col.tab_name != cond.lhs_col.tab_name) return true;
             auto rhs_col = get_col(rec_cols, cond.rhs_col);
             rhs_type = rhs_col->type;
             rhs = rec->data + rhs_col->offset;

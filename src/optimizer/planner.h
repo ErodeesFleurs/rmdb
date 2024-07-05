@@ -54,7 +54,7 @@ class Planner {
     std::shared_ptr<Plan> physical_optimization(std::shared_ptr<Query> query,
                                                 Context* context);
 
-    std::vector<std::shared_ptr<Plan>> generate_scan_plan(std::shared_ptr<Query>& query, std::vector<std::string>& index_col_names);
+    std::vector<std::shared_ptr<Plan>> generate_scan_plan(std::shared_ptr<Query>& query, std::vector<std::string>& all_index_col_names);
 
     std::shared_ptr<Plan> make_merge_sort_one_rel(std::shared_ptr<Query> query, 
                                                            std::vector<std::shared_ptr<Plan>>& table_scan_executors);

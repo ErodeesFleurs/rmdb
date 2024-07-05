@@ -33,7 +33,6 @@ bool Planner::get_index_cols(std::string tab_name,
         col_2_op_idx;  // 存储列名 -> 比较方法、curr_conds中所在下标
     int idx = 0;
     for (const auto& cond : curr_conds) {
-        idx++;
         std::cerr << "cond.lhs_col.tab_name -> " << cond.lhs_col.tab_name
                   << std::endl;
         std::cerr << "tab_name -> " << tab_name << std::endl;
@@ -53,7 +52,7 @@ bool Planner::get_index_cols(std::string tab_name,
         }
         idx++;
     }
-    std::cerr << col_2_op_idx.size() << "jgioersdjgo;iserdjgserdgersgresgeswtgoierhgoretsh" << std::endl;
+    std::cerr << col_2_op_idx.size() << "jgioersdjgoliserdjgserdgersgresgeswtgoierhgoretsh" << std::endl;
     int matches = 0;             //最左匹配中最多匹配数
     std::vector<Condition> res;  //最左匹配时条件顺序
     std::vector<int> idxs;       //最左匹配时下标顺序
@@ -94,6 +93,7 @@ bool Planner::get_index_cols(std::string tab_name,
     }
     curr_conds = std::move(res);
     for (const auto& col : cols) {
+        // std::cerr << "COL NAMES: " << col.name << std::endl;
         index_col_names.push_back(col.name);
     }
     return true;
@@ -241,20 +241,20 @@ std::shared_ptr<Plan> Planner::physical_optimization(
 
     std::shared_ptr<Plan> plan;
     
-    std::vector<std::string> index_col_names;
-    std::vector<std::shared_ptr<Plan>> scan_plans = std::move(generate_scan_plan(tmp_query, index_col_names));
-    if (!index_col_names.empty()) {
+    std::vector<std::string> all_index_col_names;
+    std::vector<std::shared_ptr<Plan>> scan_plans = std::move(generate_scan_plan(tmp_query, all_index_col_names));
+    if (!all_index_col_names.empty()) {
         auto conds = query->conds;
         std::set<std::string> st;
-        for (auto &str : index_col_names) {
+        for (auto &str : all_index_col_names) {
             st.insert(str);
             std::cerr << "index str -> " << str << std::endl;
         }
         for (auto &cond : conds) {
-            std::cerr << "cond str -> " << cond.lhs_col.tab_name << ' ' << cond.rhs_col.tab_name << std::endl;
+            std::cerr << "cond str -> " << cond.lhs_col.col_name << ' ' << cond.rhs_col.col_name << std::endl;
         }
         if (std::all_of(conds.begin(), conds.end(), [&](Condition cond) {
-            return st.count(cond.lhs_col.tab_name) && st.count(cond.rhs_col.tab_name);
+            return st.count(cond.lhs_col.col_name) && st.count(cond.rhs_col.col_name);
         })) {
             enable_sortmerge_join = true;
             enable_nestedloop_join = false;
@@ -287,16 +287,27 @@ std::shared_ptr<Plan> Planner::physical_optimization(
     return plan;
 }
 
-std::vector<std::shared_ptr<Plan>> Planner::generate_scan_plan(std::shared_ptr<Query>& query, std::vector<std::string>& index_col_names) {
+std::vector<std::shared_ptr<Plan>> Planner::generate_scan_plan(std::shared_ptr<Query>& query, std::vector<std::string>& all_index_col_names) {
     auto x = std::dynamic_pointer_cast<ast::SelectStmt>(query->parse);
     std::vector<std::string> tables = query->tables;
     // // Scan table , 生成表算子列表tab_nodes
     std::vector<std::shared_ptr<Plan>> table_scan_executors(tables.size());
     for (size_t i = 0; i < tables.size(); i++) {
-        auto curr_conds = pop_conds(query->conds, tables[i]);
+        auto curr_conds = pop_or_conds(query->conds, tables[i]);
         // int index_no = get_indexNo(tables[i], curr_conds);
+        std::vector<Condition> suff;
+        for (const auto& cond : curr_conds) {
+            if (!cond.is_rhs_list && !cond.is_rhs_query && !cond.is_rhs_val && cond.op == CompOp::OP_EQ) {
+                Condition swp = cond;
+                std::swap(swp.lhs_col, swp.rhs_col);
+                suff.push_back(swp);
+            }
+        }
+        curr_conds.insert(curr_conds.end(), suff.begin(), suff.end());
+        std::vector<std::string> index_col_names;
         bool index_exist =
             get_index_cols(tables[i], curr_conds, index_col_names);
+        all_index_col_names.insert(all_index_col_names.end(), index_col_names.begin(), index_col_names.end());
         std::cerr << index_exist << "<-- ? index exist ?" << std::endl;
         if (index_exist == false) {  // 该表没有索引
             index_col_names.clear();

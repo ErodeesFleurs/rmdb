@@ -84,6 +84,7 @@ class IndexScanExecutor : public AbstractExecutor {
     }
 
     void beginTuple() override {
+        std::cerr << "index BeginTuple" << std::endl;
         std::string ix_name = sm_manager_->get_ix_manager()->get_index_name(
             tab_name_, index_col_names_);
         RmRecord lower_record(index_meta_.col_tot_len),
@@ -170,6 +171,7 @@ class IndexScanExecutor : public AbstractExecutor {
             }
             scan_->next();
         }
+        std::cerr << "index Begin End" << std::endl;
     }
 
     void nextTuple() override {
