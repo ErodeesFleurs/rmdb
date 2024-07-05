@@ -293,8 +293,10 @@ std::vector<std::shared_ptr<Plan>> Planner::generate_scan_plan(std::shared_ptr<Q
     // // Scan table , 生成表算子列表tab_nodes
     std::vector<std::shared_ptr<Plan>> table_scan_executors(tables.size());
     for (size_t i = 0; i < tables.size(); i++) {
+        std::cerr << "QUERT COND SIZE ->" << query->conds.size() << std::endl;
+        auto no_or_curr_conds = pop_conds(query->conds, tables[i]);
         auto curr_conds = pop_or_conds(query->conds, tables[i]);
-        // int index_no = get_indexNo(tables[i], curr_conds);
+        curr_conds.insert(curr_conds.end(), no_or_curr_conds.begin(), no_or_curr_conds.end());
         std::vector<Condition> suff;
         for (const auto& cond : curr_conds) {
             if (!cond.is_rhs_list && !cond.is_rhs_query && !cond.is_rhs_val && cond.op == CompOp::OP_EQ) {
@@ -311,10 +313,11 @@ std::vector<std::shared_ptr<Plan>> Planner::generate_scan_plan(std::shared_ptr<Q
         std::cerr << index_exist << "<-- ? index exist ?" << std::endl;
         if (index_exist == false) {  // 该表没有索引
             index_col_names.clear();
+            std::cerr << "no_or_curr_conds.size -> " << no_or_curr_conds.size() << std::endl;
             table_scan_executors[i] = std::make_shared<ScanPlan>(
-                T_SeqScan, sm_manager_, tables[i], curr_conds, index_col_names);
+                T_SeqScan, sm_manager_, tables[i], no_or_curr_conds, index_col_names);
         } else {  // 存在索引
-            table_scan_executors[i] =
+            table_scan_executors[i] = 
                 std::make_shared<ScanPlan>(T_IndexScan, sm_manager_, tables[i],
                                            curr_conds, index_col_names);
         }
@@ -365,6 +368,7 @@ std::shared_ptr<Plan> Planner::make_one_rel(std::shared_ptr<Query> query, std::v
     // 假设在ast中已经添加了jointree，这里需要修改的逻辑是，先处理jointree，然后再考虑剩下的部分
     if (conds.size() >= 1) {
         // 有连接条件
+        std::cerr << "youyouyouyouyouyouyouyouyouyouyouyouyou" << std::endl;
 
         // 根据连接条件，生成第一层join
         std::vector<std::string> joined_tables(tables.size());
@@ -376,6 +380,7 @@ std::shared_ptr<Plan> Planner::make_one_rel(std::shared_ptr<Query> query, std::v
             right = pop_scan(scantbl, it->rhs_col.tab_name, joined_tables,
                              table_scan_executors);
             std::vector<Condition> join_conds{*it};
+            std::cerr << "youyou-> " << join_conds.begin()->lhs_col.col_name << ' ' << join_conds.begin()->op << ' ' << join_conds.begin()->rhs_col.col_name << std::endl;
             //建立join
             table_join_executors = std::make_shared<JoinPlan>(
                 T_NestLoop, std::move(left), std::move(right), join_conds);

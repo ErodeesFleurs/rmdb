@@ -166,6 +166,7 @@ class IndexScanExecutor : public AbstractExecutor {
             rid_ = scan_->rid();
             auto rec = fh_->get_record(rid_, context_);
             if (fed_conds_.empty() ||
+                eval_index_conds(cols_, fed_conds_, rec.get()) ||
                 eval_conds(cols_, fed_conds_, rec.get())) {
                 break;
             }
@@ -184,7 +185,8 @@ class IndexScanExecutor : public AbstractExecutor {
             rid_ = scan_->rid();
             try {
                 auto record = fh_->get_record(rid_, context_);
-                if (fed_conds_.empty() ||
+                if (fed_conds_.empty() || 
+                    eval_index_conds(cols_, fed_conds_, record.get()) || 
                     eval_conds(cols_, fed_conds_, record.get())) {
                     break;
                 }

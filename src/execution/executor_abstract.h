@@ -229,6 +229,101 @@ class AbstractExecutor {
             }
             return false;
         } else {
+            // if (cond.rhs_col.tab_name != cond.lhs_col.tab_name) return true;
+            auto rhs_col = get_col(rec_cols, cond.rhs_col);
+            rhs_type = rhs_col->type;
+            rhs = rec->data + rhs_col->offset;
+        }
+        int cmp;
+        if (rhs_type != lhs_type) {
+            Value ls = get_value(lhs_type, lhs);
+            Value rs = get_value(rhs_type, rhs);
+            cmp = val_compare(ls, rs);
+        } else {
+            cmp = ix_compare(lhs, rhs, rhs_type, lhs_col->len);
+        }
+        if (cond.op == OP_EQ) {
+            return cmp == 0;
+        } else if (cond.op == OP_NE) {
+            return cmp != 0;
+        } else if (cond.op == OP_LT) {
+            return cmp < 0;
+        } else if (cond.op == OP_GT) {
+            return cmp > 0;
+        } else if (cond.op == OP_LE) {
+            return cmp <= 0;
+        } else if (cond.op == OP_GE) {
+            return cmp >= 0;
+        } else {
+            throw InternalError("eval_cond::Unexpected op type");
+        }
+    }
+
+    static bool eval_index_cond(const std::vector<ColMeta>& rec_cols,
+                          const Condition& cond, const RmRecord* rec) {
+        std::cerr << rec_cols[0].tab_name << " " << cond.lhs_col.tab_name << " <--------!!!!!" << std::endl;
+        auto lhs_col = get_col(rec_cols, cond.lhs_col);
+        char* lhs = rec->data + lhs_col->offset;
+        char* rhs;
+        Value lhs_value = get_value(lhs_col->type, lhs);
+        ColType rhs_type, lhs_type = lhs_col->type;
+        if (cond.is_rhs_val) {
+            rhs_type = cond.rhs_val.type;
+            rhs = cond.rhs_val.raw->data;
+        } else if (cond.is_rhs_query) {
+            if (cond.rhs_query_res.first.size() != 1) {
+                throw InternalError("sub_query::Unexpected colMetas size");
+            }
+            auto type = cond.rhs_query_res.first[0].type;
+            if (type != lhs_type &&
+                (type == TYPE_STRING || lhs_type == TYPE_STRING)) {
+                throw InternalError("eval_cond::Unexpected type");
+            }
+            if (cond.rhs_query_res.second.size() == 0) {
+                throw InternalError("eval_cond::Unexpected rhs_query_res size");
+            }
+            if (cond.rhs_query_res.second.size() == 1 && cond.op != OP_IN) {
+                Value rhs_value =
+                    get_value(type, cond.rhs_query_res.second[0].data +
+                                        cond.rhs_query_res.first[0].offset);
+                return check_cond(lhs_value, rhs_value, cond.op);
+            }
+            if (cond.op != OP_IN) {
+                throw InternalError("eval_cond::Unexpected op type");
+            }
+            for (auto& record : cond.rhs_query_res.second) {
+                Value rhs_value = get_value(
+                    type, record.data + cond.rhs_query_res.first[0].offset);
+                if (check_cond(lhs_value, rhs_value, OP_EQ)) {
+                    return true;
+                }
+            }
+            return false;
+        } else if (cond.is_rhs_list) {
+            if (cond.rhs_val_list.size() == 0) {
+                throw InternalError("eval_cond::Unexpected rhs_val_list size");
+            }
+            if (cond.rhs_val_list.size() == 1 && cond.op != OP_IN) {
+                if (lhs_type != cond.rhs_val_list[0].type &&
+                    (lhs_type == TYPE_STRING || cond.rhs_val_list[0].type == TYPE_STRING)) {
+                    return false;
+                }
+                return check_cond(lhs_value, cond.rhs_val_list[0], cond.op);
+            }
+            if (cond.op != OP_IN) {
+                throw InternalError("eval_cond::Unexpected op type");
+            }
+            for (auto& value : cond.rhs_val_list) {
+                if (lhs_type != value.type &&
+                    (lhs_type == TYPE_STRING || value.type == TYPE_STRING)) {
+                    continue;
+                }
+                if (check_cond(lhs_value, value, OP_EQ)) {
+                    return true;
+                }
+            }
+            return false;
+        } else {
             if (cond.rhs_col.tab_name != cond.lhs_col.tab_name) return true;
             auto rhs_col = get_col(rec_cols, cond.rhs_col);
             rhs_type = rhs_col->type;
@@ -265,6 +360,15 @@ class AbstractExecutor {
         return std::all_of(conds.begin(), conds.end(),
                            [&](const Condition& cond) {
                                return eval_cond(rec_cols, cond, rec);
+                           });
+    }
+
+    static bool eval_index_conds(const std::vector<ColMeta>& rec_cols,
+                           const std::vector<Condition>& conds,
+                           const RmRecord* rec) {
+        return std::all_of(conds.begin(), conds.end(),
+                           [&](const Condition& cond) {
+                               return eval_index_cond(rec_cols, cond, rec);
                            });
     }
 
