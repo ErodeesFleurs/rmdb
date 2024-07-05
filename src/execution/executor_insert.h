@@ -43,7 +43,6 @@ class InsertExecutor : public AbstractExecutor {
     };
 
     std::unique_ptr<RmRecord> Next() override {
-        // std::cerr << "InsertExecutor::Next() should be called" << std::endl;
         int fail_pos = -1;
         RmRecord rec(fh_->get_file_hdr().record_size);
         //获取数据
@@ -113,7 +112,6 @@ class InsertExecutor : public AbstractExecutor {
         //更新事务
         auto* wr = new WriteRecord(WType::INSERT_TUPLE, tab_name_, rid_, rec);
         context_->txn_->append_write_record(wr);
-        // std::cerr << "InsertExecutor::Next() should be called end" << std::endl;
         return nullptr;
     }
     Rid& rid() override { return rid_; }

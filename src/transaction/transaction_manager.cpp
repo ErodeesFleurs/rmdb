@@ -31,7 +31,6 @@ Transaction* TransactionManager::begin(Transaction* txn,
     if (txn == nullptr) {
         txn = new Transaction(next_txn_id_++);
     }
-    std::cerr << "begin txn " << txn->get_transaction_id() << std::endl;
     txn_map.emplace(txn->get_transaction_id(), txn);
 
     auto* log = new BeginLogRecord(txn->get_transaction_id());
@@ -60,7 +59,6 @@ void TransactionManager::commit(Transaction* txn, LogManager* log_manager) {
 
     auto lock_set = txn->get_lock_set();
     for (auto i : *lock_set) {
-        std::cerr << "unlock " << i.fd_ << std::endl;
         lock_manager_->unlock(txn, i);
     }
     txn->clear();
