@@ -70,7 +70,9 @@ class LockManager {
 
     bool unlock(Transaction* txn, LockDataId lock_data_id);
 
-    bool check_loop(Transaction* txn);
+    bool check_lock(Transaction* txn);
+
+    bool check_unlock(Transaction* txn);
 
    private:
     std::mutex latch_;  // 用于锁表的并发
