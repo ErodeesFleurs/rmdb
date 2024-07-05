@@ -147,7 +147,7 @@ class AbstractExecutor {
         auto lhs_col = get_col(rec_cols, cond.lhs_col);
         char* lhs = rec->data + lhs_col->offset;
         char* rhs;
-        Value lhs_value = get_value(lhs_col->type, lhs);
+        // Value lhs_value = get_value(lhs_col->type, lhs);
         ColType rhs_type, lhs_type = lhs_col->type;
         assert(!cond.is_rhs_list && !cond.is_rhs_query && !cond.is_rhs_val);
         auto rhs_col = get_col(rec_cols, cond.rhs_col);
@@ -166,7 +166,7 @@ class AbstractExecutor {
     }
     static bool eval_cond(const std::vector<ColMeta>& rec_cols,
                           const Condition& cond, const RmRecord* rec) {
-        std::cerr << rec_cols[0].tab_name << " " << cond.lhs_col.tab_name << " <--------!!!!!" << std::endl;
+        // std::cerr << rec_cols[0].tab_name << " " << cond.lhs_col.tab_name << " <--------!!!!!" << std::endl;
         auto lhs_col = get_col(rec_cols, cond.lhs_col);
         char* lhs = rec->data + lhs_col->offset;
         char* rhs;
@@ -261,7 +261,7 @@ class AbstractExecutor {
 
     static bool eval_index_cond(const std::vector<ColMeta>& rec_cols,
                           const Condition& cond, const RmRecord* rec) {
-        std::cerr << rec_cols[0].tab_name << " " << cond.lhs_col.tab_name << " <--------!!!!!" << std::endl;
+        // std::cerr << rec_cols[0].tab_name << " " << cond.lhs_col.tab_name << " <--------!!!!!" << std::endl;
         auto lhs_col = get_col(rec_cols, cond.lhs_col);
         char* lhs = rec->data + lhs_col->offset;
         char* rhs;

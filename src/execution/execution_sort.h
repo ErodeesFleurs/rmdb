@@ -48,20 +48,6 @@ class SortExecutor : public AbstractExecutor {
     void beginTuple() override {
         std::cerr << "Sort BeginTuple" << std::endl;
         prev_->beginTuple();
-        // int cnt = 0;
-        // int now = -1;
-        // current_tuple = nullptr;
-        // while (!prev_->is_end()) {
-        //     if (cmp(prev_->Next(), current_tuple)) {
-        //         current_tuple = prev_->Next();
-        //         now = cnt;
-        //     }
-        //     prev_->nextTuple();
-        //     cnt++;
-        // }
-        // tuple_num++;
-        // tuple_total_num = cnt;
-        // used_tuple.push_back(now);
 
         while (!prev_->is_end()) {
             all_records.emplace_back(std::move(prev_->Next()));
@@ -102,23 +88,6 @@ class SortExecutor : public AbstractExecutor {
     }
 
     void nextTuple() override {
-        // prev_->beginTuple();
-        // int cnt = 0;
-        // int now = -1;
-        // current_tuple = nullptr;
-        // while (!prev_->is_end()) {
-        //     if (std::find(used_tuple.begin(), used_tuple.end(), cnt) ==
-        //             used_tuple.end() &&
-        //         cmp(prev_->Next(), current_tuple)) {
-        //         current_tuple = prev_->Next();
-        //         now = cnt;
-        //     }
-        //     prev_->nextTuple();
-        //     cnt++;
-        // }
-        // tuple_num++;
-        // used_tuple.push_back(now);
-
         if (records_iterator != all_records.end()) {
             records_iterator++;
             if (records_iterator != all_records.end()) {

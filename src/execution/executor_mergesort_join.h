@@ -75,9 +75,9 @@ class MergeSortJoinExecutor : public AbstractExecutor {
             right_->nextTuple();
         }
 
-        std::cerr << "begin print_table_into_one_file_respectively" << std::endl;
+        // std::cerr << "begin print_table_into_one_file_respectively" << std::endl;
         print_table_into_one_file_respectively();
-        std::cerr << "end print_table_into_one_file_respectively" << std::endl;
+        // std::cerr << "end print_table_into_one_file_respectively" << std::endl;
 
         for (int i = 0, p = 0; i < left_records.size() && p < right_records.size(); i++) {
             std::unique_ptr<RmRecord> now_joined_record = get_joined_record(left_records[i], right_records[p]);

@@ -33,9 +33,9 @@ bool Planner::get_index_cols(std::string tab_name,
         col_2_op_idx;  // 存储列名 -> 比较方法、curr_conds中所在下标
     int idx = 0;
     for (const auto& cond : curr_conds) {
-        std::cerr << "cond.lhs_col.tab_name -> " << cond.lhs_col.tab_name
-                  << std::endl;
-        std::cerr << "tab_name -> " << tab_name << std::endl;
+        // std::cerr << "cond.lhs_col.tab_name -> " << cond.lhs_col.tab_name
+                //   << std::endl;
+        // std::cerr << "tab_name -> " << tab_name << std::endl;
         if (cond.lhs_col.tab_name != tab_name)
             continue;
         int op = -1;
@@ -52,7 +52,7 @@ bool Planner::get_index_cols(std::string tab_name,
         }
         idx++;
     }
-    std::cerr << col_2_op_idx.size() << "jgioersdjgoliserdjgserdgersgresgeswtgoierhgoretsh" << std::endl;
+    // std::cerr << col_2_op_idx.size() << "jgioersdjgoliserdjgserdgersgresgeswtgoierhgoretsh" << std::endl;
     int matches = 0;             //最左匹配中最多匹配数
     std::vector<Condition> res;  //最左匹配时条件顺序
     std::vector<int> idxs;       //最左匹配时下标顺序
@@ -248,10 +248,10 @@ std::shared_ptr<Plan> Planner::physical_optimization(
         std::set<std::string> st;
         for (auto &str : all_index_col_names) {
             st.insert(str);
-            std::cerr << "index str -> " << str << std::endl;
+            // std::cerr << "index str -> " << str << std::endl;
         }
         for (auto &cond : conds) {
-            std::cerr << "cond str -> " << cond.lhs_col.col_name << ' ' << cond.rhs_col.col_name << std::endl;
+            // std::cerr << "cond str -> " << cond.lhs_col.col_name << ' ' << cond.rhs_col.col_name << std::endl;
         }
         if (std::all_of(conds.begin(), conds.end(), [&](Condition cond) {
             return st.count(cond.lhs_col.col_name) && st.count(cond.rhs_col.col_name);
@@ -310,10 +310,10 @@ std::vector<std::shared_ptr<Plan>> Planner::generate_scan_plan(std::shared_ptr<Q
         bool index_exist =
             get_index_cols(tables[i], curr_conds, index_col_names);
         all_index_col_names.insert(all_index_col_names.end(), index_col_names.begin(), index_col_names.end());
-        std::cerr << index_exist << "<-- ? index exist ?" << std::endl;
+        // std::cerr << index_exist << "<-- ? index exist ?" << std::endl;
         if (index_exist == false) {  // 该表没有索引
             index_col_names.clear();
-            std::cerr << "no_or_curr_conds.size -> " << no_or_curr_conds.size() << std::endl;
+            // std::cerr << "no_or_curr_conds.size -> " << no_or_curr_conds.size() << std::endl;
             table_scan_executors[i] = std::make_shared<ScanPlan>(
                 T_SeqScan, sm_manager_, tables[i], no_or_curr_conds, index_col_names);
         } else {  // 存在索引
@@ -368,7 +368,7 @@ std::shared_ptr<Plan> Planner::make_one_rel(std::shared_ptr<Query> query, std::v
     // 假设在ast中已经添加了jointree，这里需要修改的逻辑是，先处理jointree，然后再考虑剩下的部分
     if (conds.size() >= 1) {
         // 有连接条件
-        std::cerr << "youyouyouyouyouyouyouyouyouyouyouyouyou" << std::endl;
+        // std::cerr << "youyouyouyouyouyouyouyouyouyouyouyouyou" << std::endl;
 
         // 根据连接条件，生成第一层join
         std::vector<std::string> joined_tables(tables.size());
@@ -380,7 +380,7 @@ std::shared_ptr<Plan> Planner::make_one_rel(std::shared_ptr<Query> query, std::v
             right = pop_scan(scantbl, it->rhs_col.tab_name, joined_tables,
                              table_scan_executors);
             std::vector<Condition> join_conds{*it};
-            std::cerr << "youyou-> " << join_conds.begin()->lhs_col.col_name << ' ' << join_conds.begin()->op << ' ' << join_conds.begin()->rhs_col.col_name << std::endl;
+            // std::cerr << "youyou-> " << join_conds.begin()->lhs_col.col_name << ' ' << join_conds.begin()->op << ' ' << join_conds.begin()->rhs_col.col_name << std::endl;
             //建立join
             table_join_executors = std::make_shared<JoinPlan>(
                 T_NestLoop, std::move(left), std::move(right), join_conds);
