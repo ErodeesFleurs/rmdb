@@ -44,9 +44,8 @@ class DeleteExecutor : public AbstractExecutor {
     void delete_index(RmRecord* rec, Rid rid_) {
         // 删除索引
         for (auto& index : tab_.indexes) {
-            auto ix_name = sm_manager_->get_ix_manager()->get_index_name(
-                tab_name_, index.cols);
-            auto ih = sm_manager_->ihs_.at(ix_name).get();
+            auto ix_manager = sm_manager_->get_ix_manager();
+            auto ih = ix_manager->open_index(tab_name_, index.cols);
             auto key = std::make_unique<char[]>(index.col_tot_len);
             int offset = 0;
             for (int j = 0; j < index.col_num; ++j) {
@@ -56,6 +55,7 @@ class DeleteExecutor : public AbstractExecutor {
             }
             //删除索引
             ih->delete_entry(key.get(), context_->txn_);
+            ix_manager->close_index(ih.get());
         }
     }
 
