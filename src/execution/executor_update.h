@@ -50,8 +50,7 @@ class UpdateExecutor : public AbstractExecutor {
         for (auto& index : tab_.indexes) {
             auto ix_name = sm_manager_->get_ix_manager()->get_index_name(
                 tab_name_, index.cols);
-            auto ix_manager = sm_manager_->get_ix_manager();
-            auto ih = ix_manager->open_index(tab_name_, index.cols);
+            auto ih = sm_manager_->ihs_.at(ix_name).get();
             char* key = new char[index.col_tot_len];
             int offset = 0;
             for (int j = 0; j < index.col_num; ++j) {
@@ -61,7 +60,6 @@ class UpdateExecutor : public AbstractExecutor {
             }
 
             ih->delete_entry(key, context_->txn_);
-            ix_manager->close_index(ih.get());
             delete[] key;
         }
     }
@@ -71,8 +69,9 @@ class UpdateExecutor : public AbstractExecutor {
         int fail_p = -1;
         for (int i = 0; i < (int)tab_.indexes.size(); i++) {
             auto& index = tab_.indexes[i];
-            auto ix_manager = sm_manager_->get_ix_manager();
-            auto ih = ix_manager->open_index(tab_name_, index.cols);
+            auto ix_name = sm_manager_->get_ix_manager()->get_index_name(
+                tab_name_, index.cols);
+            auto ih = sm_manager_->ihs_.at(ix_name).get();
             char* key = new char[index.col_tot_len];
             int offset = 0;
             for (int j = 0; j < index.col_num; ++j) {
@@ -83,7 +82,6 @@ class UpdateExecutor : public AbstractExecutor {
 
             auto result = ih->insert_entry(key, rid_, context_->txn_);
             delete[] key;
-            ix_manager->close_index(ih.get());
             if (result.second == false) {
                 fail_p = i;
                 break;
@@ -94,8 +92,9 @@ class UpdateExecutor : public AbstractExecutor {
             //删掉已插入索引
             for (int i = 0; i < fail_p; i++) {
                 auto& index = tab_.indexes[i];
-                auto ix_manager = sm_manager_->get_ix_manager();
-                auto ih = ix_manager->open_index(tab_name_, index.cols);
+                auto ix_name = sm_manager_->get_ix_manager()->get_index_name(
+                    tab_name_, index.cols);
+                auto ih = sm_manager_->ihs_.at(ix_name).get();
                 char* key = new char[index.col_tot_len];
                 int offset = 0;
                 for (int j = 0; j < index.col_num; ++j) {
@@ -105,7 +104,6 @@ class UpdateExecutor : public AbstractExecutor {
                 }
 
                 ih->delete_entry(key, context_->txn_);
-                ix_manager->close_index(ih.get());
                 delete[] key;
             }
             return false;

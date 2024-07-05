@@ -317,7 +317,6 @@ void SmManager::create_index(const std::string& tab_name,
             }
             ix_hdl->insert_entry(key, rm_scan.rid(), context->txn_);
         }
-        ix_manager_->close_index(ix_hdl);
     } catch (InternalError& error) {
         drop_index(tab_name, col_names, context);
         throw InternalError("Non-unique index!");
