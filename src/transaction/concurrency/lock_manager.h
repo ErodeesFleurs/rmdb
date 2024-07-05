@@ -70,18 +70,7 @@ class LockManager {
 
     bool unlock(Transaction* txn, LockDataId lock_data_id);
 
-    bool is_lock(Transaction* txn);
-
-    bool is_unlock(Transaction* txn);
-
-    bool GrantLock(LockRequestQueue& request_queue, LockRequest& request);
-
-    bool CanGrantLock(const LockRequestQueue& request_queue, LockMode mode);
-
-    LockManager::GroupLockMode CalculateGroupLockMode(
-        const LockRequestQueue& request_queue);
-
-    bool WaitDie(LockRequestQueue& request_queue, LockRequest& request);
+    bool check_loop(Transaction* txn);
 
    private:
     std::mutex latch_;  // 用于锁表的并发
