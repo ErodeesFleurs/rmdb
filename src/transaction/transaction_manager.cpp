@@ -163,9 +163,8 @@ void TransactionManager::delete_record_in_index(Transaction* transaction,
                                                 RmRecord* rec, Rid rid_) {
     auto& tab = sm_manager_->db_.get_table(table_name);
     for (auto& index : tab.indexes) {
-        auto index_name = sm_manager_->get_ix_manager()->get_index_name(
-            table_name, index.cols);
-        auto index_handle = sm_manager_->get_index_handle(index_name);
+        auto index_manager = sm_manager_->get_ix_manager();
+        auto index_handle = index_manager->open_index(table_name, index.cols);
         auto key = std::make_unique<char[]>(index.col_tot_len);
         int offset = 0;
         for (int j = 0; j < index.col_num; ++j) {
@@ -174,6 +173,7 @@ void TransactionManager::delete_record_in_index(Transaction* transaction,
             offset += index.cols[j].len;
         }
         index_handle->delete_entry(key.get(), transaction);
+        index_manager->close_index(index_handle.get());
     }
 }
 
@@ -188,9 +188,8 @@ void TransactionManager::insert_record_in_index(Transaction* transaction,
                                                 RmRecord* rec, Rid rid_) {
     auto& tab = sm_manager_->db_.get_table(table_name);
     for (auto& index : tab.indexes) {
-        auto index_name = sm_manager_->get_ix_manager()->get_index_name(
-            table_name, index.cols);
-        auto index_handle = sm_manager_->get_index_handle(index_name);
+        auto index_manager = sm_manager_->get_ix_manager();
+        auto index_handle = index_manager->open_index(table_name, index.cols);
         auto key = std::make_unique<char[]>(index.col_tot_len);
         int offset = 0;
         for (int j = 0; j < index.col_num; ++j) {
@@ -199,5 +198,6 @@ void TransactionManager::insert_record_in_index(Transaction* transaction,
             offset += index.cols[j].len;
         }
         index_handle->insert_entry(key.get(), rid_, transaction);
+        index_manager->close_index(index_handle.get());
     }
 }
