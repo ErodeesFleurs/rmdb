@@ -142,28 +142,28 @@ class AbstractExecutor {
         return 0;
     }
 
-    static int comp_cond(const std::vector<ColMeta>& rec_cols,
-                            const Condition& cond, const RmRecord* rec) {
-        auto lhs_col = get_col(rec_cols, cond.lhs_col);
-        char* lhs = rec->data + lhs_col->offset;
-        char* rhs;
-        // Value lhs_value = get_value(lhs_col->type, lhs);
-        ColType rhs_type, lhs_type = lhs_col->type;
-        assert(!cond.is_rhs_list && !cond.is_rhs_query && !cond.is_rhs_val);
-        auto rhs_col = get_col(rec_cols, cond.rhs_col);
-            rhs_type = rhs_col->type;
-            rhs = rec->data + rhs_col->offset;
-        int cmp;
-        if (rhs_type != lhs_type) {
-            Value ls = get_value(lhs_type, lhs);
-            Value rs = get_value(rhs_type, rhs);
-            cmp = val_compare(ls, rs);
-        } else {
-            cmp = ix_compare(lhs, rhs, rhs_type, lhs_col->len);
-        }
-        assert(cond.op == OP_EQ);
-        return cmp;
-    }
+    // static int comp_cond(const std::vector<ColMeta>& rec_cols,
+    //                         const Condition& cond, const RmRecord* rec) {
+    //     auto lhs_col = get_col(rec_cols, cond.lhs_col);
+    //     char* lhs = rec->data + lhs_col->offset;
+    //     char* rhs;
+    //     // Value lhs_value = get_value(lhs_col->type, lhs);
+    //     ColType rhs_type, lhs_type = lhs_col->type;
+    //     assert(!cond.is_rhs_list && !cond.is_rhs_query && !cond.is_rhs_val);
+    //     auto rhs_col = get_col(rec_cols, cond.rhs_col);
+    //         rhs_type = rhs_col->type;
+    //         rhs = rec->data + rhs_col->offset;
+    //     int cmp;
+    //     if (rhs_type != lhs_type) {
+    //         Value ls = get_value(lhs_type, lhs);
+    //         Value rs = get_value(rhs_type, rhs);
+    //         cmp = val_compare(ls, rs);
+    //     } else {
+    //         cmp = ix_compare(lhs, rhs, rhs_type, lhs_col->len);
+    //     }
+    //     assert(cond.op == OP_EQ);
+    //     return cmp;
+    // }
     static bool eval_cond(const std::vector<ColMeta>& rec_cols,
                           const Condition& cond, const RmRecord* rec) {
         // std::cerr << rec_cols[0].tab_name << " " << cond.lhs_col.tab_name << " <--------!!!!!" << std::endl;

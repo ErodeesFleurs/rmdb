@@ -34,6 +34,13 @@ class MergeSortJoinExecutor : public AbstractExecutor {
     std::vector<std::unique_ptr<RmRecord>>::iterator joined_records_iterator;
     std::unique_ptr<RmRecord> current_tuple;
 
+    std::vector<ColMeta>::const_iterator left_col;
+    std::vector<ColMeta>::const_iterator right_col;
+    int left_offset;
+    int right_offset;
+    ColType left_type;
+    ColType right_type;
+
    public:
     MergeSortJoinExecutor(std::unique_ptr<AbstractExecutor> left,
                           std::unique_ptr<AbstractExecutor> right,
@@ -52,12 +59,22 @@ class MergeSortJoinExecutor : public AbstractExecutor {
         fed_conds_ = std::move(conds);
         assert(fed_conds_.size() == 1);
         fed_cond_ = fed_conds_.front();
+        
+        assert(!fed_cond_.is_rhs_list && !fed_cond_.is_rhs_query && !fed_cond_.is_rhs_val);
 
         left_records.clear();
         right_records.clear();
         joined_records.clear();
 
         current_tuple = nullptr;
+
+        left_col = get_col(left_->cols(), fed_cond_.lhs_col);
+        left_offset = left_col->offset;
+        left_type = left_col->type;
+        right_col = get_col(right_->cols(), fed_cond_.rhs_col);
+        right_offset = right_col->offset;
+        right_type = right_col->type;
+        assert(fed_cond_.op == OP_EQ);
     }
 
     const std::vector<ColMeta>& cols() const override { return cols_; }
@@ -79,28 +96,16 @@ class MergeSortJoinExecutor : public AbstractExecutor {
         print_table_into_one_file_respectively();
         // std::cerr << "end print_table_into_one_file_respectively" << std::endl;
 
-        for (int i = 0, p = 0; i < left_records.size() && p < right_records.size(); i++) {
-            std::unique_ptr<RmRecord> now_joined_record = get_joined_record(left_records[i], right_records[p]);
-            while (comp_cond(cols_, fed_cond_, now_joined_record.get()) == 1) {
+        for (int i = 0, p = 0; i < (int)left_records.size() && p < (int)right_records.size(); i++) {
+            while (p < (int)right_records.size() && comp_cond(left_records[i].get(), right_records[p].get()) == 1) {
                 p++;
-                if (p >= (int)right_records.size())
-                    break;
-                now_joined_record =
-                    get_joined_record(left_records[i], right_records[p]);
             }
-            if (p >= (int)right_records.size())
-                break;
             int rem = p;
-            if (comp_cond(cols_, fed_cond_, now_joined_record.get()) == 0) {
-                while (comp_cond(cols_, fed_cond_, now_joined_record.get()) ==
-                       0) {
-                    joined_records.emplace_back(std::move(now_joined_record));
-                    p++;
-                    if (p >= (int)right_records.size())
-                        break;
-                    now_joined_record =
-                        get_joined_record(left_records[i], right_records[p]);
-                }
+            while (p < (int)right_records.size() && comp_cond(left_records[i].get(), right_records[p].get()) ==
+                    0) {
+                std::unique_ptr<RmRecord> now_joined_record = std::move(get_joined_record(left_records[i], right_records[p]));
+                joined_records.emplace_back(std::move(now_joined_record));
+                p++;
             }
             p = rem;
         }
@@ -113,6 +118,20 @@ class MergeSortJoinExecutor : public AbstractExecutor {
             current_tuple =
                 std::make_unique<RmRecord>(*((*joined_records_iterator).get()));
         }
+    }
+
+    int comp_cond(const RmRecord* left_rec, const RmRecord* right_rec) {
+        char* lhs = left_rec->data + left_offset;
+        char* rhs = right_rec->data + right_offset;
+        int cmp;
+        if (left_type != right_type) {
+            Value ls = get_value(left_type, lhs);
+            Value rs = get_value(right_type, rhs);
+            cmp = val_compare(ls, rs);
+        } else {
+            cmp = ix_compare(lhs, rhs, right_type, left_col->len);
+        }
+        return cmp;
     }
 
     void nextTuple() override {
@@ -164,7 +183,7 @@ class MergeSortJoinExecutor : public AbstractExecutor {
             }
             outfile << "\n";
 
-            for (int i = 0; i < records.size(); i++) {
+            for (int i = 0; i < (int)records.size(); i++) {
                 
                 std::vector<std::string> columns;
                 for (auto& col : prev_->cols()) {
