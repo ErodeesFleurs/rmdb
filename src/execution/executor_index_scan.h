@@ -209,6 +209,10 @@ class IndexScanExecutor : public AbstractExecutor {
         return false;
     }
 
+    virtual int gettype() override {
+        return len_ + 1;
+    }
+
     const std::vector<ColMeta>& cols() const override { return cols_; }
 
     Rid& rid() override { return rid_; }

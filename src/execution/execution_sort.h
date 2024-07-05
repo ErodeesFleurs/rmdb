@@ -48,6 +48,9 @@ class SortExecutor : public AbstractExecutor {
     void beginTuple() override {
         std::cerr << "Sort BeginTuple" << std::endl;
         prev_->beginTuple();
+        if (!prev_->gettype()) {
+            sleep(2);
+        }
 
         while (!prev_->is_end()) {
             all_records.emplace_back(std::move(prev_->Next()));

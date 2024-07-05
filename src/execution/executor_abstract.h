@@ -142,6 +142,10 @@ class AbstractExecutor {
         return 0;
     }
 
+    virtual int gettype() {
+        return 0;
+    }
+
     // static int comp_cond(const std::vector<ColMeta>& rec_cols,
     //                         const Condition& cond, const RmRecord* rec) {
     //     auto lhs_col = get_col(rec_cols, cond.lhs_col);
