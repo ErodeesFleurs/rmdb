@@ -37,7 +37,7 @@ class TransactionManager {
 
     void commit(Transaction* txn, LogManager* log_manager);
 
-    void abort(Context* context, LogManager* log_manager);
+    void abort(Context* context, LogManager* log_manager, bool is_redo = false);
 
     void delete_record_in_index(Transaction* transaction,
                                 const std::string& table_name, RmRecord* rec,

@@ -17,6 +17,7 @@ See the Mulan PSL v2 for more details. */
 #include <signal.h>
 #include <unistd.h>
 #include <atomic>
+#include <cstddef>
 
 #include "analyze/analyze.h"
 #include "errors.h"
@@ -178,7 +179,7 @@ void* client_handler(void* sock_fd) {
                     offset = str.length();
 
                     // 回滚事务
-                    txn_manager->abort(context, log_manager.get());
+                    txn_manager->abort(context, log_manager.get(), false);
                     std::cout << e.GetInfo() << std::endl;
 
                     if (!output_ellipsis) {

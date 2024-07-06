@@ -24,24 +24,41 @@ bool LockManager::CheckAndGrantNormalLock(Transaction* txn,
     auto& lock_request_queue = lock_table_[lock_data_id];
 
     // 检查当前加锁队列中的锁模式
-    for (auto& lock_request : lock_request_queue.request_queue_) {
-        if (lock_request.granted_ &&
-            (lock_request.lock_mode_ == LockMode::EXLUCSIVE ||
-             lock_mode == LockMode::EXLUCSIVE)) {
-            if (txn->get_transaction_id() > lock_request.txn_id_) {
-                // 当前事务优先级更低，则中止持有锁的事务
-                txn->set_state(TransactionState::ABORTED);
-                throw TransactionAbortException(
-                    txn->get_transaction_id(),
-                    AbortReason::DEADLOCK_PREVENTION);
-            } else {
-                // 如果当前事务优先级更高，则等待
-                auto check = [&] {
-                    return !lock_request.granted_ ||
-                           lock_request.txn_id_ == txn->get_transaction_id();
-                };
-                lock_request_queue.cv_.wait(lock, check);
+    while (true) {
+        bool flag = false;
+        for (auto& lock_request : lock_request_queue.request_queue_) {
+            if (lock_request.granted_ &&
+                (lock_request.lock_mode_ == LockMode::EXLUCSIVE ||
+                 lock_mode == LockMode::EXLUCSIVE)) {
+                if (txn->get_transaction_id() > lock_request.txn_id_) {
+                    // 当前事务优先级更低，则中止持有锁的事务
+                    txn->set_state(TransactionState::ABORTED);
+                    throw TransactionAbortException(
+                        txn->get_transaction_id(),
+                        AbortReason::DEADLOCK_PREVENTION);
+                } else {
+                    // 如果当前事务优先级更高，则等待
+                    auto check = [&] {
+                        std::cerr << txn->get_transaction_id() << " wait"
+                                  << " "
+                                  << lock_request_queue.request_queue_.size()
+                                  << std::endl;
+                        return !lock_request.granted_ ||
+                               lock_request.txn_id_ ==
+                                   txn->get_transaction_id();
+                    };
+                    if (!check()) {
+                        lock_request_queue.cv_.wait(lock);
+                        std::cerr << txn->get_transaction_id() << " wake up"
+                                  << std::endl;
+                        flag = true;
+                        break;
+                    }
+                }
             }
+        }
+        if (!flag) {
+            break;
         }
     }
 

@@ -76,7 +76,8 @@ void TransactionManager::commit(Transaction* txn, LogManager* log_manager) {
  * @param {Transaction *} txn 需要回滚的事务
  * @param {LogManager} *log_manager 日志管理器指针
  */
-void TransactionManager::abort(Context* context, LogManager* log_manager) {
+void TransactionManager::abort(Context* context, LogManager* log_manager,
+                               bool is_redo) {
     // Todo:
     // 1. 回滚所有写操作
     // 2. 释放所有锁
@@ -144,13 +145,27 @@ void TransactionManager::abort(Context* context, LogManager* log_manager) {
     for (auto i : *lock_set) {
         lock_manager_->unlock(txn, i);
     }
-    txn->clear();
+    txn->clear_lock_set();
+    if (!is_redo) {
+        txn->clear();
 
-    auto log = std::make_unique<AbortLogRecord>(txn->get_transaction_id());
-    log->prev_lsn_ = txn->get_prev_lsn();
-    log_manager->add_log_to_buffer(log.get());
-    txn->set_prev_lsn(log->lsn_);
-    txn->set_state(TransactionState::ABORTED);
+        auto log = std::make_unique<AbortLogRecord>(txn->get_transaction_id());
+        log->prev_lsn_ = txn->get_prev_lsn();
+        log_manager->add_log_to_buffer(log.get());
+        txn->set_prev_lsn(log->lsn_);
+        txn->set_state(TransactionState::ABORTED);
+    } else {
+        try {
+            std::cerr << "redo" << std::endl;
+            std::cerr << "size: " << txn->get_write_set()->size() << std::endl;
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            redo(txn, log_manager, context);
+        } catch (TransactionAbortException& e) {
+            abort(context, log_manager, is_redo);
+            std::cout << e.GetInfo() << std::endl;
+            txn->set_state(TransactionState::ABORTED);
+        }
+    }
 }
 
 /**
