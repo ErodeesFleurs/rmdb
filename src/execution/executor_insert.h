@@ -61,6 +61,10 @@ class InsertExecutor : public AbstractExecutor {
             memcpy(rec.data + col.offset, val.raw->data, col.len);
         }
 
+        if (context_->txn_ != nullptr) {
+            context_->lock_mgr_->lock_exclusive_on_table(
+                context_->txn_, sm_manager_->fhs_[tab_name_]->GetFd());
+        }
         // 插入记录, 获取rid
         rid_ = fh_->insert_record(rec.data, context_);
         // 更新索引

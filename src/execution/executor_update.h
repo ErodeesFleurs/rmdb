@@ -122,6 +122,9 @@ class UpdateExecutor : public AbstractExecutor {
         for (auto rid : rids_) {
             auto rec = fh_->get_record(rid, context_);
             auto old_rec = fh_->get_record(rid, context_);
+            if (context_->txn_ != nullptr)
+                context_->lock_mgr_->lock_exclusive_on_record(
+                    context_->txn_, rid, fh_->GetFd());
             delete_index(rec.get(), rid);
             upd_cnt++;
             for (const auto& i : set_clauses_) {
