@@ -76,8 +76,7 @@ void TransactionManager::commit(Transaction* txn, LogManager* log_manager) {
  * @param {Transaction *} txn 需要回滚的事务
  * @param {LogManager} *log_manager 日志管理器指针
  */
-void TransactionManager::abort(Context* context, LogManager* log_manager,
-                               bool is_redo) {
+void TransactionManager::abort(Context* context, LogManager* log_manager) {
     // Todo:
     // 1. 回滚所有写操作
     // 2. 释放所有锁
@@ -145,27 +144,13 @@ void TransactionManager::abort(Context* context, LogManager* log_manager,
     for (auto i : *lock_set) {
         lock_manager_->unlock(txn, i);
     }
-    txn->clear_lock_set();
-    if (!is_redo) {
-        txn->clear();
+    txn->clear();
 
-        auto log = std::make_unique<AbortLogRecord>(txn->get_transaction_id());
-        log->prev_lsn_ = txn->get_prev_lsn();
-        log_manager->add_log_to_buffer(log.get());
-        txn->set_prev_lsn(log->lsn_);
-        txn->set_state(TransactionState::ABORTED);
-    } else {
-        try {
-            std::cerr << "redo" << std::endl;
-            std::cerr << "size: " << txn->get_write_set()->size() << std::endl;
-            std::this_thread::sleep_for(std::chrono::milliseconds(100));
-            redo(txn, log_manager, context);
-        } catch (TransactionAbortException& e) {
-            abort(context, log_manager, is_redo);
-            std::cout << e.GetInfo() << std::endl;
-            txn->set_state(TransactionState::ABORTED);
-        }
-    }
+    auto log = std::make_unique<AbortLogRecord>(txn->get_transaction_id());
+    log->prev_lsn_ = txn->get_prev_lsn();
+    log_manager->add_log_to_buffer(log.get());
+    txn->set_prev_lsn(log->lsn_);
+    txn->set_state(TransactionState::ABORTED);
 }
 
 /**
@@ -215,55 +200,5 @@ void TransactionManager::insert_record_in_index(Transaction* transaction,
             offset += index.cols[j].len;
         }
         index_handle->insert_entry(key.get(), rid_, transaction);
-    }
-}
-
-/**
- * @description: 重新执行当前事务的写操作
- * @param {Transaction*} txn 当前事务指针
- * @param {LogManager*} log_manager 日志管理器指针
- * @param {Context*} context 上下文指针
- */
-void TransactionManager::redo(Transaction* txn, LogManager* log_manager,
-                              Context* context) {
-    // 获取事务的写操作集合
-    auto write_set = txn->get_write_set();
-
-    // 遍历写操作集合，重新执行每个操作
-    for (auto& write_record : *write_set) {
-        auto write_type = write_record->GetWriteType();
-        auto table_name = write_record->GetTableName();
-        auto record = write_record->GetRecord();
-        auto rid = write_record->GetRid();
-
-        if (!sm_manager_->contains_table(table_name)) {
-            throw TableExistsError(table_name);
-        }
-
-        auto file_handle = sm_manager_->get_file_handle(table_name);
-
-        // 根据写操作的类型，重新执行相应操作
-        switch (write_type) {
-            case WType::INSERT_TUPLE: {
-                // 重新插入记录
-                file_handle->insert_record(rid, record.data);
-                insert_record_in_index(txn, table_name, &record, rid);
-                break;
-            }
-            case WType::UPDATE_TUPLE: {
-                // 重新更新记录
-                file_handle->update_record(rid, record.data, context);
-                insert_record_in_index(txn, table_name, &record, rid);
-                break;
-            }
-            case WType::DELETE_TUPLE: {
-                // 重新删除记录
-                file_handle->delete_record(rid, context);
-                delete_record_in_index(txn, table_name, &record, rid);
-                break;
-            }
-            default:
-                throw InternalError("Unexpected write type");
-        }
     }
 }
