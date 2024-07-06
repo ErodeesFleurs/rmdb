@@ -63,9 +63,6 @@ class LockManager {
 
     ~LockManager() {}
 
-    bool CheckAndGrantLock(Transaction* txn, LockDataId& lock_data_id,
-                           LockMode lock_mode);
-
     bool CheckAndGrantNormalLock(Transaction* txn, LockDataId& lock_data_id,
                                  LockMode lock_mode);
 

@@ -57,6 +57,7 @@ void TransactionManager::commit(Transaction* txn, LogManager* log_manager) {
     // 5. 更新事务状态
 
     auto lock_set = txn->get_lock_set();
+    std::cerr << "lock_set size: " << lock_set->size() << std::endl;
     for (auto i : *lock_set) {
         lock_manager_->unlock(txn, i);
     }
