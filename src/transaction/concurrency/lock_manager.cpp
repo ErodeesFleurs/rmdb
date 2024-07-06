@@ -29,7 +29,6 @@ bool LockManager::lock_shared_on_record(Transaction* txn, const Rid& rid,
     bool ok = true;
     for (auto i : request_queue_.request_queue_) {
         if (i.txn_id_ == txn->get_transaction_id()) {
-            //            std::cout << i.txn_id_ << " " << i.lock_mode_ << " " << i.granted_ << "\n";
             //已有锁
             if (i.granted_)
                 return true;
