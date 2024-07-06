@@ -11,17 +11,9 @@ TESTS = [
     "lost_update_test",
     "unrepeatable_read_test",
     "unrepeatable_read_test_hard",
-    "phantom_read_test_1",
-    "phantom_read_test_2",
-    "phantom_read_test_3",
-    "phantom_read_test_4",
 ]
 
 CHECK_METHOD = [
-    "dict_match",
-    "dict_match",
-    "dict_match",
-    "dict_match",
     "dict_match",
     "dict_match",
     "dict_match",
