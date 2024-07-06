@@ -57,7 +57,6 @@ void TransactionManager::commit(Transaction* txn, LogManager* log_manager) {
     // 5. 更新事务状态
 
     auto lock_set = txn->get_lock_set();
-    std::cerr << "lock_set size: " << lock_set->size() << std::endl;
     for (auto i : *lock_set) {
         lock_manager_->unlock(txn, i);
     }
@@ -86,7 +85,6 @@ void TransactionManager::abort(Context* context, LogManager* log_manager) {
 
     auto txn = context->txn_;
     auto write_set = txn->get_write_set();
-    std::cerr << "write_set size: " << write_set->size() << std::endl;
     while (!write_set->empty()) {
         auto write_record = write_set->back();
         write_set->pop_back();
@@ -111,7 +109,6 @@ void TransactionManager::abort(Context* context, LogManager* log_manager) {
                     txn, rid, file_handle->GetFd());
                 delete_record_in_index(txn, table_name, &record, rid);
                 file_handle->delete_record(rid, context);
-                std::cerr << "delete record in abort" << std::endl;
                 break;
             }
             case WType::UPDATE_TUPLE: {
@@ -129,7 +126,6 @@ void TransactionManager::abort(Context* context, LogManager* log_manager) {
                 delete_record_in_index(txn, table_name, old_record.get(), rid);
                 file_handle->update_record(rid, record.data, context);
                 insert_record_in_index(txn, table_name, &record, rid);
-                std::cerr << "update record in abort" << std::endl;
                 break;
             }
             case WType::DELETE_TUPLE: {
@@ -143,7 +139,6 @@ void TransactionManager::abort(Context* context, LogManager* log_manager) {
                     txn, file_handle->GetFd());
                 insert_record_in_index(txn, table_name, &record, rid);
                 file_handle->insert_record(rid, record.data);
-                std::cerr << "insert record in abort" << std::endl;
                 break;
             }
             default:

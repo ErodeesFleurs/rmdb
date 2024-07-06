@@ -226,7 +226,7 @@ void* client_handler(void* sock_fd) {
         }
         // 如果是单挑语句，需要按照一个完整的事务来执行，所以执行完当前语句后，自动提交事务
         if (context->txn_->get_txn_mode() == false) {
-            std::cerr << "不是显式事务，自动提交事务\n" << std::endl;
+            // std::cerr << "不是显式事务，自动提交事务\n" << std::endl;
             txn_manager->commit(context->txn_, context->log_mgr_);
         }
     }
