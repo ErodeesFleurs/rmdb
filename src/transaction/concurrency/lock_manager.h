@@ -63,6 +63,15 @@ class LockManager {
 
     ~LockManager() {}
 
+    bool CheckAndGrantLock(Transaction* txn, LockDataId& lock_data_id,
+                           LockMode lock_mode);
+
+    bool CheckAndGrantNormalLock(Transaction* txn, LockDataId& lock_data_id,
+                                 LockMode lock_mode);
+
+    bool CheckAndGrantIntentLock(Transaction* txn, LockDataId& lock_data_id,
+                                 LockMode lock_mode);
+
     bool lock_shared_on_record(Transaction* txn, const Rid& rid, int tab_fd);
 
     bool lock_exclusive_on_record(Transaction* txn, const Rid& rid, int tab_fd);
@@ -74,8 +83,6 @@ class LockManager {
     bool lock_IS_on_table(Transaction* txn, int tab_fd);
 
     bool lock_IX_on_table(Transaction* txn, int tab_fd);
-
-    bool check_loop(Transaction* txn);
 
     bool unlock(Transaction* txn, LockDataId lock_data_id);
 

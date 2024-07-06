@@ -87,11 +87,11 @@ class Transaction {
         return lock_set_;
     }
 
-    inline void append_lock_set(LockDataId lock_data_id) {
+    inline void append_lock(LockDataId lock_data_id) {
         lock_set_->insert(lock_data_id);
     }
 
-    inline bool delete_lock_set(LockDataId lock_data_id) {
+    inline bool delete_lock(LockDataId lock_data_id) {
         return lock_set_->erase(lock_data_id);
     }
 
