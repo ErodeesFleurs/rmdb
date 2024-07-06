@@ -75,6 +75,8 @@ class LockManager {
 
     bool lock_IX_on_table(Transaction* txn, int tab_fd);
 
+    bool check_loop(Transaction* txn);
+
     bool unlock(Transaction* txn, LockDataId lock_data_id);
 
     bool check_lock(Transaction* txn);
