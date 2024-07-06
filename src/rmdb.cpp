@@ -17,6 +17,7 @@ See the Mulan PSL v2 for more details. */
 #include <signal.h>
 #include <unistd.h>
 #include <atomic>
+#include <cstddef>
 
 #include "analyze/analyze.h"
 #include "errors.h"

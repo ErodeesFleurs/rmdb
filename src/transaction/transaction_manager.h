@@ -46,9 +46,6 @@ class TransactionManager {
     void insert_record_in_index(Transaction* transaction,
                                 const std::string& table_name, RmRecord* rec,
                                 Rid rid_);
-
-    void redo(Transaction* txn, LogManager* log_manager, Context* context);
-
     ConcurrencyMode get_concurrency_mode() { return concurrency_mode_; }
 
     void set_concurrency_mode(ConcurrencyMode concurrency_mode) {
