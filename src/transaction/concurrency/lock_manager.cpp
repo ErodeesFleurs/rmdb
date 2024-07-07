@@ -22,7 +22,7 @@ bool LockManager::CheckAndGrantNormalLock(Transaction* txn,
                                           LockMode lock_mode) {
     std::unique_lock<std::mutex> lock(latch_);
     auto& lock_request_queue = lock_table_[lock_data_id];
-
+    bool flag = false;
     // 检查当前加锁队列中的锁模式
     for (auto& lock_request : lock_request_queue.request_queue_) {
         if (lock_request.granted_ &&
@@ -36,14 +36,13 @@ bool LockManager::CheckAndGrantNormalLock(Transaction* txn,
                     AbortReason::DEADLOCK_PREVENTION);
             } else {
                 // 如果当前事务优先级更高，则等待
-                auto check = [&] {
-                    return !lock_request.granted_ ||
-                           lock_request.txn_id_ == txn->get_transaction_id();
-                };
-                lock_request_queue.cv_.wait(lock, check);
+                flag = true;
                 break;
             }
         }
+    }
+    if (flag) {
+        lock_request_queue.cv_.wait(lock);
     }
 
     // 如果没有冲突，或者可以获取锁，则添加锁请求到队列并授予锁
@@ -53,8 +52,8 @@ bool LockManager::CheckAndGrantNormalLock(Transaction* txn,
     lock_request_queue.group_lock_mode_ =
         lock_mode == LockMode::EXLUCSIVE ? GroupLockMode::X : GroupLockMode::S;
     txn->append_lock(lock_data_id);
-    std::cerr << txn->get_transaction_id() << "lock success: " << time(NULL)
-              << std::endl;
+    // std::cerr << txn->get_transaction_id() << "lock success: " << time(NULL)
+    //           << std::endl;
     return true;
 }
 
@@ -178,22 +177,22 @@ bool LockManager::unlock(Transaction* txn, LockDataId lock_data_id) {
     }
 
     auto& lock_request_queue = it->second;
-    for (auto& lock_request : lock_request_queue.request_queue_) {
-        if (lock_request.txn_id_ == txn->get_transaction_id()) {
-            lock_request.granted_ = false;
-        }
-    }
-    // auto size = lock_request_queue.request_queue_.size();
-    // lock_request_queue.request_queue_.erase(
-    //     std::remove_if(lock_request_queue.request_queue_.begin(),
-    //                    lock_request_queue.request_queue_.end(),
-    //                    [txn](const LockRequest& request) {
-    //                        return request.txn_id_ == txn->get_transaction_id();
-    //                    }),
-    //     lock_request_queue.request_queue_.end());
-    // if (size == lock_request_queue.request_queue_.size()) {
-    //     return false;
+    // for (auto& lock_request : lock_request_queue.request_queue_) {
+    //     if (lock_request.txn_id_ == txn->get_transaction_id()) {
+    //         lock_request.granted_ = false;
+    //     }
     // }
+    auto size = lock_request_queue.request_queue_.size();
+    lock_request_queue.request_queue_.erase(
+        std::remove_if(lock_request_queue.request_queue_.begin(),
+                       lock_request_queue.request_queue_.end(),
+                       [txn](const LockRequest& request) {
+                           return request.txn_id_ == txn->get_transaction_id();
+                       }),
+        lock_request_queue.request_queue_.end());
+    if (size == lock_request_queue.request_queue_.size()) {
+        return false;
+    }
     // std::cerr << txn->get_transaction_id() << " unlock success, queue size: "
     //           << lock_request_queue.request_queue_.size() << std::endl;
     lock_request_queue.cv_.notify_one();
