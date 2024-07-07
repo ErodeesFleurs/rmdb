@@ -9,12 +9,12 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details. */
 
 #pragma once
+#include "../common/common.h"
 #include "execution_defs.h"
 #include "execution_manager.h"
 #include "executor_abstract.h"
 #include "index/ix.h"
 #include "system/sm.h"
-#include "../common/common.h"
 
 class InsertExecutor : public AbstractExecutor {
    private:
@@ -37,6 +37,8 @@ class InsertExecutor : public AbstractExecutor {
         }
         fh_ = sm_manager_->fhs_.at(tab_name).get();
         context_ = context;
+        context_->lock_mgr_->lock_exclusive_on_table(
+            context_->txn_, sm_manager_->fhs_[tab_name_]->GetFd());
     };
 
     std::unique_ptr<RmRecord> Next() override {
@@ -65,7 +67,7 @@ class InsertExecutor : public AbstractExecutor {
          * std::string s(a, len);
          */
         if (context_->txn_ != nullptr) {
-            auto &indexes = tab_.indexes;
+            auto& indexes = tab_.indexes;
             if (indexes.size() == 1 && indexes.front().col_num == 1) {
                 auto& index = tab_.indexes.front();
                 ColType type = index.cols.front().type;
@@ -74,7 +76,7 @@ class InsertExecutor : public AbstractExecutor {
                 auto ih = sm_manager_->ihs_.at(ix_name).get();
                 char* key = new char[index.col_tot_len];
                 memcpy(key, rec.data + index.cols.front().offset,
-                        index.cols.front().len);
+                       index.cols.front().len);
                 Value val;
                 if (type == ColType::TYPE_INT) {
                     val = *(int*)key;
@@ -85,11 +87,12 @@ class InsertExecutor : public AbstractExecutor {
                     val = s;
                 }
                 std::cerr << val << " <- VAL ?????" << std::endl;
-                context_->lock_mgr_->lock_exclusive_on_gap(
-                    context_->txn_, std::pair<Value, Value>(val, val), sm_manager_->fhs_[tab_name_]->GetFd());
+                // context_->lock_mgr_->lock_exclusive_on_gap(
+                //     context_->txn_, std::pair<Value, Value>(val, val),
+                //     sm_manager_->fhs_[tab_name_]->GetFd());
             } else {
-                context_->lock_mgr_->lock_exclusive_on_table(
-                    context_->txn_, sm_manager_->fhs_[tab_name_]->GetFd());
+                // context_->lock_mgr_->lock_exclusive_on_table(
+                //     context_->txn_, sm_manager_->fhs_[tab_name_]->GetFd());
             }
         }
         // 插入记录, 获取rid
