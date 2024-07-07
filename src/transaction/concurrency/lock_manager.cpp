@@ -10,6 +10,67 @@ See the Mulan PSL v2 for more details. */
 
 #include "lock_manager.h"
 
+bool LockManager::CompareLockMode(LockMode mode1, LockMode mode2) {
+    if (mode1 == LockMode::SHARED &&
+        (mode2 == LockMode::SHARED || mode2 == LockMode::INTENTION_SHARED)) {
+        return true;
+    } else if (mode1 == LockMode::EXLUCSIVE) {
+        return false;
+    } else if (mode1 == LockMode::INTENTION_SHARED &&
+               mode2 != LockMode::EXLUCSIVE) {
+        return true;
+    } else if (mode1 == LockMode::INTENTION_EXCLUSIVE &&
+               (mode2 == LockMode::INTENTION_EXCLUSIVE ||
+                mode2 == LockMode::INTENTION_SHARED)) {
+        return true;
+    } else if (mode1 == LockMode::S_IX && mode2 == LockMode::INTENTION_SHARED) {
+        return true;
+    }
+    return false;
+}
+
+bool LockManager::CompareGroupLockWithLock(GroupLockMode group_mode,
+                                           LockMode mode) {
+    if (group_mode == GroupLockMode::NON_LOCK) {
+        return true;
+    } else
+        return CompareLockMode(GetLockMode(group_mode), mode);
+}
+
+LockManager::GroupLockMode LockManager::GetGroupLockMode(LockMode mode) {
+    switch (mode) {
+        case LockMode::SHARED:
+            return GroupLockMode::S;
+        case LockMode::EXLUCSIVE:
+            return GroupLockMode::X;
+        case LockMode::INTENTION_SHARED:
+            return GroupLockMode::IS;
+        case LockMode::INTENTION_EXCLUSIVE:
+            return GroupLockMode::IX;
+        case LockMode::S_IX:
+            return GroupLockMode::SIX;
+        default:
+            return GroupLockMode::NON_LOCK;
+    }
+}
+
+LockManager::LockMode LockManager::GetLockMode(GroupLockMode mode) {
+    switch (mode) {
+        case GroupLockMode::S:
+            return LockMode::SHARED;
+        case GroupLockMode::X:
+            return LockMode::EXLUCSIVE;
+        case GroupLockMode::IS:
+            return LockMode::INTENTION_SHARED;
+        case GroupLockMode::IX:
+            return LockMode::INTENTION_EXCLUSIVE;
+        case GroupLockMode::SIX:
+            return LockMode::S_IX;
+        default:
+            return LockMode::SHARED;
+    }
+}
+
 /**
  * @description: 检查并获取普通锁，如果锁被其他事务占用，应用wait-die算法处理死锁
  * @return {bool} 加锁是否成功

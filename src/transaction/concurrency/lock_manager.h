@@ -63,6 +63,16 @@ class LockManager {
 
     ~LockManager() {}
 
+    bool CompareLockMode(LockMode mode1, LockMode mode2);
+
+    bool CompareGroupLockWithLock(GroupLockMode group_mode, LockMode mode);
+
+    LockManager::GroupLockMode GetGroupLockMode(LockMode mode);
+
+    LockManager::LockMode GetLockMode(GroupLockMode mode);
+
+    bool CompareGroupLock(GroupLockMode mode1, GroupLockMode mode2);
+
     bool CheckAndGrantNormalLock(Transaction* txn, LockDataId& lock_data_id,
                                  LockMode lock_mode);
 
