@@ -62,6 +62,9 @@ class DeleteExecutor : public AbstractExecutor {
     std::unique_ptr<RmRecord> Next() override {
         for (auto rid : rids_) {
             auto rec = fh_->get_record(rid, context_);
+            if (context_->txn_ != nullptr)
+                context_->lock_mgr_->lock_exclusive_on_record(
+                    context_->txn_, rid, fh_->GetFd());
             //实际删除
             delete_index(rec.get(), rid);
             fh_->delete_record(rid, context_);

@@ -449,6 +449,8 @@ void SmManager::load_record(const std::string& file_path,
                            tab_meta.cols[idx].len);
             idx++;
         }
+        context->lock_mgr_->lock_exclusive_on_table(context->txn_,
+                                                    file_handle->GetFd());
         auto rid = file_handle->insert_record(record.data, context);
 
         auto logRecord = std::make_shared<InsertLogRecord>(

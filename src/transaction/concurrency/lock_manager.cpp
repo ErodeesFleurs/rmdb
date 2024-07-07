@@ -24,41 +24,25 @@ bool LockManager::CheckAndGrantNormalLock(Transaction* txn,
     auto& lock_request_queue = lock_table_[lock_data_id];
 
     // 检查当前加锁队列中的锁模式
-    while (true) {
-        bool flag = false;
-        for (auto& lock_request : lock_request_queue.request_queue_) {
-            if (lock_request.granted_ &&
-                (lock_request.lock_mode_ == LockMode::EXLUCSIVE ||
-                 lock_mode == LockMode::EXLUCSIVE)) {
-                if (txn->get_transaction_id() > lock_request.txn_id_) {
-                    // 当前事务优先级更低，则中止持有锁的事务
-                    txn->set_state(TransactionState::ABORTED);
-                    throw TransactionAbortException(
-                        txn->get_transaction_id(),
-                        AbortReason::DEADLOCK_PREVENTION);
-                } else {
-                    // 如果当前事务优先级更高，则等待
-                    auto check = [&] {
-                        std::cerr << txn->get_transaction_id() << " wait"
-                                  << " "
-                                  << lock_request_queue.request_queue_.size()
-                                  << std::endl;
-                        return !lock_request.granted_ ||
-                               lock_request.txn_id_ ==
-                                   txn->get_transaction_id();
-                    };
-                    if (!check()) {
-                        lock_request_queue.cv_.wait(lock);
-                        std::cerr << txn->get_transaction_id() << " wake up"
-                                  << std::endl;
-                        flag = true;
-                        break;
-                    }
-                }
+    for (auto& lock_request : lock_request_queue.request_queue_) {
+        if (lock_request.granted_ &&
+            (lock_request.lock_mode_ == LockMode::EXLUCSIVE ||
+             lock_mode == LockMode::EXLUCSIVE)) {
+            if (txn->get_transaction_id() > lock_request.txn_id_) {
+                // 当前事务优先级更低，则中止持有锁的事务
+                txn->set_state(TransactionState::ABORTED);
+                throw TransactionAbortException(
+                    txn->get_transaction_id(),
+                    AbortReason::DEADLOCK_PREVENTION);
+            } else {
+                // 如果当前事务优先级更高，则等待
+                auto check = [&] {
+                    return !lock_request.granted_ ||
+                           lock_request.txn_id_ == txn->get_transaction_id();
+                };
+                lock_request_queue.cv_.wait(lock, check);
+                break;
             }
-        }
-        if (!flag) {
-            break;
         }
     }
 
@@ -69,7 +53,8 @@ bool LockManager::CheckAndGrantNormalLock(Transaction* txn,
     lock_request_queue.group_lock_mode_ =
         lock_mode == LockMode::EXLUCSIVE ? GroupLockMode::X : GroupLockMode::S;
     txn->append_lock(lock_data_id);
-    std::cerr << "lock success" << std::endl;
+    std::cerr << txn->get_transaction_id() << "lock success: " << time(NULL)
+              << std::endl;
     return true;
 }
 
@@ -91,7 +76,7 @@ bool LockManager::CheckAndGrantIntentLock(Transaction* txn,
                                                    lock_mode);
     lock_request_queue.request_queue_.back().granted_ = true;
     txn->append_lock(lock_data_id);
-    std::cerr << "lock success" << std::endl;
+    // std::cerr << "lock success" << std::endl;
     return true;
 }
 
@@ -104,8 +89,8 @@ bool LockManager::CheckAndGrantIntentLock(Transaction* txn,
  */
 bool LockManager::lock_shared_on_record(Transaction* txn, const Rid& rid,
                                         int tab_fd) {
-    std::cerr << txn->get_transaction_id() << " lock shared on record"
-              << std::endl;
+    // std::cerr << txn->get_transaction_id() << " lock shared on record"
+    //           << std::endl;
     LockDataId lock_data_id(tab_fd, rid, LockDataType::RECORD);
     return CheckAndGrantNormalLock(txn, lock_data_id, LockMode::SHARED);
 }
@@ -119,8 +104,8 @@ bool LockManager::lock_shared_on_record(Transaction* txn, const Rid& rid,
  */
 bool LockManager::lock_exclusive_on_record(Transaction* txn, const Rid& rid,
                                            int tab_fd) {
-    std::cerr << txn->get_transaction_id() << " lock exclusive on record"
-              << std::endl;
+    // std::cerr << txn->get_transaction_id() << " lock exclusive on record"
+    //           << std::endl;
     LockDataId lock_data_id(tab_fd, rid, LockDataType::RECORD);
     return CheckAndGrantNormalLock(txn, lock_data_id, LockMode::EXLUCSIVE);
 }
@@ -132,8 +117,8 @@ bool LockManager::lock_exclusive_on_record(Transaction* txn, const Rid& rid,
  * @param {int} tab_fd 目标表的fd
  */
 bool LockManager::lock_shared_on_table(Transaction* txn, int tab_fd) {
-    std::cerr << txn->get_transaction_id() << " lock shared on table"
-              << std::endl;
+    // std::cerr << txn->get_transaction_id() << " lock shared on table"
+    //           << std::endl;
     LockDataId lock_data_id(tab_fd, LockDataType::TABLE);
     return CheckAndGrantNormalLock(txn, lock_data_id, LockMode::SHARED);
 }
@@ -145,8 +130,8 @@ bool LockManager::lock_shared_on_table(Transaction* txn, int tab_fd) {
  * @param {int} tab_fd 目标表的fd
  */
 bool LockManager::lock_exclusive_on_table(Transaction* txn, int tab_fd) {
-    std::cerr << txn->get_transaction_id() << " lock exclusive on table"
-              << std::endl;
+    // std::cerr << txn->get_transaction_id() << " lock exclusive on table"
+    //           << std::endl;
     LockDataId lock_data_id(tab_fd, LockDataType::TABLE);
     return CheckAndGrantNormalLock(txn, lock_data_id, LockMode::EXLUCSIVE);
 }
@@ -158,7 +143,7 @@ bool LockManager::lock_exclusive_on_table(Transaction* txn, int tab_fd) {
  * @param {int} tab_fd 目标表的fd
  */
 bool LockManager::lock_IS_on_table(Transaction* txn, int tab_fd) {
-    std::cerr << txn->get_transaction_id() << " lock IS on table" << std::endl;
+    // std::cerr << txn->get_transaction_id() << " lock IS on table" << std::endl;
     LockDataId lock_data_id(tab_fd, LockDataType::TABLE);
     return CheckAndGrantIntentLock(txn, lock_data_id,
                                    LockMode::INTENTION_SHARED);
@@ -171,7 +156,7 @@ bool LockManager::lock_IS_on_table(Transaction* txn, int tab_fd) {
  * @param {int} tab_fd 目标表的fd
  */
 bool LockManager::lock_IX_on_table(Transaction* txn, int tab_fd) {
-    std::cerr << txn->get_transaction_id() << " lock IX on table" << std::endl;
+    // std::cerr << txn->get_transaction_id() << " lock IX on table" << std::endl;
     LockDataId lock_data_id(tab_fd, LockDataType::TABLE);
     return CheckAndGrantIntentLock(txn, lock_data_id,
                                    LockMode::INTENTION_EXCLUSIVE);
@@ -184,8 +169,8 @@ bool LockManager::lock_IX_on_table(Transaction* txn, int tab_fd) {
  * @param {LockDataId} lock_data_id 要释放的锁ID
  */
 bool LockManager::unlock(Transaction* txn, LockDataId lock_data_id) {
-    std::cerr << txn->get_transaction_id() << " unlock" << " "
-              << lock_data_id.type_ << std::endl;
+    // std::cerr << txn->get_transaction_id() << " unlock" << " "
+    //           << lock_data_id.type_ << std::endl;
     std::unique_lock<std::mutex> lock(latch_);
     auto it = lock_table_.find(lock_data_id);
     if (it == lock_table_.end()) {
@@ -193,19 +178,24 @@ bool LockManager::unlock(Transaction* txn, LockDataId lock_data_id) {
     }
 
     auto& lock_request_queue = it->second;
-    auto size = lock_request_queue.request_queue_.size();
-    lock_request_queue.request_queue_.erase(
-        std::remove_if(lock_request_queue.request_queue_.begin(),
-                       lock_request_queue.request_queue_.end(),
-                       [txn](const LockRequest& request) {
-                           return request.txn_id_ == txn->get_transaction_id();
-                       }),
-        lock_request_queue.request_queue_.end());
-    if (size == lock_request_queue.request_queue_.size()) {
-        return false;
+    for (auto& lock_request : lock_request_queue.request_queue_) {
+        if (lock_request.txn_id_ == txn->get_transaction_id()) {
+            lock_request.granted_ = false;
+        }
     }
-    std::cerr << txn->get_transaction_id() << " unlock success, queue size: "
-              << lock_request_queue.request_queue_.size() << std::endl;
-    lock_request_queue.cv_.notify_all();
+    // auto size = lock_request_queue.request_queue_.size();
+    // lock_request_queue.request_queue_.erase(
+    //     std::remove_if(lock_request_queue.request_queue_.begin(),
+    //                    lock_request_queue.request_queue_.end(),
+    //                    [txn](const LockRequest& request) {
+    //                        return request.txn_id_ == txn->get_transaction_id();
+    //                    }),
+    //     lock_request_queue.request_queue_.end());
+    // if (size == lock_request_queue.request_queue_.size()) {
+    //     return false;
+    // }
+    // std::cerr << txn->get_transaction_id() << " unlock success, queue size: "
+    //           << lock_request_queue.request_queue_.size() << std::endl;
+    lock_request_queue.cv_.notify_one();
     return true;
 }

@@ -57,7 +57,6 @@ void TransactionManager::commit(Transaction* txn, LogManager* log_manager) {
     // 5. 更新事务状态
 
     auto lock_set = txn->get_lock_set();
-    std::cerr << "lock_set size: " << lock_set->size() << std::endl;
     for (auto i : *lock_set) {
         lock_manager_->unlock(txn, i);
     }
@@ -106,6 +105,8 @@ void TransactionManager::abort(Context* context, LogManager* log_manager) {
                 log_manager->add_log_to_buffer(log_record.get());
                 txn->set_prev_lsn(log_record->lsn_);
 
+                context->lock_mgr_->lock_exclusive_on_record(
+                    txn, rid, file_handle->GetFd());
                 delete_record_in_index(txn, table_name, &record, rid);
                 file_handle->delete_record(rid, context);
                 break;
@@ -120,6 +121,8 @@ void TransactionManager::abort(Context* context, LogManager* log_manager) {
                 log_manager->add_log_to_buffer(log_record.get());
                 txn->set_prev_lsn(log_record->lsn_);
 
+                context->lock_mgr_->lock_exclusive_on_record(
+                    txn, rid, file_handle->GetFd());
                 delete_record_in_index(txn, table_name, old_record.get(), rid);
                 file_handle->update_record(rid, record.data, context);
                 insert_record_in_index(txn, table_name, &record, rid);
@@ -132,6 +135,8 @@ void TransactionManager::abort(Context* context, LogManager* log_manager) {
                 log_manager->add_log_to_buffer(log_record.get());
                 txn->set_prev_lsn(log_record->lsn_);
 
+                context->lock_mgr_->lock_exclusive_on_table(
+                    txn, file_handle->GetFd());
                 insert_record_in_index(txn, table_name, &record, rid);
                 file_handle->insert_record(rid, record.data);
                 break;
