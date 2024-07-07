@@ -122,6 +122,9 @@ void SmManager::close_db() {
     for (auto& fh : fhs_) {  // 关闭所有的文件句柄
         rm_manager_->close_file(fh.second.get());
     }
+    for (auto& ih : ihs_) {  // 关闭所有的索引句柄
+        ix_manager_->close_index(ih.second.get());
+    }
     db_.name_.clear();
     db_.tabs_.clear();
     fhs_.clear();
