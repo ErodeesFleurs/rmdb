@@ -13,6 +13,7 @@ See the Mulan PSL v2 for more details. */
 #include <condition_variable>
 #include <mutex>
 #include "transaction/transaction.h"
+#include "../../common/common.h"
 
 static const std::string GroupLockModeStr[10] = {"NON_LOCK", "IS", "IX",
                                                  "S",        "X",  "SIX"};
@@ -24,7 +25,9 @@ class LockManager {
         EXLUCSIVE,
         INTENTION_SHARED,
         INTENTION_EXCLUSIVE,
-        S_IX
+        S_IX, 
+        GAP_SHARED, 
+        GAP_EXCLUSIVE
     };
 
     /** 用于标识加锁队列中排他性最强的锁类型，例如加锁队列中有SHARED和EXLUSIVE两个加锁操作，则该队列的锁模式为X 
@@ -43,9 +46,13 @@ class LockManager {
         LockRequest(txn_id_t txn_id, LockMode lock_mode)
             : txn_id_(txn_id), lock_mode_(lock_mode), granted_(false) {}
 
+        LockRequest(txn_id_t txn_id, LockMode lock_mode, std::pair<Value, Value> gap_rg)
+            : txn_id_(txn_id), lock_mode_(lock_mode), granted_(false), gap_rg_(gap_rg) {}
+
         txn_id_t txn_id_;     // 申请加锁的事务ID
         LockMode lock_mode_;  // 事务申请加锁的类型
         bool granted_;        // 该事务是否已经被赋予锁
+        std::pair<Value, Value> gap_rg_;  //对于GAP锁的加锁申请的区间范围
     };
 
     /* 数据项上的加锁队列 */
@@ -66,12 +73,21 @@ class LockManager {
     bool CheckAndGrantNormalLock(Transaction* txn, LockDataId& lock_data_id,
                                  LockMode lock_mode);
 
+    bool CheckAndGrantGapLock(Transaction* txn, LockDataId& lock_data_id, LockMode lock_mode, 
+                                           std::pair<Value, Value> rg);
+
     bool CheckAndGrantIntentLock(Transaction* txn, LockDataId& lock_data_id,
                                  LockMode lock_mode);
 
     bool lock_shared_on_record(Transaction* txn, const Rid& rid, int tab_fd);
 
     bool lock_exclusive_on_record(Transaction* txn, const Rid& rid, int tab_fd);
+
+    bool lock_shared_on_gap(Transaction* txn, const std::pair<Value, Value> rg,
+                                           int tab_fd);
+
+    bool lock_exclusive_on_gap(Transaction* txn, const std::pair<Value, Value> rg,
+                                           int tab_fd);
 
     bool lock_shared_on_table(Transaction* txn, int tab_fd);
 

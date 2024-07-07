@@ -14,6 +14,7 @@ See the Mulan PSL v2 for more details. */
 #include "executor_abstract.h"
 #include "index/ix.h"
 #include "system/sm.h"
+#include "../common/common.h"
 
 class InsertExecutor : public AbstractExecutor {
    private:
@@ -36,12 +37,6 @@ class InsertExecutor : public AbstractExecutor {
         }
         fh_ = sm_manager_->fhs_.at(tab_name).get();
         context_ = context;
-        if (context_->txn_ != nullptr) {
-            context_->lock_mgr_->lock_exclusive_on_table(
-                context->txn_, sm_manager_->fhs_[tab_name_]->GetFd());
-            // context_->lock_mgr_->lock_IX_on_table(
-            //     context->txn_, sm_manager_->fhs_[tab_name_]->GetFd());
-        }
     };
 
     std::unique_ptr<RmRecord> Next() override {
@@ -63,9 +58,39 @@ class InsertExecutor : public AbstractExecutor {
             memcpy(rec.data + col.offset, val.raw->data, col.len);
         }
 
+        /**
+         * char* a = nullptr;
+         * int b  = *(int*)a;
+         * int len;
+         * std::string s(a, len);
+         */
         if (context_->txn_ != nullptr) {
-            context_->lock_mgr_->lock_exclusive_on_table(
-                context_->txn_, sm_manager_->fhs_[tab_name_]->GetFd());
+            auto &indexes = tab_.indexes;
+            if (indexes.size() == 1 && indexes.front().col_num == 1) {
+                auto& index = tab_.indexes.front();
+                ColType type = index.cols.front().type;
+                auto ix_name = sm_manager_->get_ix_manager()->get_index_name(
+                    tab_name_, index.cols);
+                auto ih = sm_manager_->ihs_.at(ix_name).get();
+                char* key = new char[index.col_tot_len];
+                memcpy(key, rec.data + index.cols.front().offset,
+                        index.cols.front().len);
+                Value val;
+                if (type == ColType::TYPE_INT) {
+                    val = *(int*)key;
+                } else if (type == ColType::TYPE_FLOAT) {
+                    val = *(double*)key;
+                } else {
+                    std::string s(key, index.cols.front().len);
+                    val = s;
+                }
+                std::cerr << val << " <- VAL ?????" << std::endl;
+                context_->lock_mgr_->lock_exclusive_on_gap(
+                    context_->txn_, std::pair<Value, Value>(val, val), sm_manager_->fhs_[tab_name_]->GetFd());
+            } else {
+                context_->lock_mgr_->lock_exclusive_on_table(
+                    context_->txn_, sm_manager_->fhs_[tab_name_]->GetFd());
+            }
         }
         // 插入记录, 获取rid
         rid_ = fh_->insert_record(rec.data, context_);

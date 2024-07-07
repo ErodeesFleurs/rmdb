@@ -26,8 +26,9 @@ bool LockManager::CheckAndGrantNormalLock(Transaction* txn,
     // 检查当前加锁队列中的锁模式
     for (auto& lock_request : lock_request_queue.request_queue_) {
         if (lock_request.granted_ &&
-            (lock_request.lock_mode_ == LockMode::EXLUCSIVE ||
-             lock_mode == LockMode::EXLUCSIVE)) {
+            (lock_mode == LockMode::EXLUCSIVE || 
+             lock_request.lock_mode_ == LockMode::EXLUCSIVE ||
+             lock_request.lock_mode_ == LockMode::GAP_EXCLUSIVE)) {
             if (txn->get_transaction_id() > lock_request.txn_id_) {
                 // 当前事务优先级更低，则中止持有锁的事务
                 txn->set_state(TransactionState::ABORTED);
@@ -52,6 +53,60 @@ bool LockManager::CheckAndGrantNormalLock(Transaction* txn,
     lock_request_queue.request_queue_.back().granted_ = true;
     lock_request_queue.group_lock_mode_ =
         lock_mode == LockMode::EXLUCSIVE ? GroupLockMode::X : GroupLockMode::S;
+    txn->append_lock(lock_data_id);
+    std::cerr << txn->get_transaction_id() << "lock success: " << time(NULL)
+              << std::endl;
+    return true;
+}
+
+/**
+ * @description: 检查并获取间隙锁，如果锁被其他事务占用，应用wait-die算法处理死锁
+ * @return {bool} 加锁是否成功
+ * @param {Transaction*} txn 要申请锁的事务对象指针
+ * @param {LockDataId&} lock_data_id 加锁的目标资源ID
+ * @param {LockMode} lock_mode 加锁的模式
+ */
+bool LockManager::CheckAndGrantGapLock(Transaction* txn,
+                                          LockDataId& lock_data_id,
+                                          LockMode lock_mode, std::pair<Value, Value> rg) {
+    std::unique_lock<std::mutex> lock(latch_);
+    auto& lock_request_queue = lock_table_[lock_data_id];
+
+    auto in_range = [&](std::pair<Value, Value> &a, std::pair<Value, Value> &b) -> bool {
+        return !(a.second < b.first || b.second < a.first);
+    };
+
+    // 检查当前加锁队列中的锁模式
+    for (auto& lock_request : lock_request_queue.request_queue_) {
+        // std::cerr << "LOCKGRNAD?? -> " << lock_request.granted_ << ' ' << lock_request.lock_mode_ << ' ' << lock_request.gap_rg_.first << ' ' << lock_request.gap_rg_.second << ' ' << rg.first << ' ' << rg.second << ' ' << std::endl;
+        if (lock_request.granted_ &&
+            (lock_request.lock_mode_ == LockMode::EXLUCSIVE ||
+             lock_request.lock_mode_ == LockMode::GAP_EXCLUSIVE && in_range(lock_request.gap_rg_, rg) || 
+             lock_mode == LockMode::GAP_EXCLUSIVE && (lock_request.lock_mode_ == LockMode::SHARED || lock_request.lock_mode_ == LockMode::GAP_SHARED && in_range(lock_request.gap_rg_, rg)))) {
+            if (txn->get_transaction_id() > lock_request.txn_id_) {
+                // 当前事务优先级更低，则中止持有锁的事务
+                txn->set_state(TransactionState::ABORTED);
+                throw TransactionAbortException(
+                    txn->get_transaction_id(),
+                    AbortReason::DEADLOCK_PREVENTION);
+            } else {
+                // 如果当前事务优先级更高，则等待
+                auto check = [&] {
+                    return !lock_request.granted_ ||
+                           lock_request.txn_id_ == txn->get_transaction_id();
+                };
+                lock_request_queue.cv_.wait(lock, check);
+                break;
+            }
+        }
+    }
+
+    // 如果没有冲突，或者可以获取锁，则添加锁请求到队列并授予锁
+    lock_request_queue.request_queue_.emplace_back(txn->get_transaction_id(), lock_mode, 
+                                                   rg);
+    lock_request_queue.request_queue_.back().granted_ = true;
+    lock_request_queue.group_lock_mode_ =
+        lock_mode == LockMode::EXLUCSIVE ? GroupLockMode::X : GroupLockMode::S;     // no use;
     txn->append_lock(lock_data_id);
     std::cerr << txn->get_transaction_id() << "lock success: " << time(NULL)
               << std::endl;
@@ -108,6 +163,36 @@ bool LockManager::lock_exclusive_on_record(Transaction* txn, const Rid& rid,
     //           << std::endl;
     LockDataId lock_data_id(tab_fd, rid, LockDataType::RECORD);
     return CheckAndGrantNormalLock(txn, lock_data_id, LockMode::EXLUCSIVE);
+}
+
+/**
+ * @description: 申请行级间隙读锁
+ * @return {bool} 加锁是否成功
+ * @param {Transaction*} txn 要申请锁的事务对象指针
+ * @param {Rid&} rid 加锁的目标记录ID
+ * @param {int} tab_fd 记录所在的表的fd
+ */
+bool LockManager::lock_shared_on_gap(Transaction* txn, const std::pair<Value, Value> rg,
+                                           int tab_fd) {
+    // std::cerr << txn->get_transaction_id() << " lock exclusive on record"
+    //           << std::endl;
+    LockDataId lock_data_id(tab_fd, LockDataType::TABLE);
+    return CheckAndGrantGapLock(txn, lock_data_id, LockMode::GAP_SHARED, rg);
+}
+
+/**
+ * @description: 申请行级间隙排他锁
+ * @return {bool} 加锁是否成功
+ * @param {Transaction*} txn 要申请锁的事务对象指针
+ * @param {Rid&} rid 加锁的目标记录ID
+ * @param {int} tab_fd 记录所在的表的fd
+ */
+bool LockManager::lock_exclusive_on_gap(Transaction* txn, const std::pair<Value, Value> rg,
+                                           int tab_fd) {
+    // std::cerr << txn->get_transaction_id() << " lock exclusive on record"
+    //           << std::endl;
+    LockDataId lock_data_id(tab_fd, LockDataType::TABLE);
+    return CheckAndGrantGapLock(txn, lock_data_id, LockMode::GAP_EXCLUSIVE, rg);
 }
 
 /**
@@ -196,6 +281,6 @@ bool LockManager::unlock(Transaction* txn, LockDataId lock_data_id) {
     // }
     // std::cerr << txn->get_transaction_id() << " unlock success, queue size: "
     //           << lock_request_queue.request_queue_.size() << std::endl;
-    lock_request_queue.cv_.notify_one();
+    lock_request_queue.cv_.notify_all();
     return true;
 }
