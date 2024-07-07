@@ -196,6 +196,6 @@ bool LockManager::unlock(Transaction* txn, LockDataId lock_data_id) {
     // }
     // std::cerr << txn->get_transaction_id() << " unlock success, queue size: "
     //           << lock_request_queue.request_queue_.size() << std::endl;
-    lock_request_queue.cv_.notify_one();
+    lock_request_queue.cv_.notify_all();
     return true;
 }
