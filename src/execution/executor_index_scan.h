@@ -128,7 +128,6 @@ class IndexScanExecutor : public AbstractExecutor {
                 } else if (cond.op == OP_NE) {
                     // do nothing
                 }
-                break;
             }
             min_value.raw = nullptr;
             max_value.raw = nullptr;
