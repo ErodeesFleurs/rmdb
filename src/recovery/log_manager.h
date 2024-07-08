@@ -565,7 +565,6 @@ class LogBuffer {
         log_record->deserialize(buffer_ + cur_offset_);
         log_record->format_print();
         cur_offset_ += log_record->log_tot_len_;
-        std::cerr << log_record->log_tot_len_ << std::endl;
         return log_record;
     }
 
