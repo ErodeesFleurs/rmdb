@@ -93,6 +93,8 @@ class SmManager {
 
     bool contains_table(const std::string& tab_name) const;
 
+    bool contains_index(const std::string& index_name) const;
+
     RmFileHandle* get_file_handle(const std::string& tab_name) const;
 
     IxIndexHandle* get_index_handle(const std::string& index_name) const;

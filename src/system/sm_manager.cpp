@@ -484,6 +484,10 @@ bool SmManager::contains_table(const std::string& tab_name) const {
     return db_.is_table(tab_name);
 }
 
+bool SmManager::contains_index(const std::string& index_name) const {
+    return ihs_.count(index_name);
+}
+
 RmFileHandle* SmManager::get_file_handle(const std::string& tab_name) const {
     return fhs_.at(tab_name).get();
 }

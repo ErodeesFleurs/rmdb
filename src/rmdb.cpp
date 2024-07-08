@@ -18,6 +18,7 @@ See the Mulan PSL v2 for more details. */
 #include <unistd.h>
 #include <atomic>
 #include <cstddef>
+#include <cstdlib>
 
 #include "analyze/analyze.h"
 #include "errors.h"
@@ -235,8 +236,8 @@ void* client_handler(void* sock_fd) {
     std::cout << "Terminating current client_connection..." << std::endl;
     std::cout << "count_seq_scan: " << count_seq_scan << std::endl;
     std::cout << "count_index_scan: " << count_index_scan << std::endl;
-    close(fd);           // close a file descriptor.
-    pthread_exit(NULL);  // terminate calling thread!
+    close(fd);              // close a file descriptor.
+    pthread_exit(nullptr);  // terminate calling thread!
 }
 
 void start_server() {

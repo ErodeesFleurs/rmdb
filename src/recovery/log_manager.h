@@ -11,14 +11,16 @@ See the Mulan PSL v2 for more details. */
 #pragma once
 
 #include <iostream>
+#include <memory>
 #include <mutex>
 #include <vector>
+
 #include "common/config.h"
 #include "log_defs.h"
 #include "record/rm_defs.h"
 
 /* 日志记录对应操作的类型 */
-enum LogType : int { UPDATE = 0, INSERT, DELETE, begin, commit, ABORT };
+enum class LogType : int { UPDATE = 0, INSERT, DELETE, BEGIN, COMMIT, ABORT };
 static std::string LogTypeStr[] = {"UPDATE", "INSERT", "DELETE",
                                    "BEGIN",  "COMMIT", "ABORT"};
 
@@ -49,10 +51,10 @@ class LogRecord {
     }
     // used for debug
     virtual void format_print() {
-        std::cout << "log type in father_function: " << LogTypeStr[log_type_]
-                  << "\n";
+        std::cout << "log type in father_function: "
+                  << LogTypeStr[(int)log_type_] << "\n";
         printf("Print Log Record:\n");
-        printf("log_type_: %s\n", LogTypeStr[log_type_].c_str());
+        printf("log_type_: %s\n", LogTypeStr[(int)log_type_].c_str());
         printf("lsn: %d\n", lsn_);
         printf("log_tot_len: %d\n", log_tot_len_);
         printf("log_tid: %d\n", log_tid_);
@@ -63,7 +65,7 @@ class LogRecord {
 class BeginLogRecord : public LogRecord {
    public:
     BeginLogRecord() {
-        log_type_ = LogType::begin;
+        log_type_ = LogType::BEGIN;
         lsn_ = INVALID_LSN;
         log_tot_len_ = LOG_HEADER_SIZE;
         log_tid_ = INVALID_TXN_ID;
@@ -75,7 +77,7 @@ class BeginLogRecord : public LogRecord {
     // 从src中反序列化出一条Begin日志记录
     void deserialize(const char* src) override { LogRecord::deserialize(src); }
     virtual void format_print() override {
-        std::cout << "log type in son_function: " << LogTypeStr[log_type_]
+        std::cout << "log type in son_function: " << LogTypeStr[(int)log_type_]
                   << "\n";
         LogRecord::format_print();
     }
@@ -87,7 +89,7 @@ class BeginLogRecord : public LogRecord {
 class CommitLogRecord : public LogRecord {
    public:
     CommitLogRecord() {
-        log_type_ = LogType::commit;
+        log_type_ = LogType::COMMIT;
         lsn_ = INVALID_LSN;
         log_tot_len_ = LOG_HEADER_SIZE;
         log_tid_ = INVALID_TXN_ID;
@@ -99,7 +101,7 @@ class CommitLogRecord : public LogRecord {
     // 从src中反序列化出一条Commit日志记录
     void deserialize(const char* src) override { LogRecord::deserialize(src); }
     virtual void format_print() override {
-        std::cout << "log type in son_function: " << LogTypeStr[log_type_]
+        std::cout << "log type in son_function: " << LogTypeStr[(int)log_type_]
                   << "\n";
         LogRecord::format_print();
     }
@@ -123,7 +125,7 @@ class AbortLogRecord : public LogRecord {
     // 从src中反序列化出一条Abort日志记录
     void deserialize(const char* src) override { LogRecord::deserialize(src); }
     virtual void format_print() override {
-        std::cout << "log type in son_function: " << LogTypeStr[log_type_]
+        std::cout << "log type in son_function: " << LogTypeStr[(int)log_type_]
                   << "\n";
         LogRecord::format_print();
     }
@@ -345,7 +347,8 @@ class LogBuffer {
    public:
     LogBuffer() {
         offset_ = 0;
-        memset(buffer_, 0, sizeof(buffer_));
+        std::memset(buffer_, 0, sizeof(buffer_));
+        log_offset_.clear();
     }
 
     bool is_full(int append_size) {
@@ -354,8 +357,66 @@ class LogBuffer {
         return false;
     }
 
+    void write_log(LogRecord* log_record) {
+        log_offset_.push_back(offset_);
+        auto dest = std::make_unique<char[]>(log_record->log_tot_len_);
+        log_record->serialize(dest.get());
+        std::memcpy(buffer_ + offset_, dest.get(), log_record->log_tot_len_);
+        offset_ += log_record->log_tot_len_;
+    }
+
+    void reset() { idx_ = 0; }
+
+    void clear() {
+        idx_ = 0;
+        offset_ = 0;
+        std::memset(buffer_, 0, sizeof(buffer_));
+        log_offset_.clear();
+    }
+
+    bool has_next() const { return idx_ < (int)log_offset_.size(); }
+
+    std::shared_ptr<LogRecord> next() {
+        std::shared_ptr<LogRecord> log_record = nullptr;
+        if (idx_ >= (int)log_offset_.size()) {
+            return nullptr;
+        }
+        auto type = *reinterpret_cast<LogType*>(buffer_ + log_offset_[idx_]);
+
+        switch (type) {
+            case LogType::BEGIN: {
+                log_record = std::make_shared<BeginLogRecord>();
+                log_record->deserialize(buffer_ + log_offset_[idx_]);
+            }
+            case LogType::COMMIT: {
+                log_record = std::make_shared<CommitLogRecord>();
+                log_record->deserialize(buffer_ + log_offset_[idx_]);
+            }
+            case LogType::ABORT: {
+                log_record = std::make_shared<AbortLogRecord>();
+                log_record->deserialize(buffer_ + log_offset_[idx_]);
+            }
+            case LogType::INSERT: {
+                log_record = std::make_shared<InsertLogRecord>();
+                log_record->deserialize(buffer_ + log_offset_[idx_]);
+            }
+            case LogType::DELETE: {
+                log_record = std::make_shared<DeleteLogRecord>();
+                log_record->deserialize(buffer_ + log_offset_[idx_]);
+            }
+            case LogType::UPDATE: {
+                log_record = std::make_shared<UpdateLogRecord>();
+                log_record->deserialize(buffer_ + log_offset_[idx_]);
+            }
+        }
+        idx_++;
+        return log_record;
+    }
+
     char buffer_[LOG_BUFFER_SIZE + 1];
-    int offset_;  // 写入log的offset
+    std::vector<int> log_offset_;  // 记录每条日志在buffer中的offset
+    int offset_;                   // 写入log的offset
+    int idx_ = 0;  // 用于遍历log_offset_，指示当前遍历到的log_offset_的下标
 };
 
 /* 日志管理器，负责把日志写入日志缓冲区，以及把日志缓冲区中的内容写入磁盘中 */
