@@ -560,6 +560,14 @@ class LogBuffer {
                 log_record = std::make_shared<UpdateLogRecord>();
                 log_record->deserialize(buffer_ + log_offset_[idx_]);
             }
+            case LogType::INDEX_INSERT: {
+                log_record = std::make_shared<IndexInsertLogRecord>();
+                log_record->deserialize(buffer_ + log_offset_[idx_]);
+            }
+            case LogType::INDEX_DELETE: {
+                log_record = std::make_shared<IndexDeleteLogRecord>();
+                log_record->deserialize(buffer_ + log_offset_[idx_]);
+            }
         }
         idx_++;
         return log_record;

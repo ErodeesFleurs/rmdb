@@ -45,6 +45,18 @@ void RecoveryManager::analyze() {
                 att_[log->log_tid_] = log->lsn_;
                 break;
             }
+            case LogType::INDEX_INSERT: {
+                auto insert_log =
+                    std::dynamic_pointer_cast<IndexInsertLogRecord>(log);
+                att_[log->log_tid_] = log->lsn_;
+                break;
+            }
+            case LogType::INDEX_DELETE: {
+                auto insert_log =
+                    std::dynamic_pointer_cast<IndexDeleteLogRecord>(log);
+                att_[log->log_tid_] = log->lsn_;
+                break;
+            }
             default:
                 break;
         }
@@ -76,17 +88,17 @@ void RecoveryManager::analyze() {
  */
 void RecoveryManager::redo() {
     rollback(true);
-    for (const auto& log_reocrd : logs_) {
-        if (auto log = std::dynamic_pointer_cast<BeginLogRecord>(log_reocrd)) {
+    for (const auto& log_record : logs_) {
+        if (auto log = std::dynamic_pointer_cast<BeginLogRecord>(log_record)) {
             continue;
         } else if (auto log =
-                       std::dynamic_pointer_cast<CommitLogRecord>(log_reocrd)) {
+                       std::dynamic_pointer_cast<CommitLogRecord>(log_record)) {
             continue;
         } else if (auto log =
-                       std::dynamic_pointer_cast<AbortLogRecord>(log_reocrd)) {
+                       std::dynamic_pointer_cast<AbortLogRecord>(log_record)) {
             continue;
         } else if (auto log =
-                       std::dynamic_pointer_cast<InsertLogRecord>(log_reocrd)) {
+                       std::dynamic_pointer_cast<InsertLogRecord>(log_record)) {
             auto file_handle = sm_manager_->get_file_handle(log->table_name_);
             try {
                 file_handle->insert_record(log->rid_, log->insert_value_.data);
@@ -96,7 +108,7 @@ void RecoveryManager::redo() {
                 assert(new_rid == log->rid_);
             }
         } else if (auto log =
-                       std::dynamic_pointer_cast<DeleteLogRecord>(log_reocrd)) {
+                       std::dynamic_pointer_cast<DeleteLogRecord>(log_record)) {
             auto file_handle = sm_manager_->get_file_handle(log->table_name_);
             try {
                 file_handle->delete_record(log->rid_, nullptr);
@@ -104,7 +116,7 @@ void RecoveryManager::redo() {
                 std::cout << e.what() << '\n';
             }
         } else if (auto log =
-                       std::dynamic_pointer_cast<UpdateLogRecord>(log_reocrd)) {
+                       std::dynamic_pointer_cast<UpdateLogRecord>(log_record)) {
             auto file_handle = sm_manager_->get_file_handle(log->table_name_);
             try {
                 file_handle->update_record(log->rid_, log->after_value_.data,
@@ -112,6 +124,14 @@ void RecoveryManager::redo() {
             } catch (RMDBError& e) {
                 std::cout << e.what() << '\n';
             }
+        } else if (auto log = std::dynamic_pointer_cast<IndexInsertLogRecord>(
+                       log_record)) {
+            auto index_handle = sm_manager_->get_index_handle(log->ix_name_);
+            index_handle->insert_entry(log->key_, log->rid_, nullptr);
+        } else if (auto log = std::dynamic_pointer_cast<IndexDeleteLogRecord>(
+                       log_record)) {
+            auto index_handle = sm_manager_->get_index_handle(log->ix_name_);
+            index_handle->delete_entry(log->key_, nullptr);
         }
     }
 }
@@ -174,6 +194,24 @@ void RecoveryManager::rollback(bool is_r_txn) {
                         log->rid_, log->before_value_.data, nullptr);
                 } catch (RMDBError& e) {
                     std::cout << e.what() << '\n';
+                }
+                idx = log->prev_lsn_;
+            } else if (auto log =
+                           std::dynamic_pointer_cast<IndexInsertLogRecord>(
+                               logs_[idx])) {
+                if (!is_r_txn) {
+                    auto index_handle =
+                        sm_manager_->get_index_handle(log->ix_name_);
+                    index_handle->delete_entry(log->key_, nullptr);
+                }
+                idx = log->prev_lsn_;
+            } else if (auto log =
+                           std::dynamic_pointer_cast<IndexDeleteLogRecord>(
+                               logs_[idx])) {
+                if (!is_r_txn) {
+                    auto index_handle =
+                        sm_manager_->get_index_handle(log->ix_name_);
+                    index_handle->insert_entry(log->key_, log->rid_, nullptr);
                 }
                 idx = log->prev_lsn_;
             }
