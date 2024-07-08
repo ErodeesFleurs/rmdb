@@ -40,20 +40,6 @@ std::shared_ptr<Query> Analyze::do_analyze(std::shared_ptr<ast::TreeNode> parse,
             query->cols.push_back(sel_col);
         }
 
-        // 处理group by
-        for (auto& sv_group_col : x->group) {
-            TabCol group_col = {.tab_name = sv_group_col->cols->tab_name,
-                                .col_name = sv_group_col->cols->col_name,
-                                .as_name = sv_group_col->cols->as_name,
-                                .aggregate = sv_group_col->cols->aggregate};
-            query->group_cols.push_back(group_col);
-        }
-        // 如果有group by，检查group by的列是否存在
-        for (auto& group_col : query->group_cols) {
-            group_col = check_column(all_cols, group_col);  // Group列元数据校验
-        }
-        check_group(query->group_cols, query->tables);
-
         if (query->cols.empty()) {
             // select all columns
             for (auto& col : all_cols) {
@@ -75,6 +61,21 @@ std::shared_ptr<Query> Analyze::do_analyze(std::shared_ptr<ast::TreeNode> parse,
                 sel_col = check_column(all_cols, sel_col);  // 列元数据校验
             }
         }
+
+        // 处理group by
+        for (auto& sv_group_col : x->group) {
+            TabCol group_col = {.tab_name = sv_group_col->cols->tab_name,
+                                .col_name = sv_group_col->cols->col_name,
+                                .as_name = sv_group_col->cols->as_name,
+                                .aggregate = sv_group_col->cols->aggregate};
+            query->group_cols.push_back(group_col);
+        }
+        // 如果有group by，检查group by的列是否存在
+        for (auto& group_col : query->group_cols) {
+            group_col = check_column(all_cols, group_col);  // Group列元数据校验
+        }
+        check_group(query->group_cols, query->tables);
+        
         // 处理where条件
         get_clause(x->conds, query->conds, context);
         check_clause(query->tables, query->conds);
@@ -89,6 +90,22 @@ std::shared_ptr<Query> Analyze::do_analyze(std::shared_ptr<ast::TreeNode> parse,
         check_col_group_and_aggr(query->cols, query->group_cols);
         // 检测group by不存在时，是否有having条件
         check_without_group(query->group_cols, query->having_conds);
+
+        // 处理order by
+        for (auto& sv_order : x->order) {
+            Order order;
+            order.col = {.tab_name = sv_order->cols->tab_name, 
+                                .col_name = sv_order->cols->col_name, 
+                                .as_name = sv_order->cols->as_name, 
+                                .aggregate = sv_order->cols->aggregate};
+            order.dir = convert_sv_order_by_dir(sv_order->orderby_dir);
+            query->orders.push_back(order);
+        }
+        // 如果有order by，检查order by的列是否存在
+        for (auto& order : query->orders) {
+            order.col = check_column(all_cols, order.col);  // Group列元数据校验
+        }
+        check_order(query->orders, query->tables);
     } else if (auto x = std::dynamic_pointer_cast<ast::UpdateStmt>(parse)) {
         /** TODO: */
         set_clause(x->tab_name, x->set_clauses, query->set_clauses);
@@ -103,6 +120,8 @@ std::shared_ptr<Query> Analyze::do_analyze(std::shared_ptr<ast::TreeNode> parse,
         for (auto& sv_val : x->vals) {
             query->values.push_back(convert_sv_value(sv_val));
         }
+    } else if (auto x = std::dynamic_pointer_cast<ast::SetStmt>(parse)) {
+        query->parse = x;
     } else {
         // do nothing
     }
@@ -444,6 +463,25 @@ void Analyze::check_group(const std::vector<TabCol>& group_cols,
     }
 }
 
+void Analyze::check_order(const std::vector<Order>& orders,
+                          const std::vector<std::string>& tab_names) {
+    std::vector<ColMeta> all_cols;
+    get_all_cols(tab_names, all_cols);
+    for (auto& order : orders) {
+        bool found = false;
+        for (auto& col : all_cols) {
+            if (col.name == order.col.col_name &&
+                col.tab_name == order.col.tab_name) {
+                found = true;
+                break;
+            }
+        }
+        if (!found) {
+            throw RMDBError("Order by column not found");
+        }
+    }
+}
+
 void Analyze::check_without_group(const std::vector<TabCol>& group_cols,
                                   const std::vector<Condition>& having_conds) {
     if (group_cols.empty() && !having_conds.empty()) {
@@ -473,4 +511,11 @@ CompOp Analyze::convert_sv_comp_op(ast::SvCompOp op) {
         {ast::SV_OP_GT, OP_GT}, {ast::SV_OP_LE, OP_LE}, {ast::SV_OP_GE, OP_GE},
         {ast::SV_OP_IN, OP_IN}};
     return m.at(op);
+}
+
+OrderDir Analyze::convert_sv_order_by_dir(ast::OrderByDir obd) {
+    std::map<ast::OrderByDir, OrderDir> m = {
+        {ast::OrderBy_DEFAULT, DEFAULT}, {ast::OrderBy_ASC, ASC}, {ast::OrderBy_DESC, DESC}
+    };
+    return m.at(obd);
 }
