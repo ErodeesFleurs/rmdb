@@ -39,10 +39,10 @@ class UpdateExecutor : public AbstractExecutor {
         rids_ = rids;
         context_ = context;
 
-        if (context_->txn_ != nullptr) {
-            context_->lock_mgr_->lock_IX_on_table(
-                context->txn_, sm_manager_->fhs_[tab_name_]->GetFd());
-        }
+        // if (context_->txn_ != nullptr) {
+        //     context_->lock_mgr_->lock_IX_on_table(
+        //         context->txn_, sm_manager_->fhs_[tab_name_]->GetFd());
+        // }
     }
 
     void delete_index(RmRecord* rec, Rid rid_) {
@@ -140,9 +140,9 @@ class UpdateExecutor : public AbstractExecutor {
         for (auto rid : rids_) {
             auto rec = fh_->get_record(rid, context_);
             auto old_rec = fh_->get_record(rid, context_);
-            if (context_->txn_ != nullptr)
-                context_->lock_mgr_->lock_exclusive_on_record(
-                    context_->txn_, rid, fh_->GetFd());
+            // if (context_->txn_ != nullptr)
+            //     context_->lock_mgr_->lock_exclusive_on_record(
+            //         context_->txn_, rid, fh_->GetFd());
             delete_index(rec.get(), rid);
             upd_cnt++;
             for (const auto& i : set_clauses_) {

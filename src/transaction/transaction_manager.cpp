@@ -106,8 +106,8 @@ void TransactionManager::abort(Context* context, LogManager* log_manager) {
                 log_manager->add_log_to_buffer(log_record.get());
                 txn->set_prev_lsn(log_record->lsn_);
 
-                context->lock_mgr_->lock_exclusive_on_record(
-                    txn, rid, file_handle->GetFd());
+                // context->lock_mgr_->lock_exclusive_on_record(
+                //     txn, rid, file_handle->GetFd());
                 delete_record_in_index(context, table_name, &record, rid);
                 file_handle->delete_record(rid, context);
                 break;
@@ -122,8 +122,8 @@ void TransactionManager::abort(Context* context, LogManager* log_manager) {
                 log_manager->add_log_to_buffer(log_record);
                 txn->set_prev_lsn(log_record->lsn_);
 
-                context->lock_mgr_->lock_exclusive_on_record(
-                    txn, rid, file_handle->GetFd());
+                // context->lock_mgr_->lock_exclusive_on_record(
+                //     txn, rid, file_handle->GetFd());
                 delete_record_in_index(context, table_name, old_record.get(),
                                        rid);
                 file_handle->update_record(rid, record.data, context);
@@ -138,8 +138,8 @@ void TransactionManager::abort(Context* context, LogManager* log_manager) {
                 log_manager->add_log_to_buffer(log_record.get());
                 txn->set_prev_lsn(log_record->lsn_);
 
-                context->lock_mgr_->lock_exclusive_on_table(
-                    txn, file_handle->GetFd());
+                // context->lock_mgr_->lock_exclusive_on_table(
+                //     txn, file_handle->GetFd());
                 insert_record_in_index(context, table_name, &record, rid);
                 file_handle->insert_record(rid, record.data);
                 break;

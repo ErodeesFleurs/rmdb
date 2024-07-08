@@ -79,10 +79,10 @@ class IndexScanExecutor : public AbstractExecutor {
             }
         }
         fed_conds_ = conds_;
-        if (context_->txn_ != nullptr) {
-            context_->lock_mgr_->lock_IS_on_table(
-                context_->txn_, sm_manager_->fhs_[tab_name_]->GetFd());
-        }
+        // if (context_->txn_ != nullptr) {
+        //     context_->lock_mgr_->lock_IS_on_table(
+        //         context_->txn_, sm_manager_->fhs_[tab_name_]->GetFd());
+        // }
     }
 
     void beginTuple() override {
