@@ -51,16 +51,22 @@ class UpdateExecutor : public AbstractExecutor {
             auto ix_name = sm_manager_->get_ix_manager()->get_index_name(
                 tab_name_, index.cols);
             auto ih = sm_manager_->ihs_.at(ix_name).get();
-            char* key = new char[index.col_tot_len];
+            auto key = std::make_unique<char[]>(index.col_tot_len);
             int offset = 0;
             for (int j = 0; j < index.col_num; ++j) {
-                memcpy(key + offset, rec->data + index.cols[j].offset,
+                memcpy(key.get() + offset, rec->data + index.cols[j].offset,
                        index.cols[j].len);
                 offset += index.cols[j].len;
             }
-
-            ih->delete_entry(key, context_->txn_);
-            delete[] key;
+            //更新日志
+            auto logRecord = new IndexDeleteLogRecord(
+                context_->txn_->get_transaction_id(), key.get(), rid_, ix_name,
+                index.col_tot_len);
+            logRecord->prev_lsn_ = context_->txn_->get_prev_lsn();
+            context_->log_mgr_->add_log_to_buffer(logRecord);
+            context_->txn_->set_prev_lsn(logRecord->lsn_);
+            //删除索引
+            ih->delete_entry(key.get(), context_->txn_);
         }
     }
 
@@ -72,16 +78,22 @@ class UpdateExecutor : public AbstractExecutor {
             auto ix_name = sm_manager_->get_ix_manager()->get_index_name(
                 tab_name_, index.cols);
             auto ih = sm_manager_->ihs_.at(ix_name).get();
-            char* key = new char[index.col_tot_len];
+            auto key = std::make_unique<char[]>(index.col_tot_len);
             int offset = 0;
             for (int j = 0; j < index.col_num; ++j) {
-                memcpy(key + offset, rec->data + index.cols[j].offset,
+                memcpy(key.get() + offset, rec->data + index.cols[j].offset,
                        index.cols[j].len);
                 offset += index.cols[j].len;
             }
-
-            auto result = ih->insert_entry(key, rid_, context_->txn_);
-            delete[] key;
+            //更新日志
+            auto logRecord = new IndexInsertLogRecord(
+                context_->txn_->get_transaction_id(), key.get(), rid_, ix_name,
+                index.col_tot_len);
+            logRecord->prev_lsn_ = context_->txn_->get_prev_lsn();
+            context_->log_mgr_->add_log_to_buffer(logRecord);
+            context_->txn_->set_prev_lsn(logRecord->lsn_);
+            //插入索引
+            auto result = ih->insert_entry(key.get(), rid_, context_->txn_);
             if (result.second == false) {
                 fail_p = i;
                 break;
@@ -95,16 +107,22 @@ class UpdateExecutor : public AbstractExecutor {
                 auto ix_name = sm_manager_->get_ix_manager()->get_index_name(
                     tab_name_, index.cols);
                 auto ih = sm_manager_->ihs_.at(ix_name).get();
-                char* key = new char[index.col_tot_len];
+                auto key = std::make_unique<char[]>(index.col_tot_len);
                 int offset = 0;
                 for (int j = 0; j < index.col_num; ++j) {
-                    memcpy(key + offset, rec->data + index.cols[j].offset,
+                    memcpy(key.get() + offset, rec->data + index.cols[j].offset,
                            index.cols[j].len);
                     offset += index.cols[j].len;
                 }
-
-                ih->delete_entry(key, context_->txn_);
-                delete[] key;
+                //更新日志
+                auto* logRecord = new IndexDeleteLogRecord(
+                    context_->txn_->get_transaction_id(), key.get(), rid_,
+                    ix_name, index.col_tot_len);
+                logRecord->prev_lsn_ = context_->txn_->get_prev_lsn();
+                context_->log_mgr_->add_log_to_buffer(logRecord);
+                context_->txn_->set_prev_lsn(logRecord->lsn_);
+                //删除索引
+                ih->delete_entry(key.get(), context_->txn_);
             }
             return false;
         }
@@ -166,6 +184,13 @@ class UpdateExecutor : public AbstractExecutor {
                 upd_cnt--;
                 break;
             }
+            //更新日志
+            auto logRecord =
+                new UpdateLogRecord(context_->txn_->get_transaction_id(),
+                                    *old_rec, *rec, rid, tab_name_);
+            logRecord->prev_lsn_ = context_->txn_->get_prev_lsn();
+            context_->log_mgr_->add_log_to_buffer(logRecord);
+            context_->txn_->set_prev_lsn(logRecord->lsn_);
             //更新记录
             fh_->update_record(rid, rec->data, context_);
             //更新事务
@@ -186,7 +211,14 @@ class UpdateExecutor : public AbstractExecutor {
                 auto now_rec = fh_->get_record(rid_, context_);
                 delete_index(now_rec.get(), rid_);
                 insert_index(&rec_, rid_);
-
+                //更新日志
+                auto logRecord =
+                    new UpdateLogRecord(context_->txn_->get_transaction_id(),
+                                        *now_rec, rec_, rid_, tab_name_);
+                logRecord->prev_lsn_ = context_->txn_->get_prev_lsn();
+                context_->log_mgr_->add_log_to_buffer(logRecord);
+                context_->txn_->set_prev_lsn(logRecord->lsn_);
+                //更新记录
                 fh_->update_record(rid_, rec_.data, context_);
                 context_->txn_->delete_write_record();
             }

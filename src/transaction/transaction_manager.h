@@ -39,13 +39,12 @@ class TransactionManager {
 
     void abort(Context* context, LogManager* log_manager);
 
-    void delete_record_in_index(Transaction* transaction,
-                                const std::string& table_name, RmRecord* rec,
-                                Rid rid_);
+    void delete_record_in_index(Context* context, const std::string& table_name,
+                                RmRecord* rec, Rid rid_);
 
-    void insert_record_in_index(Transaction* transaction,
-                                const std::string& table_name, RmRecord* rec,
-                                Rid rid_);
+    void insert_record_in_index(Context* context, const std::string& table_name,
+                                RmRecord* rec, Rid rid_);
+
     ConcurrencyMode get_concurrency_mode() { return concurrency_mode_; }
 
     void set_concurrency_mode(ConcurrencyMode concurrency_mode) {

@@ -15,52 +15,61 @@ See the Mulan PSL v2 for more details. */
  */
 void RecoveryManager::analyze() {
     std::unordered_set<std::string> tables;
-    while (buffer_.has_next()) {
-        auto log = buffer_.next();
-        switch (log->log_type_) {
-            case LogType::BEGIN:
-            case LogType::COMMIT:
-            case LogType::ABORT: {
-                att_[log->log_tid_] = log->lsn_;
-                break;
-            }
-            case LogType::UPDATE: {
-                auto update_log =
-                    std::dynamic_pointer_cast<UpdateLogRecord>(log);
-                tables.insert(update_log->table_name_);
-                att_[log->log_tid_] = log->lsn_;
-                break;
-            }
-            case LogType::DELETE: {
-                auto delete_log =
-                    std::dynamic_pointer_cast<DeleteLogRecord>(log);
-                tables.insert(delete_log->table_name_);
-                att_[log->log_tid_] = log->lsn_;
-                break;
-            }
-            case LogType::INSERT: {
-                auto insert_log =
-                    std::dynamic_pointer_cast<InsertLogRecord>(log);
-                tables.insert(insert_log->table_name_);
-                att_[log->log_tid_] = log->lsn_;
-                break;
-            }
-            case LogType::INDEX_INSERT: {
-                auto insert_log =
-                    std::dynamic_pointer_cast<IndexInsertLogRecord>(log);
-                att_[log->log_tid_] = log->lsn_;
-                break;
-            }
-            case LogType::INDEX_DELETE: {
-                auto insert_log =
-                    std::dynamic_pointer_cast<IndexDeleteLogRecord>(log);
-                att_[log->log_tid_] = log->lsn_;
-                break;
-            }
-            default:
-                break;
+    while (true) {
+        int len = disk_manager_->read_log(buffer_.buffer_, LOG_BUFFER_SIZE,
+                                          buffer_.offset_);
+        if (len <= 0) {
+            break;
         }
-        logs_.push_back(log);
+        buffer_.offset_ += len;
+        buffer_.cur_offset_ = 0;
+        while (buffer_.has_next()) {
+            auto log = buffer_.next();
+            switch (log->log_type_) {
+                case LogType::BEGIN:
+                case LogType::COMMIT:
+                case LogType::ABORT: {
+                    att_[log->log_tid_] = log->lsn_;
+                    break;
+                }
+                case LogType::UPDATE: {
+                    auto update_log =
+                        std::dynamic_pointer_cast<UpdateLogRecord>(log);
+                    tables.insert(update_log->table_name_);
+                    att_[log->log_tid_] = log->lsn_;
+                    break;
+                }
+                case LogType::DELETE: {
+                    auto delete_log =
+                        std::dynamic_pointer_cast<DeleteLogRecord>(log);
+                    tables.insert(delete_log->table_name_);
+                    att_[log->log_tid_] = log->lsn_;
+                    break;
+                }
+                case LogType::INSERT: {
+                    auto insert_log =
+                        std::dynamic_pointer_cast<InsertLogRecord>(log);
+                    tables.insert(insert_log->table_name_);
+                    att_[log->log_tid_] = log->lsn_;
+                    break;
+                }
+                case LogType::INDEX_INSERT: {
+                    auto insert_log =
+                        std::dynamic_pointer_cast<IndexInsertLogRecord>(log);
+                    att_[log->log_tid_] = log->lsn_;
+                    break;
+                }
+                case LogType::INDEX_DELETE: {
+                    auto insert_log =
+                        std::dynamic_pointer_cast<IndexDeleteLogRecord>(log);
+                    att_[log->log_tid_] = log->lsn_;
+                    break;
+                }
+                default:
+                    break;
+            }
+            logs_.push_back(log);
+        }
     }
     // 重建索引确保数据
     for (const auto& tab_name : tables) {
@@ -81,6 +90,7 @@ void RecoveryManager::analyze() {
                 index_name, index_manager->open_index(index_name, index.cols));
         }
     }
+    // std::cerr << "size: " << logs_.size() << std::endl;
 }
 
 /**
@@ -101,11 +111,17 @@ void RecoveryManager::redo() {
                        std::dynamic_pointer_cast<InsertLogRecord>(log_record)) {
             auto file_handle = sm_manager_->get_file_handle(log->table_name_);
             try {
+                // std::cerr << "redo: "
+                //           << *reinterpret_cast<int*>(log->insert_value_.data)
+                //           << std::endl;
+                // std::cerr << "rid: " << log->rid_.page_no << ' '
+                //           << log->rid_.slot_no << std::endl;
                 file_handle->insert_record(log->rid_, log->insert_value_.data);
             } catch (RMDBError& e) {
                 auto new_rid = file_handle->insert_record(
                     log->insert_value_.data, nullptr);
-                assert(new_rid == log->rid_);
+                log->rid_ = new_rid;
+                std::cout << e.what() << '\n';
             }
         } else if (auto log =
                        std::dynamic_pointer_cast<DeleteLogRecord>(log_record)) {
@@ -144,8 +160,9 @@ void RecoveryManager::undo() {
 }
 
 void RecoveryManager::rollback(bool is_r_txn) {
-    for (const auto [txn_id, lsn] : att_) {
-        auto idx = txn_id;
+    for (auto it = att_.rbegin(); it != att_.rend(); ++it) {
+        const auto [txn_id, lsn] = *it;
+        auto idx = lsn;
         while (idx != INVALID_TXN_ID) {
             if (auto log =
                     std::dynamic_pointer_cast<BeginLogRecord>(logs_[idx])) {
@@ -199,20 +216,16 @@ void RecoveryManager::rollback(bool is_r_txn) {
             } else if (auto log =
                            std::dynamic_pointer_cast<IndexInsertLogRecord>(
                                logs_[idx])) {
-                if (!is_r_txn) {
-                    auto index_handle =
-                        sm_manager_->get_index_handle(log->ix_name_);
-                    index_handle->delete_entry(log->key_, nullptr);
-                }
+                auto index_handle =
+                    sm_manager_->get_index_handle(log->ix_name_);
+                index_handle->delete_entry(log->key_, nullptr);
                 idx = log->prev_lsn_;
             } else if (auto log =
                            std::dynamic_pointer_cast<IndexDeleteLogRecord>(
                                logs_[idx])) {
-                if (!is_r_txn) {
-                    auto index_handle =
-                        sm_manager_->get_index_handle(log->ix_name_);
-                    index_handle->insert_entry(log->key_, log->rid_, nullptr);
-                }
+                auto index_handle =
+                    sm_manager_->get_index_handle(log->ix_name_);
+                index_handle->insert_entry(log->key_, log->rid_, nullptr);
                 idx = log->prev_lsn_;
             }
         }

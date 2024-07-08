@@ -44,6 +44,6 @@ class RecoveryManager {
     DiskManager* disk_manager_;                     // 用来读写文件
     BufferPoolManager* buffer_pool_manager_;        // 对页面进行读写
     SmManager* sm_manager_;                         // 访问数据库元数据
-    std::unordered_map<txn_id_t, lsn_t> att_;       // 活动事务表
+    std::map<txn_id_t, lsn_t> att_;                 // 活动事务表
     std::vector<std::shared_ptr<LogRecord>> logs_;  // 日志记录
 };

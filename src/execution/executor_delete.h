@@ -54,6 +54,13 @@ class DeleteExecutor : public AbstractExecutor {
                        index.cols[j].len);
                 offset += index.cols[j].len;
             }
+            //更新日志
+            auto logRecord = new IndexDeleteLogRecord(
+                context_->txn_->get_transaction_id(), key.get(), rid_, ix_name,
+                index.col_tot_len);
+            logRecord->prev_lsn_ = context_->txn_->get_prev_lsn();
+            context_->log_mgr_->add_log_to_buffer(logRecord);
+            context_->txn_->set_prev_lsn(logRecord->lsn_);
             //删除索引
             ih->delete_entry(key.get(), context_->txn_);
         }
@@ -65,6 +72,12 @@ class DeleteExecutor : public AbstractExecutor {
             if (context_->txn_ != nullptr)
                 context_->lock_mgr_->lock_exclusive_on_record(
                     context_->txn_, rid, fh_->GetFd());
+            //更新日志
+            auto logRecord = new DeleteLogRecord(
+                context_->txn_->get_transaction_id(), *rec, rid, tab_name_);
+            logRecord->prev_lsn_ = context_->txn_->get_prev_lsn();
+            context_->log_mgr_->add_log_to_buffer(logRecord);
+            context_->txn_->set_prev_lsn(logRecord->lsn_);
             //实际删除
             delete_index(rec.get(), rid);
             fh_->delete_record(rid, context_);

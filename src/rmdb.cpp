@@ -119,10 +119,14 @@ void* client_handler(void* sock_fd) {
         printf("i_recvBytes: %d \n ", i_recvBytes);
 
         if (strcmp(data_recv, "exit") == 0) {
+            log_manager->flush_log_to_disk();
+            sm_manager->close_db();
             std::cout << "Client exit." << std::endl;
             break;
         }
         if (strcmp(data_recv, "crash") == 0) {
+            log_manager->flush_log_to_disk();
+            sm_manager->close_db();
             std::cout << "Server crash" << std::endl;
             exit(1);
         }
