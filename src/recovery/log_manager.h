@@ -563,7 +563,7 @@ class LogBuffer {
         auto type = *reinterpret_cast<LogType*>(buffer_ + cur_offset_);
         auto log_record = createLogRecord(type);
         log_record->deserialize(buffer_ + cur_offset_);
-        log_record->format_print();
+        // log_record->format_print();
         cur_offset_ += log_record->log_tot_len_;
         return log_record;
     }

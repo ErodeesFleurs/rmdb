@@ -14,7 +14,7 @@ See the Mulan PSL v2 for more details. */
  * @description: analyze阶段，需要获得脏页表（DPT）和未完成的事务列表（ATT）
  */
 void RecoveryManager::analyze() {
-    std::cerr << "analyze start" << std::endl;
+    // std::cerr << "analyze start" << std::endl;
     std::unordered_set<std::string> tables;
     auto tot_offset = 0;
     while (true) {
@@ -75,29 +75,29 @@ void RecoveryManager::analyze() {
             logs_.push_back(log);
         }
     }
-    std::cerr << "analyze doing" << std::endl;
-    // 重建索引确保数据
-    for (const auto& tab_name : tables) {
-        auto& tab = sm_manager_->db_.get_table(tab_name);
-        for (const auto& index : tab.indexes) {
-            auto index_name = sm_manager_->get_ix_manager()->get_index_name(
-                tab.name, index.cols);
-            auto index_manager = sm_manager_->get_ix_manager();
-            std::cerr << "index_name: " << index_name << std::endl;
-            // 如果当前索引被打开了, 先关闭
-            if (sm_manager_->contains_index(index_name)) {
-                index_manager->close_index(
-                    sm_manager_->get_index_handle(index_name));
-                sm_manager_->ihs_.erase(index_name);
-            }
-            std::cerr << "destroy index" << std::endl;
-            index_manager->destroy_index(tab.name, index.cols);
-            index_manager->create_index(tab.name, index.cols);
-            sm_manager_->ihs_.emplace(
-                index_name, index_manager->open_index(tab_name, index.cols));
-        }
-    }
-    std::cerr << "analyze done" << std::endl;
+    // std::cerr << "analyze doing" << std::endl;
+    // // 重建索引确保数据
+    // for (const auto& tab_name : tables) {
+    //     auto& tab = sm_manager_->db_.get_table(tab_name);
+    //     for (const auto& index : tab.indexes) {
+    //         auto index_name = sm_manager_->get_ix_manager()->get_index_name(
+    //             tab.name, index.cols);
+    //         auto index_manager = sm_manager_->get_ix_manager();
+    //         std::cerr << "index_name: " << index_name << std::endl;
+    //         // 如果当前索引被打开了, 先关闭
+    //         if (sm_manager_->contains_index(index_name)) {
+    //             index_manager->close_index(
+    //                 sm_manager_->get_index_handle(index_name));
+    //             sm_manager_->ihs_.erase(index_name);
+    //         }
+    //         std::cerr << "destroy index" << std::endl;
+    //         index_manager->destroy_index(tab.name, index.cols);
+    //         index_manager->create_index(tab.name, index.cols);
+    //         sm_manager_->ihs_.emplace(
+    //             index_name, index_manager->open_index(tab_name, index.cols));
+    //     }
+    // }
+    // std::cerr << "analyze done" << std::endl;
     // std::cerr << "size: " << logs_.size() << std::endl;
 }
 
