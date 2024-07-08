@@ -20,9 +20,19 @@ See the Mulan PSL v2 for more details. */
 #include "record/rm_defs.h"
 
 /* 日志记录对应操作的类型 */
-enum class LogType : int { UPDATE = 0, INSERT, DELETE, BEGIN, COMMIT, ABORT };
-static std::string LogTypeStr[] = {"UPDATE", "INSERT", "DELETE",
-                                   "BEGIN",  "COMMIT", "ABORT"};
+enum class LogType : int {
+    UPDATE = 0,
+    INSERT,
+    DELETE,
+    BEGIN,
+    COMMIT,
+    ABORT,
+    INDEX_INSERT,
+    INDEX_DELETE
+};
+static std::string LogTypeStr[] = {"UPDATE",       "INSERT",      "DELETE",
+                                   "BEGIN",        "COMMIT",      "ABORT",
+                                   "INDEX_INSERT", "INDEX_DELETE"};
 
 class LogRecord {
    public:
@@ -339,6 +349,148 @@ class UpdateLogRecord : public LogRecord {
     Rid rid_;                 // 记录插入的位置
     char* table_name_;        // 插入记录的表名称
     size_t table_name_size_;  // 表名称的大小
+};
+
+class IndexInsertLogRecord : public LogRecord {
+   public:
+    IndexInsertLogRecord() {
+        log_type_ = LogType::INDEX_INSERT;
+        lsn_ = INVALID_LSN;
+        log_tot_len_ = LOG_HEADER_SIZE;
+        log_tid_ = INVALID_TXN_ID;
+        prev_lsn_ = INVALID_LSN;
+        ix_name_ = nullptr;
+    }
+    IndexInsertLogRecord(txn_id_t txn_id, char* key, Rid& rid,
+                         std::string ix_name, int tot_len)
+        : IndexInsertLogRecord() {
+        log_tid_ = txn_id;
+        key_ = key;
+        tot_len_ = tot_len;
+        rid_ = rid;
+        log_tot_len_ += sizeof(int);           // tot_len
+        log_tot_len_ += tot_len;               // key
+        log_tot_len_ += sizeof(Rid);           // rid
+        ix_name_size_ = ix_name.length() + 1;  // ix_name
+        ix_name_ = new char[ix_name_size_];
+        memcpy(ix_name_, ix_name.c_str(), ix_name_size_);
+        log_tot_len_ += sizeof(size_t) + ix_name_size_;  // ix_size + ix_name
+    }
+
+    // 把delete日志记录序列化到dest中
+    void serialize(char* dest) const override {
+        LogRecord::serialize(dest);
+        int offset = OFFSET_LOG_DATA;
+        //head - key_size - key - rid - ix_size - ix_name
+        memcpy(dest + offset, &tot_len_, sizeof(int));
+        offset += sizeof(int);
+        memcpy(dest + offset, key_, tot_len_);
+        offset += tot_len_;
+        memcpy(dest + offset, &rid_, sizeof(Rid));
+        offset += sizeof(Rid);
+        memcpy(dest + offset, &ix_name_size_, sizeof(size_t));
+        offset += sizeof(size_t);
+        memcpy(dest + offset, ix_name_, ix_name_size_);
+    }
+    // 从src中反序列化出一条delete日志记录
+    void deserialize(const char* src) override {
+        LogRecord::deserialize(src);
+        tot_len_ = *reinterpret_cast<const int*>(src + OFFSET_LOG_DATA);
+        int offset = OFFSET_LOG_DATA + sizeof(int);
+        key_ = new char[tot_len_];
+        memcpy(key_, src + offset, tot_len_);
+        offset += tot_len_;
+        rid_ = *reinterpret_cast<const Rid*>(src + offset);
+        offset += sizeof(Rid);
+        ix_name_size_ = *reinterpret_cast<const size_t*>(src + offset);
+        offset += sizeof(size_t);
+        ix_name_ = new char[ix_name_size_];
+        memcpy(ix_name_, src + offset, ix_name_size_);
+    }
+    void format_print() override {
+        printf("index insert record\n");
+        LogRecord::format_print();
+        printf("delete_value: %s\n", key_);
+        printf("delete rid: %d, %d\n", rid_.page_no, rid_.slot_no);
+        printf("ix name: %s\n", ix_name_);
+    }
+
+    char* key_;            // b+树插入的键值
+    int tot_len_;          // key长度
+    Rid rid_;              // 插入的rid
+    char* ix_name_;        // index_name
+    size_t ix_name_size_;  // index_name的大小
+};
+
+class IndexDeleteLogRecord : public LogRecord {
+   public:
+    IndexDeleteLogRecord() {
+        log_type_ = LogType::INDEX_DELETE;
+        lsn_ = INVALID_LSN;
+        log_tot_len_ = LOG_HEADER_SIZE;
+        log_tid_ = INVALID_TXN_ID;
+        prev_lsn_ = INVALID_LSN;
+        ix_name_ = nullptr;
+    }
+    IndexDeleteLogRecord(txn_id_t txn_id, char* key, Rid& rid,
+                         std::string ix_name, int tot_len)
+        : IndexDeleteLogRecord() {
+        log_tid_ = txn_id;
+        key_ = key;
+        tot_len_ = tot_len;
+        rid_ = rid;
+        log_tot_len_ += sizeof(int);           // tot_len
+        log_tot_len_ += tot_len;               // key
+        log_tot_len_ += sizeof(Rid);           // rid
+        ix_name_size_ = ix_name.length() + 1;  // ix_name
+        ix_name_ = new char[ix_name_size_];
+        memcpy(ix_name_, ix_name.c_str(), ix_name_size_);
+        log_tot_len_ += sizeof(size_t) + ix_name_size_;  // ix_size + ix_name
+    }
+
+    // 把delete日志记录序列化到dest中
+    void serialize(char* dest) const override {
+        LogRecord::serialize(dest);
+        int offset = OFFSET_LOG_DATA;
+        //head - key_size - key - rid - ix_size - ix_name
+        memcpy(dest + offset, &tot_len_, sizeof(int));
+        offset += sizeof(int);
+        memcpy(dest + offset, key_, tot_len_);
+        offset += tot_len_;
+        memcpy(dest + offset, &rid_, sizeof(Rid));
+        offset += sizeof(Rid);
+        memcpy(dest + offset, &ix_name_size_, sizeof(size_t));
+        offset += sizeof(size_t);
+        memcpy(dest + offset, ix_name_, ix_name_size_);
+    }
+    // 从src中反序列化出一条delete日志记录
+    void deserialize(const char* src) override {
+        LogRecord::deserialize(src);
+        tot_len_ = *reinterpret_cast<const int*>(src + OFFSET_LOG_DATA);
+        int offset = OFFSET_LOG_DATA + sizeof(int);
+        key_ = new char[tot_len_];
+        memcpy(key_, src + offset, tot_len_);
+        offset += tot_len_;
+        rid_ = *reinterpret_cast<const Rid*>(src + offset);
+        offset += sizeof(Rid);
+        ix_name_size_ = *reinterpret_cast<const size_t*>(src + offset);
+        offset += sizeof(size_t);
+        ix_name_ = new char[ix_name_size_];
+        memcpy(ix_name_, src + offset, ix_name_size_);
+    }
+    void format_print() override {
+        printf("index delete record\n");
+        LogRecord::format_print();
+        printf("delete_value: %s\n", key_);
+        printf("delete rid: %d, %d\n", rid_.page_no, rid_.slot_no);
+        printf("ix name: %s\n", ix_name_);
+    }
+
+    char* key_;            // b+树插入的键值
+    int tot_len_;          // key长度
+    Rid rid_;              // 插入的rid
+    char* ix_name_;        // index_name
+    size_t ix_name_size_;  // index_name的大小
 };
 
 /* 日志缓冲区，只有一个buffer，因此需要阻塞地去把日志写入缓冲区中 */

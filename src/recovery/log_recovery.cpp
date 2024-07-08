@@ -77,7 +77,16 @@ void RecoveryManager::analyze() {
 void RecoveryManager::redo() {
     rollback(true);
     for (const auto& log_reocrd : logs_) {
-        if (auto log = std::dynamic_pointer_cast<InsertLogRecord>(log_reocrd)) {
+        if (auto log = std::dynamic_pointer_cast<BeginLogRecord>(log_reocrd)) {
+            continue;
+        } else if (auto log =
+                       std::dynamic_pointer_cast<CommitLogRecord>(log_reocrd)) {
+            continue;
+        } else if (auto log =
+                       std::dynamic_pointer_cast<AbortLogRecord>(log_reocrd)) {
+            continue;
+        } else if (auto log =
+                       std::dynamic_pointer_cast<InsertLogRecord>(log_reocrd)) {
             auto file_handle = sm_manager_->get_file_handle(log->table_name_);
             try {
                 file_handle->insert_record(log->rid_, log->insert_value_.data);
@@ -85,6 +94,23 @@ void RecoveryManager::redo() {
                 auto new_rid = file_handle->insert_record(
                     log->insert_value_.data, nullptr);
                 assert(new_rid == log->rid_);
+            }
+        } else if (auto log =
+                       std::dynamic_pointer_cast<DeleteLogRecord>(log_reocrd)) {
+            auto file_handle = sm_manager_->get_file_handle(log->table_name_);
+            try {
+                file_handle->delete_record(log->rid_, nullptr);
+            } catch (RMDBError& e) {
+                std::cout << e.what() << '\n';
+            }
+        } else if (auto log =
+                       std::dynamic_pointer_cast<UpdateLogRecord>(log_reocrd)) {
+            auto file_handle = sm_manager_->get_file_handle(log->table_name_);
+            try {
+                file_handle->update_record(log->rid_, log->after_value_.data,
+                                           nullptr);
+            } catch (RMDBError& e) {
+                std::cout << e.what() << '\n';
             }
         }
     }
