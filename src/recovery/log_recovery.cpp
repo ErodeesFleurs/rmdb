@@ -14,6 +14,9 @@ See the Mulan PSL v2 for more details. */
  * @description: analyze阶段，需要获得脏页表（DPT）和未完成的事务列表（ATT）
  */
 void RecoveryManager::analyze() {
+    //获取脏页
+    std::unordered_map<page_id_t, RedoLogsInPage> dpt;
+    auto tot_offset = 0;
     // std::cerr << "analyze start" << std::endl;
     // std::unordered_set<std::string> tables;
     // auto tot_offset = 0;
