@@ -237,6 +237,13 @@ struct SetClause {
     SetOp op;
 };
 
+enum OrderDir { DEFAULT, ASC, DESC };
+
+struct Order {
+    TabCol col;
+    OrderDir dir;
+};
+
 class Query {
    public:
     std::shared_ptr<ast::TreeNode> parse;
@@ -255,6 +262,8 @@ class Query {
     std::vector<TabCol> group_cols;
 
     std::vector<Condition> having_conds;
+
+    std::vector<Order> orders;
 
     Query() {}
 };

@@ -32,6 +32,8 @@ class Planner {
     bool enable_nestedloop_join = true;
     bool enable_sortmerge_join = false;
 
+    PlanTag get_join_method();
+
    public:
     Planner(SmManager* sm_manager) : sm_manager_(sm_manager) {}
 
@@ -52,7 +54,13 @@ class Planner {
     std::shared_ptr<Plan> physical_optimization(std::shared_ptr<Query> query,
                                                 Context* context);
 
-    std::shared_ptr<Plan> make_one_rel(std::shared_ptr<Query> query);
+    std::vector<std::shared_ptr<Plan>> generate_scan_plan(std::shared_ptr<Query>& query, std::vector<std::string>& all_index_col_names);
+
+    std::shared_ptr<Plan> make_merge_sort_one_rel(std::shared_ptr<Query> query, 
+                                                           std::vector<std::shared_ptr<Plan>>& table_scan_executors);
+
+    std::shared_ptr<Plan> make_one_rel(std::shared_ptr<Query> query, 
+                                                  std::vector<std::shared_ptr<Plan>>& table_scan_executors);
 
     std::shared_ptr<Plan> generate_aggregate_plan(std::shared_ptr<Query> query,
                                                   std::shared_ptr<Plan> plan);
@@ -65,6 +73,8 @@ class Planner {
     std::shared_ptr<Plan> generate_select_plan(std::shared_ptr<Query> query,
                                                Context* context);
 
+    std::vector<TabCol> get_sel_cols(std::string tab_name,
+                             std::vector<Condition>& curr_conds);
     // int get_indexNo(std::string tab_name, std::vector<Condition> curr_conds);
     bool get_index_cols(std::string tab_name, std::vector<Condition> curr_conds,
                         std::vector<std::string>& index_col_names);

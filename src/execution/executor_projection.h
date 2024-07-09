@@ -75,7 +75,10 @@ class ProjectionExecutor : public AbstractExecutor {
         return rec;
     }
 
-    bool is_end() const override { return prev_->is_end(); }
+    bool is_end() const override { 
+        std::cerr << "proj is end " << prev_->is_end() << std::endl;
+        return prev_->is_end();
+    }
 
     Rid& rid() override { return _abstract_rid; }
 
