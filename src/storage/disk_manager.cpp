@@ -257,7 +257,7 @@ int DiskManager::read_log(char* log_data, int size, int offset) {
         log_fd_ = open_file(LOG_FILE_NAME);
     }
     int file_size = get_file_size(LOG_FILE_NAME);
-    if (file_size > 1024)
+    if (file_size > 1024 * 2)
         return -1;
     if (offset > file_size) {
         return -1;
