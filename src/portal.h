@@ -147,13 +147,13 @@ class Portal {
              txn_id_t* txn_id, Context* context) {
         switch (portal->tag) {
             case PORTAL_ONE_SELECT: {
-                // ql->select_from(std::move(portal->root),
-                //                 std::move(portal->sel_cols), context);
+                ql->select_from(std::move(portal->root),
+                                std::move(portal->sel_cols), context);
                 break;
             }
 
             case PORTAL_DML_WITHOUT_SELECT: {
-                // ql->run_dml(std::move(portal->root));
+                ql->run_dml(std::move(portal->root));
                 break;
             }
             case PORTAL_MULTI_QUERY: {
@@ -161,7 +161,7 @@ class Portal {
                 break;
             }
             case PORTAL_CMD_UTILITY: {
-                // ql->run_cmd_utility(portal->plan, txn_id, context);
+                ql->run_cmd_utility(portal->plan, txn_id, context);
                 break;
             }
             default: {
