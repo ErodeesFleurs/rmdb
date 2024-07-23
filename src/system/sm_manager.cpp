@@ -457,11 +457,11 @@ void SmManager::load_record(const std::string& file_path,
         //                                             file_handle->GetFd());
         auto rid = file_handle->insert_record(record.data, context);
 
-        auto logRecord = std::make_shared<InsertLogRecord>(
-            context->txn_->get_transaction_id(), record, rid, tab_name);
-        logRecord->prev_lsn_ = context->txn_->get_prev_lsn();
-        context->log_mgr_->add_log_to_buffer(logRecord.get());
-        context->txn_->set_prev_lsn(logRecord->lsn_);
+        // auto logRecord = std::make_shared<InsertLogRecord>(
+        //     context->txn_->get_transaction_id(), record, rid, tab_name);
+        // logRecord->prev_lsn_ = context->txn_->get_prev_lsn();
+        // context->log_mgr_->add_log_to_buffer(logRecord.get());
+        // context->txn_->set_prev_lsn(logRecord->lsn_);
         // 更新索引
         for (const auto& index : tab_meta.indexes) {
             auto index_name = ix_manager_->get_index_name(tab_name, index.cols);
@@ -474,9 +474,9 @@ void SmManager::load_record(const std::string& file_path,
             }
             index_handle->insert_entry(key.get(), rid, context->txn_);
         }
-        auto write_record =
-            new WriteRecord(WType::INSERT_TUPLE, tab_name, rid, record);
-        context->txn_->append_write_record(write_record);
+        // auto write_record =
+        //     new WriteRecord(WType::INSERT_TUPLE, tab_name, rid, record);
+        // context->txn_->append_write_record(write_record);
     }
     infile.close();
 }
