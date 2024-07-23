@@ -74,7 +74,7 @@ void QlManager::run_mutli_query(std::shared_ptr<Plan> plan, Context* context) {
                 break;
             }
             case T_LoadData: {
-                sm_manager_->load_record(x->file_path_, x->tab_name_, context);
+                // sm_manager_->load_record(x->file_path_, x->tab_name_, context);
                 break;
             }
             default:
