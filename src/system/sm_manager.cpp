@@ -359,7 +359,8 @@ void SmManager::drop_index(const std::string& tab_name,
 
     // 删除索引
     auto index_name = ix_manager_->get_index_name(tab_name, col_names);
-    // ix_manager_->close_index(ihs_.at(index_name).get());
+    // 如果存在索引, 则关闭索引
+    ix_manager_->close_index(ihs_.at(index_name).get());
     ix_manager_->destroy_index(ihs_.at(index_name).get(), tab_name, col_names);
     auto ix_meta = db_.get_table(tab_name).get_index_meta(col_names);
     db_.get_table(tab_name).indexes.erase(ix_meta);
