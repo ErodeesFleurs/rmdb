@@ -147,7 +147,8 @@ class Portal {
              txn_id_t* txn_id, Context* context) {
         switch (portal->tag) {
             case PORTAL_ONE_SELECT: {
-                // ql->select_from(std::move(portal->root), std::move(portal->sel_cols),  context);
+                ql->select_from(std::move(portal->root),
+                                std::move(portal->sel_cols), context);
                 break;
             }
 
