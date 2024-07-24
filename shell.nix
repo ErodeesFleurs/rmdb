@@ -8,5 +8,8 @@ mkShell {
         flex
         readline
         cmake
+        python3
+        bintools
+        gdb
     ];
 }

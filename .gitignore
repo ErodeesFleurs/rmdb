@@ -3,3 +3,4 @@
 /.vscode
 /cmake-build-debug
 /rmdb_client/build
+/src/test/performance_test/my_tpcc_input
