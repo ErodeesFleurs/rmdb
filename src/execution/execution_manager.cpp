@@ -8,6 +8,8 @@ EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
 MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details. */
 
+#include <future>
+
 #include "execution_manager.h"
 
 #include "executor_delete.h"
@@ -19,6 +21,8 @@ See the Mulan PSL v2 for more details. */
 #include "executor_update.h"
 #include "index/ix.h"
 #include "record_printer.h"
+
+std::vector<std::future<void>> futures;
 
 const char* help_info =
     "Supported SQL syntax:\n"
@@ -74,7 +78,14 @@ void QlManager::run_mutli_query(std::shared_ptr<Plan> plan, Context* context) {
                 break;
             }
             case T_LoadData: {
-                sm_manager_->load_record(x->file_path_, x->tab_name_, context);
+                auto future_result = std::async(
+                    std::launch::async,
+                    [this, file_apth = x->file_path_, tab_name = x->tab_name_,
+                     context]() {  // 拷贝捕获
+                        sm_manager_->load_record(file_apth, tab_name, context);
+                    });
+                futures.push_back(std::move(future_result));
+                // sm_manager_->load_record(x->file_path_, x->tab_name_, context);
                 break;
             }
             default:
@@ -149,6 +160,11 @@ void QlManager::run_cmd_utility(std::shared_ptr<Plan> plan, txn_id_t* txn_id,
 // 执行select语句，select语句的输出除了需要返回客户端外，还需要写入output.txt文件中
 void QlManager::select_from(std::unique_ptr<AbstractExecutor> executorTreeRoot,
                             std::vector<TabCol> sel_cols, Context* context) {
+    // 先判断futures中的load是否全部结束
+    for (auto& future : futures) {
+        future.get();
+    }
+    futures.clear();
     std::vector<std::string> captions;
     captions.reserve(sel_cols.size());
     for (auto& sel_col : sel_cols) {

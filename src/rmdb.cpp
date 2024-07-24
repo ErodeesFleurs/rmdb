@@ -19,6 +19,7 @@ See the Mulan PSL v2 for more details. */
 #include <atomic>
 #include <cstddef>
 #include <cstdlib>
+#include <future>
 
 #include "analyze/analyze.h"
 #include "errors.h"
@@ -33,6 +34,7 @@ See the Mulan PSL v2 for more details. */
 
 static bool should_exit = false;
 static bool output_ellipsis = false;
+
 int count_seq_scan = 0;
 int count_index_scan = 0;
 

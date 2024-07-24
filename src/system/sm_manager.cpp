@@ -15,6 +15,8 @@ See the Mulan PSL v2 for more details. */
 
 #include <fstream>
 
+#include "csv.h"
+
 #include "common/common.h"
 #include "index/ix.h"
 #include "record/rm.h"
@@ -421,18 +423,20 @@ void SmManager::show_index(const std::string& tab_name, Context* context) {
     }
 }
 
-void SmManager::load_record(const std::string& file_path,
-                            const std::string& tab_name, Context* context) {
+void SmManager::load_record(const std::string file_path,
+                            const std::string tab_name, Context* context) {
+    // std::cerr << "load record" << std::endl;
+    // std::cerr << "file_path: " << file_path << std::endl;
     std::fstream infile(file_path, std::ios::in);
     if (!infile.is_open()) {
-        throw std::runtime_error("file not found");
+        throw std::runtime_error("file not found: " + file_path);
     }
     if (!contains_table(tab_name)) {
         throw TableExistsError(tab_name);
     }
     auto file_handle = get_file_handle(tab_name);
     auto& tab_meta = db_.get_table(tab_name);
-    std::string input;
+    std::string input{};
     std::getline(infile, input);
     while (std::getline(infile, input)) {
         RmRecord record(file_handle->get_file_hdr().record_size);
@@ -479,6 +483,46 @@ void SmManager::load_record(const std::string& file_path,
         // context->txn_->append_write_record(write_record);
     }
     infile.close();
+    // std::cerr << "load record done" << std::endl;
+}
+
+std::pair<std::string, std::vector<RmRecord>> SmManager::get_record(
+    const std::string file_path, const std::string tab_name, Context* context) {
+    std::fstream infile(file_path, std::ios::in);
+    if (!infile.is_open()) {
+        throw std::runtime_error("file not found: " + file_path);
+    }
+    if (!contains_table(tab_name)) {
+        throw TableExistsError(tab_name);
+    }
+    auto file_handle = get_file_handle(tab_name);
+    auto& tab_meta = db_.get_table(tab_name);
+    std::string input;
+    std::vector<RmRecord> records;
+    std::getline(infile, input);
+    while (std::getline(infile, input)) {
+        RmRecord record(file_handle->get_file_hdr().record_size);
+        std::istringstream ss(input);
+        std::string value{};
+        int idx = 0;
+        while (std::getline(ss, value, ',')) {
+            Value x;
+            if (tab_meta.cols[idx].type == ColType::TYPE_INT) {
+                x = std::stoi(value);
+            } else if (tab_meta.cols[idx].type == ColType::TYPE_FLOAT) {
+                x = std::stod(value);
+            } else {
+                x = value;
+            }
+            x.init_raw(tab_meta.cols[idx].len);
+            record.rewrite(x.raw->data, tab_meta.cols[idx].offset,
+                           tab_meta.cols[idx].len);
+            idx++;
+        }
+        records.push_back(std::move(record));
+    }
+    std::cerr << "size: " << records.size() << std::endl;
+    return {tab_name, records};
 }
 
 bool SmManager::contains_table(const std::string& tab_name) const {
