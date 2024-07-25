@@ -98,8 +98,4 @@ class SmManager {
     RmFileHandle* get_file_handle(const std::string& tab_name) const;
 
     IxIndexHandle* get_index_handle(const std::string& index_name) const;
-
-    std::pair<std::string, std::vector<RmRecord>> get_record(
-        const std::string file_path, const std::string tab_name,
-        Context* context);
 };

@@ -168,7 +168,7 @@ class IxManager {
     std::unique_ptr<IxIndexHandle> open_index(
         const std::string& filename, const std::vector<ColMeta>& index_cols) {
         std::string ix_name = get_index_name(filename, index_cols);
-        int fd = disk_manager_->open_file(ix_name);
+        int fd = disk_manager_->get_file_fd(ix_name);
         return std::make_unique<IxIndexHandle>(disk_manager_,
                                                buffer_pool_manager_, fd);
     }
@@ -177,7 +177,7 @@ class IxManager {
         const std::string& filename,
         const std::vector<std::string>& index_cols) {
         std::string ix_name = get_index_name(filename, index_cols);
-        int fd = disk_manager_->open_file(ix_name);
+        int fd = disk_manager_->get_file_fd(ix_name);
         return std::make_unique<IxIndexHandle>(disk_manager_,
                                                buffer_pool_manager_, fd);
     }

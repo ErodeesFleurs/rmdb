@@ -51,7 +51,7 @@ class BPlusTreeConcurrentTest : public ::testing::Test {
         sm_ = std::make_unique<SmManager>(disk_manager_.get(),
                                           buffer_pool_manager_.get(), rm_.get(),
                                           ix_manager_.get());
-
+        std::cerr << "Create DB: " << TEST_DB_NAME << std::endl;
         // 如果测试目录不存在，则先创建测试目录
         if (disk_manager_->is_dir(TEST_DB_NAME)) {
             std::string cmd = "rm -rf " + TEST_DB_NAME;
@@ -67,16 +67,21 @@ class BPlusTreeConcurrentTest : public ::testing::Test {
         }
         // 如果测试文件存在，则先删除原文件（最后留下来的文件存的是最后一个测试点的数据）
         if (ix_manager_->exists(TEST_FILE_NAME, TEST_COL)) {
+            std::cerr << "Destroy index file: " << TEST_FILE_NAME << std::endl;
             ix_manager_->destroy_index(TEST_FILE_NAME, TEST_COL);
         }
+        std::cerr << "Create table file: " << TEST_FILE_NAME << std::endl;
         std::vector<ColDef> coldef;
         coldef.push_back({"col1", TYPE_INT, 4});
         coldef.push_back({"col2", TYPE_INT, 4});
         sm_->create_table(TEST_FILE_NAME, coldef, nullptr);
+        std::cerr << "Create index file: " << TEST_FILE_NAME << std::endl;
         sm_->create_index(TEST_FILE_NAME, TEST_COL, nullptr);
         assert(ix_manager_->exists(TEST_FILE_NAME, TEST_COL));
         // 打开测试文件
+        std::cerr << "Open index file: " << TEST_FILE_NAME << std::endl;
         ih_ = ix_manager_->open_index(TEST_FILE_NAME, TEST_COL);
+        std::cerr << "Open index file successfully" << std::endl;
         assert(ih_ != nullptr);
     }
 

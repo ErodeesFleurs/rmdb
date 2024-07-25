@@ -438,6 +438,11 @@ void SmManager::load_record(const std::string file_path,
     auto& tab_meta = db_.get_table(tab_name);
     std::string input{};
     std::getline(infile, input);
+    std::vector<IxIndexHandle*> indexs;
+    for (const auto& index : tab_meta.indexes) {
+        auto index_name = ix_manager_->get_index_name(tab_name, index.cols);
+        indexs.push_back(get_index_handle(index_name));
+    }
     while (std::getline(infile, input)) {
         RmRecord record(file_handle->get_file_hdr().record_size);
         std::istringstream ss(input);
@@ -467,16 +472,17 @@ void SmManager::load_record(const std::string file_path,
         // context->log_mgr_->add_log_to_buffer(logRecord.get());
         // context->txn_->set_prev_lsn(logRecord->lsn_);
         // 更新索引
+        size_t pos = 0;
         for (const auto& index : tab_meta.indexes) {
-            auto index_name = ix_manager_->get_index_name(tab_name, index.cols);
-            auto index_handle = get_index_handle(index_name);
-            auto key = std::make_unique<char[]>(index.col_tot_len);
+            auto index_handle = indexs[pos++];
+            auto key = new char[index.col_tot_len];
             int offset = 0;
             for (const auto& col : index.cols) {
-                memcpy(key.get() + offset, record.data + col.offset, col.len);
+                memcpy(key + offset, record.data + col.offset, col.len);
                 offset += col.len;
             }
-            index_handle->insert_entry(key.get(), rid, context->txn_);
+            index_handle->insert_entry(key, rid, context->txn_);
+            delete[] key;
         }
         // auto write_record =
         //     new WriteRecord(WType::INSERT_TUPLE, tab_name, rid, record);
@@ -484,45 +490,6 @@ void SmManager::load_record(const std::string file_path,
     }
     infile.close();
     // std::cerr << "load record done" << std::endl;
-}
-
-std::pair<std::string, std::vector<RmRecord>> SmManager::get_record(
-    const std::string file_path, const std::string tab_name, Context* context) {
-    std::fstream infile(file_path, std::ios::in);
-    if (!infile.is_open()) {
-        throw std::runtime_error("file not found: " + file_path);
-    }
-    if (!contains_table(tab_name)) {
-        throw TableExistsError(tab_name);
-    }
-    auto file_handle = get_file_handle(tab_name);
-    auto& tab_meta = db_.get_table(tab_name);
-    std::string input;
-    std::vector<RmRecord> records;
-    std::getline(infile, input);
-    while (std::getline(infile, input)) {
-        RmRecord record(file_handle->get_file_hdr().record_size);
-        std::istringstream ss(input);
-        std::string value{};
-        int idx = 0;
-        while (std::getline(ss, value, ',')) {
-            Value x;
-            if (tab_meta.cols[idx].type == ColType::TYPE_INT) {
-                x = std::stoi(value);
-            } else if (tab_meta.cols[idx].type == ColType::TYPE_FLOAT) {
-                x = std::stod(value);
-            } else {
-                x = value;
-            }
-            x.init_raw(tab_meta.cols[idx].len);
-            record.rewrite(x.raw->data, tab_meta.cols[idx].offset,
-                           tab_meta.cols[idx].len);
-            idx++;
-        }
-        records.push_back(std::move(record));
-    }
-    std::cerr << "size: " << records.size() << std::endl;
-    return {tab_name, records};
 }
 
 bool SmManager::contains_table(const std::string& tab_name) const {
