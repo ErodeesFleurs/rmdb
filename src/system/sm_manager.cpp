@@ -472,18 +472,18 @@ void SmManager::load_record(const std::string file_path,
         // context->log_mgr_->add_log_to_buffer(logRecord.get());
         // context->txn_->set_prev_lsn(logRecord->lsn_);
         // 更新索引
-        size_t pos = 0;
-        for (const auto& index : tab_meta.indexes) {
-            auto index_handle = indexs[pos++];
-            auto key = new char[index.col_tot_len];
-            int offset = 0;
-            for (const auto& col : index.cols) {
-                memcpy(key + offset, record.data + col.offset, col.len);
-                offset += col.len;
-            }
-            index_handle->insert_entry(key, rid, context->txn_);
-            delete[] key;
-        }
+        // size_t pos = 0;
+        // for (const auto& index : tab_meta.indexes) {
+        //     auto index_handle = indexs[pos++];
+        //     auto key = new char[index.col_tot_len];
+        //     int offset = 0;
+        //     for (const auto& col : index.cols) {
+        //         memcpy(key + offset, record.data + col.offset, col.len);
+        //         offset += col.len;
+        //     }
+        //     index_handle->insert_entry(key, rid, context->txn_);
+        //     delete[] key;
+        // }
         // auto write_record =
         //     new WriteRecord(WType::INSERT_TUPLE, tab_name, rid, record);
         // context->txn_->append_write_record(write_record);
