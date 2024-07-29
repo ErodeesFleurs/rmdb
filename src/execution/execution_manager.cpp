@@ -195,6 +195,13 @@ void QlManager::select_from(std::unique_ptr<AbstractExecutor> executorTreeRoot,
     size_t num_rec = 0;
 
     // 执行query_plan
+
+    auto formatFloat = [](float f) {
+        std::ostringstream oss;
+        oss << std::fixed << std::setprecision(2) << f;
+        return oss.str();
+    };
+
     for (executorTreeRoot->beginTuple(); !executorTreeRoot->is_end();
          executorTreeRoot->nextTuple()) {
         auto Tuple = executorTreeRoot->Next();
@@ -204,7 +211,7 @@ void QlManager::select_from(std::unique_ptr<AbstractExecutor> executorTreeRoot,
             if (col.type == TYPE_INT) {
                 col_str = std::to_string(Tuple->import <int>(col.offset));
             } else if (col.type == TYPE_FLOAT) {
-                col_str = std::to_string(Tuple->import <float>(col.offset));
+                col_str = formatFloat(Tuple->import <float>(col.offset));
             } else if (col.type == TYPE_STRING) {
                 col_str = Tuple->import <std::string>(col.offset, col.len);
                 col_str.resize(strlen(col_str.c_str()));
