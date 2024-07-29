@@ -158,11 +158,11 @@ class UpdateExecutor : public AbstractExecutor {
                 }
                 char* rec_buf = rec->data + col.offset;
                 if (col.type == TYPE_INT) {
-                    auto old_val = *(std::int64_t*)rec_buf;
+                    auto old_val = *(int*)rec_buf;
                     if (i.op == SetOp::OP_ADD) {
-                        std::get<std::int64_t>(value.val) += old_val;
+                        std::get<int>(value.val) += old_val;
                     } else if (i.op == SetOp::OP_SUB) {
-                        std::get<std::int64_t>(value.val) -= old_val;
+                        std::get<int>(value.val) -= old_val;
                     }
                 } else if (col.type == TYPE_FLOAT) {
                     auto old_val = *(double*)rec_buf;

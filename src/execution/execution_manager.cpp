@@ -209,8 +209,7 @@ void QlManager::select_from(std::unique_ptr<AbstractExecutor> executorTreeRoot,
         for (auto& col : executorTreeRoot->cols()) {
             std::string col_str;
             if (col.type == TYPE_INT) {
-                col_str =
-                    std::to_string(Tuple->import <std::int64_t>(col.offset));
+                col_str = std::to_string(Tuple->import <int>(col.offset));
             } else if (col.type == TYPE_FLOAT) {
                 col_str = std::to_string(Tuple->import <double>(col.offset));
             } else if (col.type == TYPE_STRING) {

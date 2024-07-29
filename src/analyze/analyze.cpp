@@ -301,7 +301,7 @@ void Analyze::check_clause(const std::vector<std::string>& tab_names,
             if (rhs_type == TYPE_FLOAT) {
                 cond.rhs_val.init_raw(sizeof(double));
             } else if (rhs_type == TYPE_INT) {
-                cond.rhs_val.init_raw(sizeof(std::int64_t));
+                cond.rhs_val.init_raw(sizeof(int));
             } else {
                 cond.rhs_val.init_raw(lhs_col->len);
             }

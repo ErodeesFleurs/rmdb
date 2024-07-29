@@ -24,8 +24,8 @@ static const bool binary_search = true;
 inline int ix_compare(const char* a, const char* b, ColType type, int col_len) {
     switch (type) {
         case TYPE_INT: {
-            std::int64_t ia = *(std::int64_t*)a;
-            std::int64_t ib = *(std::int64_t*)b;
+            int ia = *(int*)a;
+            int ib = *(int*)b;
             return (ia < ib) ? -1 : ((ia > ib) ? 1 : 0);
         }
         case TYPE_FLOAT: {
