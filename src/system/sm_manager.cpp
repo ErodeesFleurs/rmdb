@@ -450,12 +450,16 @@ void SmManager::load_record(const std::string file_path,
         int idx = 0;
         while (std::getline(ss, value, ',')) {
             Value x;
+            // std::cerr << "value: " << value << std::endl;
             if (tab_meta.cols[idx].type == ColType::TYPE_INT) {
-                x = std::stoi(value);
+                x.set_int(std::stoi(value));
+                // x = std::stoi(value);
             } else if (tab_meta.cols[idx].type == ColType::TYPE_FLOAT) {
-                x = std::stod(value);
+                x.set_float(std::stod(value));
+                // x = std::stod(value);
             } else {
-                x = value;
+                x.set_str(value);
+                // x = value;
             }
             x.init_raw(tab_meta.cols[idx].len);
             record.rewrite(x.raw->data, tab_meta.cols[idx].offset,

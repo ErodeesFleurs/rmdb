@@ -59,7 +59,8 @@ struct Value {
         } else if constexpr (std::is_same_v<T, std::string>) {
             set_str(val);
         } else {
-            throw std::runtime_error("Invalid value type");
+            throw std::runtime_error("Invalid value type: " +
+                                     std::string(typeid(T).name()));
         }
         return *this;
     }
