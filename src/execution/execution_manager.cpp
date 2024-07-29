@@ -198,7 +198,7 @@ void QlManager::select_from(std::unique_ptr<AbstractExecutor> executorTreeRoot,
 
     auto formatFloat = [](float f) {
         std::ostringstream oss;
-        oss << std::fixed << std::setprecision(2) << f;
+        oss << std::fixed << std::setprecision(6) << f;
         return oss.str();
     };
 
