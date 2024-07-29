@@ -36,7 +36,7 @@ class GroupExecutor : public AbstractExecutor {
                 cols_.push_back(ColMeta{.tab_name = "",
                                         .name = "*",
                                         .type = TYPE_INT,
-                                        .len = sizeof(int),
+                                        .len = sizeof(std::int64_t),
                                         .offset = 0});
                 continue;
             }

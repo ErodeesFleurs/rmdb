@@ -80,7 +80,7 @@ class AbstractExecutor {
         Value res;
         switch (p) {
             case TYPE_INT: {
-                int ia = *(int*)a;
+                std::int64_t ia = *(std::int64_t*)a;
                 res.set_int(ia);
                 break;
             }
@@ -125,8 +125,8 @@ class AbstractExecutor {
                 return (va < vb) ? -1 : ((va > vb) ? 1 : 0);
             }
             case TYPE_INT: {
-                int va = std::get<int>(pa.val);
-                int vb = std::get<int>(pb.val);
+                std::int64_t va = std::get<std::int64_t>(pa.val);
+                std::int64_t vb = std::get<std::int64_t>(pb.val);
                 return (va < vb) ? -1 : ((va > vb) ? 1 : 0);
             }
             case TYPE_STRING: {
@@ -262,7 +262,7 @@ class AbstractExecutor {
             col_meta = ColMeta{.tab_name = "",
                                .name = "*",
                                .type = TYPE_INT,
-                               .len = sizeof(int),
+                               .len = sizeof(std::int64_t),
                                .offset = 0};
         } else {
             col_meta = *get_col(rec_cols, tab_col, false);
@@ -271,7 +271,8 @@ class AbstractExecutor {
             for (auto& col_meta : rec_cols) {
                 if (col_meta.name == tab_col.col_name) {
                     if (col_meta.type == TYPE_INT) {
-                        val.set_int(*(int*)(rec[0]->data + col_meta.offset));
+                        val.set_int(
+                            *(std::int64_t*)(rec[0]->data + col_meta.offset));
                     } else if (col_meta.type == TYPE_FLOAT) {
                         val.set_float(
                             *(double*)(rec[0]->data + col_meta.offset));
@@ -286,9 +287,9 @@ class AbstractExecutor {
             val.set_int(rec.size());
         } else if (agg_type == AggregateType::SUM) {
             if (col_meta.type == TYPE_INT) {
-                int sum = 0;
+                std::int64_t sum = 0;
                 for (const auto& record : rec) {
-                    sum += *(int*)(record->data + col_meta.offset);
+                    sum += *(std::int64_t*)(record->data + col_meta.offset);
                 }
                 val.set_int(sum);
             } else if (col_meta.type == TYPE_FLOAT) {
@@ -300,10 +301,10 @@ class AbstractExecutor {
             }
         } else if (agg_type == AggregateType::MAX) {
             if (col_meta.type == TYPE_INT) {
-                int max = std::numeric_limits<int>::min();
+                std::int64_t max = std::numeric_limits<std::int64_t>::min();
                 for (const auto& record : rec) {
-                    max =
-                        std::max(max, *(int*)(record->data + col_meta.offset));
+                    max = std::max(
+                        max, *(std::int64_t*)(record->data + col_meta.offset));
                 }
                 val.set_int(max);
             } else if (col_meta.type == TYPE_FLOAT) {
@@ -324,10 +325,10 @@ class AbstractExecutor {
             }
         } else if (agg_type == AggregateType::MIN) {
             if (col_meta.type == TYPE_INT) {
-                int min = std::numeric_limits<int>::max();
+                std::int64_t min = std::numeric_limits<std::int64_t>::max();
                 for (const auto& record : rec) {
-                    min =
-                        std::min(min, *(int*)(record->data + col_meta.offset));
+                    min = std::min(
+                        min, *(std::int64_t*)(record->data + col_meta.offset));
                 }
                 val.set_int(min);
             } else if (col_meta.type == TYPE_FLOAT) {

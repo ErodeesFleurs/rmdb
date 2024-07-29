@@ -137,7 +137,7 @@ class IndexScanExecutor : public AbstractExecutor {
                 if (min_value.type == TYPE_STRING) {
                     min_value.init_raw(col.len);
                 } else if (min_value.type == TYPE_INT) {
-                    min_value.init_raw(sizeof(int));
+                    min_value.init_raw(sizeof(std::int64_t));
                 } else if (min_value.type == TYPE_FLOAT) {
                     min_value.init_raw(sizeof(double));
                 }
@@ -146,7 +146,7 @@ class IndexScanExecutor : public AbstractExecutor {
                 if (max_value.type == TYPE_STRING) {
                     max_value.init_raw(col.len);
                 } else if (max_value.type == TYPE_INT) {
-                    max_value.init_raw(sizeof(int));
+                    max_value.init_raw(sizeof(std::int64_t));
                 } else if (max_value.type == TYPE_FLOAT) {
                     max_value.init_raw(sizeof(double));
                 }

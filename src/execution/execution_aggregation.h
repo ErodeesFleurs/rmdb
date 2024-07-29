@@ -33,7 +33,7 @@ class AggregateExecutor : public AbstractExecutor {
                 cols_.push_back(ColMeta{.tab_name = "",
                                         .name = "*",
                                         .type = TYPE_INT,
-                                        .len = sizeof(int),
+                                        .len = sizeof(std::int64_t),
                                         .offset = 0});
             } else {
                 cols_.push_back(*prev_->get_col(prev_->cols(), sel_col));
@@ -44,12 +44,12 @@ class AggregateExecutor : public AbstractExecutor {
         output_cols_.front().offset = 0;
         if (agg_types[0] == AggregateType::COUNT) {
             output_cols_.front().type = TYPE_INT;
-            output_cols_.front().len = sizeof(int);
+            output_cols_.front().len = sizeof(std::int64_t);
         }
         for (size_t i = 1; i < output_cols_.size(); ++i) {
             if (agg_types[i] == AggregateType::COUNT) {
                 output_cols_[i].type = TYPE_INT;
-                output_cols_[i].len = sizeof(int);
+                output_cols_[i].len = sizeof(std::int64_t);
             }
             output_cols_[i].offset =
                 output_cols_[i - 1].offset + output_cols_[i - 1].len;

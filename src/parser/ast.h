@@ -11,6 +11,7 @@ See the Mulan PSL v2 for more details. */
 
 #include "defs.h"
 
+#include <cstdint>
 #include <iostream>
 #include <memory>
 #include <string>
@@ -119,9 +120,9 @@ struct Expr : public TreeNode {};
 struct Value : public Expr {};
 
 struct IntLit : public Value {
-    int val;
+    std::int64_t val;
 
-    IntLit(int val_) : val(val_) {}
+    IntLit(std::int64_t val_) : val(val_) {}
 };
 
 struct FloatLit : public Value {

@@ -213,7 +213,7 @@ field:
 type:
         INT
     {
-        $$ = std::make_shared<TypeLen>(SV_TYPE_INT, sizeof(int));
+        $$ = std::make_shared<TypeLen>(SV_TYPE_INT, sizeof(std::int64_t));
     }
     |   CHAR '(' VALUE_INT ')'
     {

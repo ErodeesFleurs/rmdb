@@ -95,8 +95,8 @@ class SortExecutor : public AbstractExecutor {
             char* rec_buf_a = a->data + col.offset;
             char* rec_buf_b = b->data + col.offset;
             if (col.type == TYPE_INT) {
-                int value_a = *(int*)rec_buf_a;
-                int value_b = *(int*)rec_buf_b;
+                std::int64_t value_a = *(std::int64_t*)rec_buf_a;
+                std::int64_t value_b = *(std::int64_t*)rec_buf_b;
                 if (value_a == value_b)
                     continue;
                 if (is_desc_[cnt])

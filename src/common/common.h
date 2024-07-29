@@ -46,13 +46,13 @@ struct TabCol {
 struct Value {
     ColType type;  // type of value
 
-    std::variant<int, double, std::string> val;
+    std::variant<std::int64_t, double, std::string> val;
 
     std::shared_ptr<RmRecord> raw;  // raw record buffer
 
     template <typename T>
     Value& operator=(T&& val) {
-        if constexpr (std::is_same_v<T, int>) {
+        if constexpr (std::is_same_v<T, std::int64_t>) {
             set_int(val);
         } else if constexpr (std::is_same_v<T, double>) {
             set_float(val);
@@ -65,7 +65,7 @@ struct Value {
         return *this;
     }
 
-    void set_int(int int_val_) {
+    void set_int(std::int64_t int_val_) {
         type = TYPE_INT;
         val = int_val_;
     }
@@ -107,7 +107,7 @@ struct Value {
 
     bool to_float() {
         if (type == TYPE_INT) {
-            val = (double)std::get<int>(val);
+            val = (double)std::get<std::int64_t>(val);
             type = TYPE_FLOAT;
             return true;
         }
@@ -118,8 +118,8 @@ struct Value {
         assert(raw == nullptr);
         raw = std::make_shared<RmRecord>(len);
         if (type == TYPE_INT) {
-            assert(len == sizeof(int));
-            *(int*)(raw->data) = std::get<int>(val);
+            assert(len == sizeof(std::int64_t));
+            *(std::int64_t*)(raw->data) = std::get<std::int64_t>(val);
         } else if (type == TYPE_FLOAT) {
             assert(len == sizeof(double));
             *(double*)(raw->data) = std::get<double>(val);
@@ -136,8 +136,8 @@ struct Value {
     void init_raw() {
         assert(raw == nullptr);
         if (type == TYPE_INT) {
-            raw = std::make_shared<RmRecord>(sizeof(int));
-            *(int*)(raw->data) = std::get<int>(val);
+            raw = std::make_shared<RmRecord>(sizeof(std::int64_t));
+            *(std::int64_t*)(raw->data) = std::get<std::int64_t>(val);
         } else if (type == TYPE_FLOAT) {
             raw = std::make_shared<RmRecord>(sizeof(double));
             *(double*)(raw->data) = std::get<double>(val);
@@ -151,7 +151,7 @@ struct Value {
     friend std::ostream& operator<<(std::ostream& os, const Value& val) {
         switch (val.type) {
             case TYPE_INT:
-                os << std::get<int>(val.val);
+                os << std::get<std::int64_t>(val.val);
                 break;
             case TYPE_FLOAT:
                 os << std::get<double>(val.val);
@@ -170,7 +170,8 @@ struct Value {
             return false;
         switch (x.type) {
             case TYPE_INT:
-                return std::get<int>(x.val) == std::get<int>(y.val);
+                return std::get<std::int64_t>(x.val) ==
+                       std::get<std::int64_t>(y.val);
             case TYPE_FLOAT:
                 return std::get<double>(x.val) == std::get<double>(y.val);
             case TYPE_STRING:
@@ -188,7 +189,8 @@ struct Value {
             return x.type < y.type;
         switch (x.type) {
             case TYPE_INT:
-                return std::get<int>(x.val) < std::get<int>(y.val);
+                return std::get<std::int64_t>(x.val) <
+                       std::get<std::int64_t>(y.val);
             case TYPE_FLOAT:
                 return std::get<double>(x.val) < std::get<double>(y.val);
             case TYPE_STRING:
@@ -208,7 +210,8 @@ struct Value {
     friend Value operator+(const Value& x, const Value& y) {
         Value res;
         if (x.type == TYPE_INT && y.type == TYPE_INT) {
-            res.set_int(std::get<int>(x.val) + std::get<int>(y.val));
+            res.set_int(std::get<std::int64_t>(x.val) +
+                        std::get<std::int64_t>(y.val));
         } else if (x.type == TYPE_FLOAT && y.type == TYPE_FLOAT) {
             res.set_float(std::get<double>(x.val) + std::get<double>(y.val));
         } else {
