@@ -104,8 +104,8 @@ class SortExecutor : public AbstractExecutor {
                 else
                     return value_a < value_b;
             } else if (col.type == TYPE_FLOAT) {
-                double value_a = *(double*)rec_buf_a;
-                double value_b = *(double*)rec_buf_b;
+                float value_a = *(float*)rec_buf_a;
+                float value_b = *(float*)rec_buf_b;
                 if (value_a == value_b)
                     continue;
                 if (is_desc_[cnt])

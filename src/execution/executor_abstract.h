@@ -50,9 +50,9 @@ class AbstractExecutor {
 
     virtual ExecutorType getType() const { return ExecutorType::ABSTRACT; };
 
-    virtual void beginTuple(){};
+    virtual void beginTuple() {};
 
-    virtual void nextTuple(){};
+    virtual void nextTuple() {};
 
     virtual bool is_end() const { return true; };
 
@@ -85,7 +85,7 @@ class AbstractExecutor {
                 break;
             }
             case TYPE_FLOAT: {
-                double fa = *(double*)a;
+                float fa = *(float*)a;
                 res.set_float(fa);
                 break;
             }
@@ -104,12 +104,12 @@ class AbstractExecutor {
             return;
         if (a.type == TYPE_FLOAT) {
             if (b.type == TYPE_INT) {
-                b.set_float((double)b.int_val);
+                b.set_float((float)b.int_val);
                 return;
             }
         } else if (a.type == TYPE_INT) {
             if (b.type == TYPE_FLOAT) {
-                a.set_float((double)a.int_val);
+                a.set_float((float)a.int_val);
                 return;
             }
         }
@@ -120,8 +120,8 @@ class AbstractExecutor {
         convert(pa, pb);
         switch (pa.type) {
             case TYPE_FLOAT: {
-                double va = pa.float_val;
-                double vb = pb.float_val;
+                float va = pa.float_val;
+                float vb = pb.float_val;
                 return (va < vb) ? -1 : ((va > vb) ? 1 : 0);
             }
             case TYPE_INT: {
@@ -273,7 +273,7 @@ class AbstractExecutor {
                         val.set_int(*(int*)(rec[0]->data + col_meta.offset));
                     } else if (col_meta.type == TYPE_FLOAT) {
                         val.set_float(
-                            *(double*)(rec[0]->data + col_meta.offset));
+                            *(float*)(rec[0]->data + col_meta.offset));
                     } else {
                         val.set_str(std::string(rec[0]->data + col_meta.offset,
                                                 col_meta.len));
@@ -291,9 +291,9 @@ class AbstractExecutor {
                 }
                 val.set_int(sum);
             } else if (col_meta.type == TYPE_FLOAT) {
-                double sum = 0;
+                float sum = 0;
                 for (const auto& record : rec) {
-                    sum += *(double*)(record->data + col_meta.offset);
+                    sum += *(float*)(record->data + col_meta.offset);
                 }
                 val.set_float(sum);
             }
@@ -306,10 +306,10 @@ class AbstractExecutor {
                 }
                 val.set_int(max);
             } else if (col_meta.type == TYPE_FLOAT) {
-                double max = std::numeric_limits<double>::min();
+                float max = std::numeric_limits<float>::min();
                 for (const auto& record : rec) {
                     max = std::max(max,
-                                   *(double*)(record->data + col_meta.offset));
+                                   *(float*)(record->data + col_meta.offset));
                 }
                 val.set_float(max);
             } else if (col_meta.type == TYPE_STRING) {
@@ -330,10 +330,10 @@ class AbstractExecutor {
                 }
                 val.set_int(min);
             } else if (col_meta.type == TYPE_FLOAT) {
-                double min = std::numeric_limits<double>::max();
+                float min = std::numeric_limits<float>::max();
                 for (const auto& record : rec) {
                     min = std::min(min,
-                                   *(double*)(record->data + col_meta.offset));
+                                   *(float*)(record->data + col_meta.offset));
                 }
                 val.set_float(min);
             } else if (col_meta.type == TYPE_STRING) {

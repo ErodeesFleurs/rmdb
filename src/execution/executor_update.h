@@ -165,7 +165,7 @@ class UpdateExecutor : public AbstractExecutor {
                         value.int_val -= old_val;
                     }
                 } else if (col.type == TYPE_FLOAT) {
-                    auto old_val = *(double*)rec_buf;
+                    auto old_val = *(float*)rec_buf;
                     if (i.op == SetOp::OP_ADD) {
                         value.float_val += old_val;
                     } else if (i.op == SetOp::OP_SUB) {
