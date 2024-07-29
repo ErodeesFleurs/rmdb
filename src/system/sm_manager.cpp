@@ -453,11 +453,10 @@ void SmManager::load_record(const std::string file_path,
             if (tab_meta.cols[idx].type == ColType::TYPE_INT) {
                 x = std::stoi(value);
             } else if (tab_meta.cols[idx].type == ColType::TYPE_FLOAT) {
-                x = std::stof(value);
+                x = std::stod(value);
             } else {
                 x = value;
             }
-            // std::cerr << "len: " << tab_meta.cols[idx].len << std::endl;
             x.init_raw(tab_meta.cols[idx].len);
             record.rewrite(x.raw->data, tab_meta.cols[idx].offset,
                            tab_meta.cols[idx].len);

@@ -299,7 +299,7 @@ void Analyze::check_clause(const std::vector<std::string>& tab_names,
         if (cond.is_rhs_val) {
             rhs_type = cond.rhs_val.type;
             if (rhs_type == TYPE_FLOAT) {
-                cond.rhs_val.init_raw(sizeof(float));
+                cond.rhs_val.init_raw(sizeof(double));
             } else if (rhs_type == TYPE_INT) {
                 cond.rhs_val.init_raw(sizeof(int));
             } else {

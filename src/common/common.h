@@ -44,8 +44,8 @@ struct TabCol {
 struct Value {
     ColType type;  // type of value
     union {
-        int int_val;      // int value
-        float float_val;  // float value
+        int int_val;       // int value
+        double float_val;  // float value
     };
     std::string str_val;  // string value
 
@@ -55,7 +55,7 @@ struct Value {
     Value& operator=(T&& val) {
         if constexpr (std::is_same_v<std::decay_t<T>, int>) {
             set_int(val);
-        } else if constexpr (std::is_same_v<std::decay_t<T>, float>) {
+        } else if constexpr (std::is_same_v<std::decay_t<T>, double>) {
             set_float(val);
         } else if constexpr (std::is_same_v<std::decay_t<T>, std::string>) {
             set_str(val);
@@ -70,7 +70,7 @@ struct Value {
         int_val = int_val_;
     }
 
-    void set_float(float float_val_) {
+    void set_float(double float_val_) {
         type = TYPE_FLOAT;
         float_val = float_val_;
     }
@@ -107,7 +107,7 @@ struct Value {
 
     bool to_float() {
         if (type == TYPE_INT) {
-            float_val = (float)int_val;
+            float_val = (double)int_val;
             type = TYPE_FLOAT;
             return true;
         }
@@ -121,8 +121,8 @@ struct Value {
             assert(len == sizeof(int));
             *(int*)(raw->data) = int_val;
         } else if (type == TYPE_FLOAT) {
-            assert(len == sizeof(float));
-            *(float*)(raw->data) = float_val;
+            assert(len == sizeof(double));
+            *(double*)(raw->data) = float_val;
         } else if (type == TYPE_STRING) {
             if (len < (int)str_val.size()) {
                 throw StringOverflowError();
@@ -138,8 +138,8 @@ struct Value {
             raw = std::make_shared<RmRecord>(sizeof(int));
             *(int*)(raw->data) = int_val;
         } else if (type == TYPE_FLOAT) {
-            raw = std::make_shared<RmRecord>(sizeof(float));
-            *(float*)(raw->data) = float_val;
+            raw = std::make_shared<RmRecord>(sizeof(double));
+            *(double*)(raw->data) = float_val;
         } else if (type == TYPE_STRING) {
             raw = std::make_shared<RmRecord>(str_val.size());
             memcpy(raw->data, str_val.c_str(), str_val.size());
