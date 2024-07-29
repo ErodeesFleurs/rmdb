@@ -98,7 +98,7 @@ struct Value {
 
     bool to_int() {
         if (type == TYPE_FLOAT) {
-            val = (std::int64_t)std::get<double>(val);
+            val = (int)std::get<double>(val);
             type = TYPE_INT;
             return true;
         }
