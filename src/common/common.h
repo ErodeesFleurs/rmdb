@@ -15,7 +15,9 @@ See the Mulan PSL v2 for more details. */
 #include <cstring>
 #include <memory>
 #include <string>
+#include <variant>
 #include <vector>
+
 #include "defs.h"
 #include "parser/parser.h"
 #include "record/rm_defs.h"
@@ -43,21 +45,18 @@ struct TabCol {
 
 struct Value {
     ColType type;  // type of value
-    union {
-        int int_val;       // int value
-        double float_val;  // float value
-    };
-    std::string str_val;  // string value
+
+    std::variant<int, double, std::string> val;
 
     std::shared_ptr<RmRecord> raw;  // raw record buffer
 
     template <typename T>
     Value& operator=(T&& val) {
-        if constexpr (std::is_same_v<std::decay_t<T>, int>) {
+        if constexpr (std::is_same_v<T, int>) {
             set_int(val);
-        } else if constexpr (std::is_same_v<std::decay_t<T>, double>) {
+        } else if constexpr (std::is_same_v<T, double>) {
             set_float(val);
-        } else if constexpr (std::is_same_v<std::decay_t<T>, std::string>) {
+        } else if constexpr (std::is_same_v<T, std::string>) {
             set_str(val);
         } else {
             throw std::runtime_error("Invalid value type");
@@ -67,22 +66,22 @@ struct Value {
 
     void set_int(int int_val_) {
         type = TYPE_INT;
-        int_val = int_val_;
+        val = int_val_;
     }
 
     void set_float(double float_val_) {
         type = TYPE_FLOAT;
-        float_val = float_val_;
+        val = float_val_;
     }
 
     void set_str(std::string str_val_) {
         type = TYPE_STRING;
-        str_val = std::move(str_val_);
+        val = std::move(str_val_);
     }
 
     bool to_floor() {
         if (type == TYPE_FLOAT) {
-            float_val = std::floor(float_val);
+            val = std::floor(std::get<double>(val));
             return true;
         }
         return false;
@@ -90,7 +89,7 @@ struct Value {
 
     bool to_cell() {
         if (type == TYPE_FLOAT) {
-            float_val = std::ceil(float_val);
+            val = std::ceil(std::get<double>(val));
             return true;
         }
         return false;
@@ -98,7 +97,7 @@ struct Value {
 
     bool to_int() {
         if (type == TYPE_FLOAT) {
-            int_val = (int)float_val;
+            val = (int)std::get<double>(val);
             type = TYPE_INT;
             return true;
         }
@@ -107,7 +106,7 @@ struct Value {
 
     bool to_float() {
         if (type == TYPE_INT) {
-            float_val = (double)int_val;
+            val = (double)std::get<int>(val);
             type = TYPE_FLOAT;
             return true;
         }
@@ -119,16 +118,17 @@ struct Value {
         raw = std::make_shared<RmRecord>(len);
         if (type == TYPE_INT) {
             assert(len == sizeof(int));
-            *(int*)(raw->data) = int_val;
+            *(int*)(raw->data) = std::get<int>(val);
         } else if (type == TYPE_FLOAT) {
             assert(len == sizeof(double));
-            *(double*)(raw->data) = float_val;
+            *(double*)(raw->data) = std::get<double>(val);
         } else if (type == TYPE_STRING) {
-            if (len < (int)str_val.size()) {
+            auto str = std::get<std::string>(val);
+            if (len < (int)str.size()) {
                 throw StringOverflowError();
             }
             memset(raw->data, 0, len);
-            memcpy(raw->data, str_val.c_str(), str_val.size());
+            memcpy(raw->data, str.c_str(), str.size());
         }
     }
 
@@ -136,11 +136,12 @@ struct Value {
         assert(raw == nullptr);
         if (type == TYPE_INT) {
             raw = std::make_shared<RmRecord>(sizeof(int));
-            *(int*)(raw->data) = int_val;
+            *(int*)(raw->data) = std::get<int>(val);
         } else if (type == TYPE_FLOAT) {
             raw = std::make_shared<RmRecord>(sizeof(double));
-            *(double*)(raw->data) = float_val;
+            *(double*)(raw->data) = std::get<double>(val);
         } else if (type == TYPE_STRING) {
+            auto str_val = std::get<std::string>(val);
             raw = std::make_shared<RmRecord>(str_val.size());
             memcpy(raw->data, str_val.c_str(), str_val.size());
         }
@@ -149,16 +150,16 @@ struct Value {
     friend std::ostream& operator<<(std::ostream& os, const Value& val) {
         switch (val.type) {
             case TYPE_INT:
-                os << val.int_val;
+                os << std::get<int>(val.val);
                 break;
             case TYPE_FLOAT:
-                os << val.float_val;
+                os << std::get<double>(val.val);
                 break;
             case TYPE_STRING:
-                os << val.str_val;
+                os << std::get<std::string>(val.val);
                 break;
             default:
-                os << "UNKNOWN";
+                throw std::runtime_error("Invalid value type");
         }
         return os;
     }
@@ -168,11 +169,12 @@ struct Value {
             return false;
         switch (x.type) {
             case TYPE_INT:
-                return x.int_val == y.int_val;
+                return std::get<int>(x.val) == std::get<int>(y.val);
             case TYPE_FLOAT:
-                return x.float_val == y.float_val;
+                return std::get<double>(x.val) == std::get<double>(y.val);
             case TYPE_STRING:
-                return x.str_val == y.str_val;
+                return std::get<std::string>(x.val) ==
+                       std::get<std::string>(y.val);
             default:
                 return false;
         }
@@ -185,11 +187,12 @@ struct Value {
             return x.type < y.type;
         switch (x.type) {
             case TYPE_INT:
-                return x.int_val < y.int_val;
+                return std::get<int>(x.val) < std::get<int>(y.val);
             case TYPE_FLOAT:
-                return x.float_val < y.float_val;
+                return std::get<double>(x.val) < std::get<double>(y.val);
             case TYPE_STRING:
-                return x.str_val < y.str_val;
+                return std::get<std::string>(x.val) <
+                       std::get<std::string>(y.val);
             default:
                 return false;
         }
@@ -204,9 +207,9 @@ struct Value {
     friend Value operator+(const Value& x, const Value& y) {
         Value res;
         if (x.type == TYPE_INT && y.type == TYPE_INT) {
-            res.set_int(x.int_val + y.int_val);
+            res.set_int(std::get<int>(x.val) + std::get<int>(y.val));
         } else if (x.type == TYPE_FLOAT && y.type == TYPE_FLOAT) {
-            res.set_float(x.float_val + y.float_val);
+            res.set_float(std::get<double>(x.val) + std::get<double>(y.val));
         } else {
             throw std::runtime_error("Invalid operation");
         }

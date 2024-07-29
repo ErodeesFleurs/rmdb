@@ -50,9 +50,9 @@ class AbstractExecutor {
 
     virtual ExecutorType getType() const { return ExecutorType::ABSTRACT; };
 
-    virtual void beginTuple(){};
+    virtual void beginTuple() {};
 
-    virtual void nextTuple(){};
+    virtual void nextTuple() {};
 
     virtual bool is_end() const { return true; };
 
@@ -104,12 +104,12 @@ class AbstractExecutor {
             return;
         if (a.type == TYPE_FLOAT) {
             if (b.type == TYPE_INT) {
-                b.set_float((double)b.int_val);
+                b.to_float();
                 return;
             }
         } else if (a.type == TYPE_INT) {
             if (b.type == TYPE_FLOAT) {
-                a.set_float((double)a.int_val);
+                a.to_float();
                 return;
             }
         }
@@ -120,23 +120,24 @@ class AbstractExecutor {
         convert(pa, pb);
         switch (pa.type) {
             case TYPE_FLOAT: {
-                double va = pa.float_val;
-                double vb = pb.float_val;
+                double va = std::get<double>(pa.val);
+                double vb = std::get<double>(pb.val);
                 return (va < vb) ? -1 : ((va > vb) ? 1 : 0);
             }
             case TYPE_INT: {
-                int va = pa.int_val;
-                int vb = pb.int_val;
+                int va = std::get<int>(pa.val);
+                int vb = std::get<int>(pb.val);
                 return (va < vb) ? -1 : ((va > vb) ? 1 : 0);
             }
             case TYPE_STRING: {
-                auto same_size_str = pb.str_val;
-                while (same_size_str.size() < pa.str_val.size()) {
+                auto same_size_str = std::get<std::string>(pb.val);
+                auto str_val = std::get<std::string>(pa.val);
+                while (same_size_str.size() < str_val.size()) {
                     same_size_str += char(0);
                 }
-                return (pa.str_val < same_size_str)
+                return (str_val < same_size_str)
                            ? -1
-                           : ((pa.str_val > same_size_str) ? 1 : 0);
+                           : ((str_val > same_size_str) ? 1 : 0);
             }
         }
         return 0;
