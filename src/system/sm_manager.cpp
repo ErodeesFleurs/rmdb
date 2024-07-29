@@ -14,6 +14,7 @@ See the Mulan PSL v2 for more details. */
 #include <unistd.h>
 
 #include <fstream>
+#include <future>
 
 #include "csv.h"
 
@@ -476,24 +477,48 @@ void SmManager::load_record(const std::string file_path,
         // context->log_mgr_->add_log_to_buffer(logRecord.get());
         // context->txn_->set_prev_lsn(logRecord->lsn_);
         // 更新索引
-        // size_t pos = 0;
-        // for (const auto& index : tab_meta.indexes) {
-        //     auto index_handle = indexs[pos++];
-        //     auto key = new char[index.col_tot_len];
-        //     int offset = 0;
-        //     for (const auto& col : index.cols) {
-        //         memcpy(key + offset, record.data + col.offset, col.len);
-        //         offset += col.len;
-        //     }
-        //     index_handle->insert_entry(key, rid, context->txn_);
-        //     delete[] key;
-        // }
+        // auto future = std::async(
+        //     std::launch::async,
+        //     [indexs, indexes = tab_meta.indexes, rid, record, context]() {
+        //         size_t pos = 0;
+        //         for (const auto& index : indexes) {
+        //             auto index_handle = indexs[pos++];
+        //             auto key = new char[index.col_tot_len];
+        //             int offset = 0;
+        //             for (const auto& col : index.cols) {
+        //                 memcpy(key + offset, record.data + col.offset, col.len);
+        //                 offset += col.len;
+        //             }
+        //             index_handle->insert_entry(key, rid, context->txn_);
+        //             delete[] key;
+        //         }
+        //     });
+        // );
+        // th.detach();
         // auto write_record =
         //     new WriteRecord(WType::INSERT_TUPLE, tab_name, rid, record);
         // context->txn_->append_write_record(write_record);
     }
     infile.close();
     // std::cerr << "load record done" << std::endl;
+    for (const auto& index : tab_meta.indexes) {
+        auto rm_scan = RmScan(file_handle);
+        while (!rm_scan.is_end()) {
+            size_t pos = 0;
+            auto rec = file_handle->get_record(rm_scan.rid(), context);
+            for (const auto& index : tab_meta.indexes) {
+                auto index_handle = indexs[pos++];
+                auto key = new char[index.col_tot_len];
+                int offset = 0;
+                for (const auto& col : index.cols) {
+                    memcpy(key + offset, rec->data + col.offset, col.len);
+                    offset += col.len;
+                }
+                index_handle->insert_entry(key, rm_scan.rid(), context->txn_);
+            }
+            rm_scan.next();
+        }
+    }
 }
 
 bool SmManager::contains_table(const std::string& tab_name) const {
