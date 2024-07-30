@@ -487,15 +487,9 @@ void SmManager::load_record(const std::string file_path,
                            tab_meta.cols[idx].len);
             idx++;
         }
-        // context->lock_mgr_->lock_exclusive_on_table(context->txn_,
-        //                                             file_handle->GetFd());
+
         auto rid = file_handle->insert_record(record.data, context);
 
-        // auto logRecord = std::make_shared<InsertLogRecord>(
-        //     context->txn_->get_transaction_id(), record, rid, tab_name);
-        // logRecord->prev_lsn_ = context->txn_->get_prev_lsn();
-        // context->log_mgr_->add_log_to_buffer(logRecord.get());
-        // context->txn_->set_prev_lsn(logRecord->lsn_);
         // 更新索引
         // auto future = std::async(
         //     std::launch::async,
@@ -515,9 +509,6 @@ void SmManager::load_record(const std::string file_path,
         //     });
         // );
         // th.detach();
-        // auto write_record =
-        //     new WriteRecord(WType::INSERT_TUPLE, tab_name, rid, record);
-        // context->txn_->append_write_record(write_record);
     }
     delete[] buffer;
     infile.close();
