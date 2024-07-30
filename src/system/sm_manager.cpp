@@ -494,18 +494,18 @@ void SmManager::load_record(const std::string file_path,
         // auto future = std::async(
         //     std::launch::async,
         //     [indexs, indexes = tab_meta.indexes, rid, record, context]() {
-        size_t pos = 0;
-        for (const auto& index : tab_meta.indexes) {
-            auto index_handle = indexs[pos++];
-            auto key = new char[index.col_tot_len];
-            int offset = 0;
-            for (const auto& col : index.cols) {
-                memcpy(key + offset, record.data + col.offset, col.len);
-                offset += col.len;
-            }
-            index_handle->insert_entry(key, rid, context->txn_);
-            delete[] key;
-        }
+        // size_t pos = 0;
+        // for (const auto& index : tab_meta.indexes) {
+        //     auto index_handle = indexs[pos++];
+        //     auto key = new char[index.col_tot_len];
+        //     int offset = 0;
+        //     for (const auto& col : index.cols) {
+        //         memcpy(key + offset, record.data + col.offset, col.len);
+        //         offset += col.len;
+        //     }
+        //     index_handle->insert_entry(key, rid, context->txn_);
+        //     delete[] key;
+        // }
         //     });
         // );
         // th.detach();
