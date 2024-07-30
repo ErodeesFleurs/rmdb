@@ -80,15 +80,15 @@ void QlManager::run_mutli_query(std::shared_ptr<Plan> plan, Context* context) {
                 break;
             }
             case T_LoadData: {
-                auto future_result = std::async(
-                    std::launch::async,
-                    [this, file_apth = x->file_path_, tab_name = x->tab_name_,
-                     context]() {  // 拷贝捕获
-                        sm_manager_->load_record(file_apth, tab_name, context);
-                        return tab_name;
-                    });
-                futures.push_back(std::move(future_result));
-                // sm_manager_->load_record(x->file_path_, x->tab_name_, context);
+                // auto future_result = std::async(
+                //     std::launch::async,
+                //     [this, file_apth = x->file_path_, tab_name = x->tab_name_,
+                //      context]() {  // 拷贝捕获
+                //         sm_manager_->load_record(file_apth, tab_name, context);
+                //         return tab_name;
+                //     });
+                // futures.push_back(std::move(future_result));
+                sm_manager_->load_record(x->file_path_, x->tab_name_, context);
                 break;
             }
             default:
