@@ -484,7 +484,7 @@ void SmManager::load_record(const std::string file_path,
         }
         // context->lock_mgr_->lock_exclusive_on_table(context->txn_,
         //                                             file_handle->GetFd());
-        auto rid = file_handle->insert_record(record.data, context);
+        file_handle->insert_record(record.data, context);
 
         // auto logRecord = std::make_shared<InsertLogRecord>(
         //     context->txn_->get_transaction_id(), record, rid, tab_name);

@@ -24,6 +24,8 @@ See the Mulan PSL v2 for more details. */
 
 std::vector<std::future<std::string>> futures;
 
+std::map<std::string, bool> need_rebuild_index;
+
 const char* help_info =
     "Supported SQL syntax:\n"
     "  command ;\n"
@@ -164,10 +166,11 @@ void QlManager::select_from(std::unique_ptr<AbstractExecutor> executorTreeRoot,
     // 先判断futures中的load是否全部结束
     for (auto& future : futures) {
         auto tab_name = future.get();
-        std::thread([this, tab_name, context]() {
-            sm_manager_->rebuild_index(tab_name, context);
-            std::cerr << "rebuild index for " << tab_name << std::endl;
-        }).detach();
+        // std::thread([this, tab_name, context]() {
+        //     sm_manager_->rebuild_index(tab_name, context);
+        //     std::cerr << "rebuild index for " << tab_name << std::endl;
+        // }).detach();
+        need_rebuild_index[tab_name] = true;
     }
     futures.clear();
     std::vector<std::string> captions;
