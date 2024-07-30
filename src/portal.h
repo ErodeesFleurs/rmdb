@@ -213,9 +213,11 @@ class Portal {
                 //     }
                 // }
                 // need_rebuild_index.clear();
-                return std::make_unique<IndexScanExecutor>(
-                    sm_manager_, x->tab_name_, x->conds_, x->index_col_names_,
-                    context);
+                return std::make_unique<SeqScanExecutor>(
+                    sm_manager_, x->tab_name_, x->conds_, context);
+                // return std::make_unique<IndexScanExecutor>(
+                //     sm_manager_, x->tab_name_, x->conds_, x->index_col_names_,
+                //     context);
             }
         } else if (auto x = std::dynamic_pointer_cast<JoinPlan>(plan)) {
             // std::cerr << "JoinPlan" << std::endl;
