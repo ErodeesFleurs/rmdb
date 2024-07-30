@@ -79,6 +79,8 @@ class SmManager {
                       const std::vector<std::string>& col_names,
                       Context* context);
 
+    void rebuild_index(const std::string& tab_name, Context* context);
+
     void drop_index(const std::string& tab_name,
                     const std::vector<std::string>& col_names,
                     Context* context);

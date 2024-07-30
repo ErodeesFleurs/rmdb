@@ -330,6 +330,21 @@ void SmManager::create_index(const std::string& tab_name,
     flush_meta();
 }
 
+void SmManager::rebuild_index(const std::string& tab_name, Context* context) {
+    if (!db_.is_table(tab_name)) {
+        throw TableNotFoundError(tab_name);
+    }
+    auto& tab = db_.get_table(tab_name);
+    for (auto& index : tab.indexes) {
+        std::vector<std::string> col_names;
+        for (auto& col : index.cols) {
+            col_names.push_back(col.name);
+        }
+        drop_index(tab_name, col_names, context);
+        create_index(tab_name, col_names, context);
+    }
+}
+
 /**
  * @description: 删除索引
  * @param {string&} tab_name 表名称
@@ -500,29 +515,30 @@ void SmManager::load_record(const std::string file_path,
         // context->txn_->append_write_record(write_record);
     }
     infile.close();
-    std::cerr << "load record done" << std::endl;
-    std::thread th([file_handle, indexs, indexes = tab_meta.indexes,
-                    context]() {
-        auto rm_scan = RmScan(file_handle);
-        while (!rm_scan.is_end()) {
-            size_t pos = 0;
-            auto rec = file_handle->get_record(rm_scan.rid(), context);
-            for (const auto& index : indexes) {
-                auto index_handle = indexs[pos++];
-                auto key = new char[index.col_tot_len];
-                int offset = 0;
-                for (const auto& col : index.cols) {
-                    memcpy(key + offset, rec->data + col.offset, col.len);
-                    offset += col.len;
-                }
-                index_handle->insert_entry(key, rm_scan.rid(), context->txn_);
-                delete[] key;
-            }
-            rm_scan.next();
-        }
-    });
-    th.detach();
-    std::cerr << "load record done: " << file_path << std::endl;
+    // std::cerr << "load record done" << std::endl;
+    // std::thread th([file_handle, indexs, indexes = tab_meta.indexes,
+    //                 context]() {
+    //     auto rm_scan = RmScan(file_handle);
+    //     while (!rm_scan.is_end()) {
+    //         size_t pos = 0;
+    //         auto rec = file_handle->get_record(rm_scan.rid(), context);
+    //         for (const auto& index : indexes) {
+    //             auto index_handle = indexs[pos++];
+    //             auto key = new char[index.col_tot_len];
+    //             int offset = 0;
+    //             for (const auto& col : index.cols) {
+    //                 memcpy(key + offset, rec->data + col.offset, col.len);
+    //                 offset += col.len;
+    //             }
+    //             index_handle->insert_entry(key, rm_scan.rid(), context->txn_);
+    //             delete[] key;
+    //         }
+    //         rm_scan.next();
+    //     }
+    //     std::cerr << "index update done" << std::endl;
+    // });
+    // th.detach();
+    // std::cerr << "load record done: " << file_path << std::endl;
 }
 
 bool SmManager::contains_table(const std::string& tab_name) const {

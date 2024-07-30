@@ -22,7 +22,7 @@ See the Mulan PSL v2 for more details. */
 #include "index/ix.h"
 #include "record_printer.h"
 
-std::vector<std::future<void>> futures;
+std::vector<std::future<std::string>> futures;
 
 const char* help_info =
     "Supported SQL syntax:\n"
@@ -83,6 +83,7 @@ void QlManager::run_mutli_query(std::shared_ptr<Plan> plan, Context* context) {
                     [this, file_apth = x->file_path_, tab_name = x->tab_name_,
                      context]() {  // 拷贝捕获
                         sm_manager_->load_record(file_apth, tab_name, context);
+                        return tab_name;
                     });
                 futures.push_back(std::move(future_result));
                 // sm_manager_->load_record(x->file_path_, x->tab_name_, context);
@@ -162,7 +163,11 @@ void QlManager::select_from(std::unique_ptr<AbstractExecutor> executorTreeRoot,
                             std::vector<TabCol> sel_cols, Context* context) {
     // 先判断futures中的load是否全部结束
     for (auto& future : futures) {
-        future.get();
+        auto tab_name = future.get();
+        std::thread([this, tab_name, context]() {
+            sm_manager_->rebuild_index(tab_name, context);
+            std::cerr << "rebuild index for " << tab_name << std::endl;
+        }).detach();
     }
     futures.clear();
     std::vector<std::string> captions;
