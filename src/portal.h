@@ -204,10 +204,15 @@ class Portal {
                     sm_manager_, x->tab_name_, x->conds_, context);
             } else {
                 // std::cerr << "IndexScan" << std::endl;
-                if (need_rebuild_index[x->tab_name_]) {
-                    sm_manager_->rebuild_index(x->tab_name_, context);
-                    need_rebuild_index[x->tab_name_] = false;
-                }
+                // for (const auto& [tab_name, need] : need_rebuild_index) {
+                //     if (need) {
+                //         std::thread([this, tab_name, context]() {
+                //             sm_manager_->rebuild_index(tab_name, context);
+                //         }).detach();
+                //         need_rebuild_index[tab_name] = false;
+                //     }
+                // }
+                // need_rebuild_index.clear();
                 return std::make_unique<IndexScanExecutor>(
                     sm_manager_, x->tab_name_, x->conds_, x->index_col_names_,
                     context);
