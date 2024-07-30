@@ -500,7 +500,7 @@ void SmManager::load_record(const std::string file_path,
         // context->txn_->append_write_record(write_record);
     }
     infile.close();
-    // std::cerr << "load record done" << std::endl;
+    std::cerr << "load record done" << std::endl;
     std::thread th([file_handle, indexs, indexes = tab_meta.indexes,
                     context]() {
         auto rm_scan = RmScan(file_handle);
@@ -516,11 +516,13 @@ void SmManager::load_record(const std::string file_path,
                     offset += col.len;
                 }
                 index_handle->insert_entry(key, rm_scan.rid(), context->txn_);
+                delete[] key;
             }
             rm_scan.next();
         }
     });
     th.detach();
+    std::cerr << "load record done: " << file_path << std::endl;
 }
 
 bool SmManager::contains_table(const std::string& tab_name) const {
