@@ -452,6 +452,11 @@ void SmManager::load_record(const std::string file_path,
     }
     auto file_handle = get_file_handle(tab_name);
     auto& tab_meta = db_.get_table(tab_name);
+
+    const std::streamsize buffer_size = 1024 * 1024;
+    char* buffer = new char[buffer_size];
+    infile.rdbuf()->pubsetbuf(buffer, buffer_size);
+
     std::string input{};
     std::getline(infile, input);
     std::vector<IxIndexHandle*> indexs;
@@ -514,31 +519,8 @@ void SmManager::load_record(const std::string file_path,
         //     new WriteRecord(WType::INSERT_TUPLE, tab_name, rid, record);
         // context->txn_->append_write_record(write_record);
     }
+    delete[] buffer;
     infile.close();
-    // std::cerr << "load record done" << std::endl;
-    // std::thread th([file_handle, indexs, indexes = tab_meta.indexes,
-    //                 context]() {
-    //     auto rm_scan = RmScan(file_handle);
-    //     while (!rm_scan.is_end()) {
-    //         size_t pos = 0;
-    //         auto rec = file_handle->get_record(rm_scan.rid(), context);
-    //         for (const auto& index : indexes) {
-    //             auto index_handle = indexs[pos++];
-    //             auto key = new char[index.col_tot_len];
-    //             int offset = 0;
-    //             for (const auto& col : index.cols) {
-    //                 memcpy(key + offset, rec->data + col.offset, col.len);
-    //                 offset += col.len;
-    //             }
-    //             index_handle->insert_entry(key, rm_scan.rid(), context->txn_);
-    //             delete[] key;
-    //         }
-    //         rm_scan.next();
-    //     }
-    //     std::cerr << "index update done" << std::endl;
-    // });
-    // th.detach();
-    // std::cerr << "load record done: " << file_path << std::endl;
 }
 
 bool SmManager::contains_table(const std::string& tab_name) const {
