@@ -493,7 +493,7 @@ void SmManager::load_record(const std::string file_path,
         // 更新索引
         // auto future = std::async(
         //     std::launch::async,
-        //     [indexs, indexes = tab_meta.indexes, rid, record, context]() {
+        // //     [indexs, indexes = tab_meta.indexes, rid, record, context]() {
         // size_t pos = 0;
         // for (const auto& index : tab_meta.indexes) {
         //     auto index_handle = indexs[pos++];
@@ -512,6 +512,7 @@ void SmManager::load_record(const std::string file_path,
     }
     delete[] buffer;
     infile.close();
+    // rebuild_index(tab_name, context);
 }
 
 bool SmManager::contains_table(const std::string& tab_name) const {

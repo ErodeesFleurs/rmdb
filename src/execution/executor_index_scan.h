@@ -17,6 +17,7 @@ See the Mulan PSL v2 for more details. */
 #include "system/sm.h"
 
 extern int count_index_scan;
+extern std::map<std::string, std::atomic_bool> is_thread_ok;
 class IndexScanExecutor : public AbstractExecutor {
    private:
     std::string tab_name_;              // 表名称

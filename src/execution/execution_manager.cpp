@@ -23,6 +23,7 @@ See the Mulan PSL v2 for more details. */
 #include "record_printer.h"
 
 std::vector<std::future<std::string>> futures;
+std::map<std::string, std::thread> load_threads;
 
 const char* help_info =
     "Supported SQL syntax:\n"
@@ -78,14 +79,13 @@ void QlManager::run_mutli_query(std::shared_ptr<Plan> plan, Context* context) {
                 break;
             }
             case T_LoadData: {
-                auto future_result = std::async(
-                    std::launch::async,
-                    [this, file_apth = x->file_path_, tab_name = x->tab_name_,
-                     context]() {  // 拷贝捕获
-                        sm_manager_->load_record(file_apth, tab_name, context);
-                        return tab_name;
-                    });
-                futures.push_back(std::move(future_result));
+                std::thread sth([this, file_apth = x->file_path_,
+                                 tab_name = x->tab_name_,
+                                 context]() {  // 拷贝捕获
+                    sm_manager_->load_record(file_apth, tab_name, context);
+                });
+                load_threads[x->tab_name_] = std::move(sth);
+                // futures.push_back(std::move(future_result));
                 // sm_manager_->load_record(x->file_path_, x->tab_name_, context);
                 break;
             }
@@ -162,25 +162,11 @@ void QlManager::run_cmd_utility(std::shared_ptr<Plan> plan, txn_id_t* txn_id,
 void QlManager::select_from(std::unique_ptr<AbstractExecutor> executorTreeRoot,
                             std::vector<TabCol> sel_cols, Context* context) {
     // 先判断futures中的load是否全部结束
-    std::vector<std::string> tab_names;
-    for (auto& future : futures) {
-        auto tab_name = future.get();
-        // tab_names.push_back(tab_name);
-        // std::thread([this, tab_name, context]() {
-        // sm_manager_->rebuild_index(tab_name, context);
-        //     // std::cerr << "rebuild index for " << tab_name << std::endl;
-        // }).detach();
-        // need_rebuild_index[tab_name] = true;
-    }
-    if (!tab_names.empty()) {
-        std::thread([this, tab_names, context]() {
-            for (auto& tab_name : tab_names) {
-                sm_manager_->rebuild_index(tab_name, context);
-            }
-        }).detach();
-        tab_names.clear();
-    }
-    futures.clear();
+    // std::vector<std::string> tab_names;
+    // for (auto& future : futures) {
+    //     auto tab_name = future.get();
+    // }
+    // futures.clear();
     std::vector<std::string> captions;
     captions.reserve(sel_cols.size());
     for (auto& sel_col : sel_cols) {

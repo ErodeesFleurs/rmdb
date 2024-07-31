@@ -22,6 +22,8 @@ See the Mulan PSL v2 for more details. */
 #include "index/ix.h"
 #include "record_printer.h"
 
+extern std::map<std::string, std::thread> load_threads;
+
 // 目前的索引匹配规则为：完全匹配索引字段，且全部为单点查询，会自动调整where条件的顺序
 bool Planner::get_index_cols(std::string tab_name,
                              std::vector<Condition> curr_conds,
@@ -179,7 +181,7 @@ std::shared_ptr<Query> Planner::logical_optimization(
 
 std::shared_ptr<Plan> Planner::physical_optimization(
     std::shared_ptr<Query> query, Context* context) {
-    std::shared_ptr<Plan> plan = make_one_rel(query);
+    std::shared_ptr<Plan> plan = make_one_rel(query, context);
 
     // 其他物理优化
 
@@ -193,7 +195,8 @@ std::shared_ptr<Plan> Planner::physical_optimization(
     return plan;
 }
 
-std::shared_ptr<Plan> Planner::make_one_rel(std::shared_ptr<Query> query) {
+std::shared_ptr<Plan> Planner::make_one_rel(std::shared_ptr<Query> query,
+                                            Context* context) {
     auto x = std::dynamic_pointer_cast<ast::SelectStmt>(query->parse);
     std::vector<std::string> tables = query->tables;
     // // Scan table , 生成表算子列表tab_nodes
@@ -204,6 +207,13 @@ std::shared_ptr<Plan> Planner::make_one_rel(std::shared_ptr<Query> query) {
         std::vector<std::string> index_col_names;
         bool index_exist =
             get_index_cols(tables[i], curr_conds, index_col_names);
+
+        if (load_threads.count(tables[i])) {
+            load_threads[tables[i]].join();
+            sm_manager_->rebuild_index(tables[i], context);
+            load_threads.erase(tables[i]);
+        }
+
         if (index_exist == false) {  // 该表没有索引
             index_col_names.clear();
             table_scan_executors[i] = std::make_shared<ScanPlan>(
