@@ -167,7 +167,7 @@ void QlManager::select_from(std::unique_ptr<AbstractExecutor> executorTreeRoot,
         auto tab_name = future.get();
         // tab_names.push_back(tab_name);
         // std::thread([this, tab_name, context]() {
-        sm_manager_->rebuild_index(tab_name, context);
+        // sm_manager_->rebuild_index(tab_name, context);
         //     // std::cerr << "rebuild index for " << tab_name << std::endl;
         // }).detach();
         // need_rebuild_index[tab_name] = true;
