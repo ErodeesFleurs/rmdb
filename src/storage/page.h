@@ -10,7 +10,42 @@ See the Mulan PSL v2 for more details. */
 
 #pragma once
 
+#include <condition_variable>
+
 #include "common/config.h"
+
+struct RWLatch {
+    std::mutex latch;
+    std::condition_variable cv;
+    int readers = 0;
+    bool writer = false;
+
+    void rd_lock() {
+        std::unique_lock<std::mutex> l(latch);
+        cv.wait(l, [&] { return !writer; });
+        readers++;
+    }
+
+    void rd_unlock() {
+        std::unique_lock<std::mutex> l(latch);
+        readers--;
+        if (readers == 0) {
+            cv.notify_all();
+        }
+    }
+
+    void wr_lock() {
+        std::unique_lock<std::mutex> l(latch);
+        cv.wait(l, [&] { return !writer && readers == 0; });
+        writer = true;
+    }
+
+    void wr_unlock() {
+        std::unique_lock<std::mutex> l(latch);
+        writer = false;
+        cv.notify_all();
+    }
+};
 
 /**
  * @description: 存储层每个Page的id的声明
@@ -82,6 +117,14 @@ class Page {
         memcpy(get_data() + OFFSET_LSN, &page_lsn, sizeof(lsn_t));
     }
 
+    inline void read_lock() { rw_latch_.rd_lock(); }
+
+    inline void read_unlock() { rw_latch_.rd_unlock(); }
+
+    inline void write_lock() { rw_latch_.wr_lock(); }
+
+    inline void write_unlock() { rw_latch_.wr_unlock(); }
+
    private:
     void reset_memory() {
         memset(data_, OFFSET_PAGE_START, PAGE_SIZE);
@@ -100,4 +143,7 @@ class Page {
 
     /** The pin count of this page. */
     int pin_count_ = 0;
+
+    /** 读写锁 */
+    RWLatch rw_latch_;
 };

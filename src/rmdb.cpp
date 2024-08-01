@@ -240,8 +240,8 @@ void* client_handler(void* sock_fd) {
 
     // Clear
     std::cout << "Terminating current client_connection..." << std::endl;
-    std::cout << "count_seq_scan: " << count_seq_scan << std::endl;
-    std::cout << "count_index_scan: " << count_index_scan << std::endl;
+    std::cerr << "count_seq_scan: " << count_seq_scan << std::endl;
+    std::cerr << "count_index_scan: " << count_index_scan << std::endl;
     close(fd);              // close a file descriptor.
     pthread_exit(nullptr);  // terminate calling thread!
 }

@@ -194,6 +194,14 @@ class IxNodeHandle {
     }
 };
 
+struct mutex_wrapper : std::mutex {
+    mutex_wrapper() = default;
+    mutex_wrapper(mutex_wrapper const&) noexcept : std::mutex() {}
+    bool operator==(mutex_wrapper const& other) noexcept {
+        return this == &other;
+    }
+};
+
 /* B+树 */
 class IxIndexHandle {
     friend class IxScan;
@@ -206,10 +214,17 @@ class IxIndexHandle {
     IxFileHdr*
         file_hdr_;  // 存了root_page，但其初始化为2（第0页存FILE_HDR_PAGE，第1页存LEAF_HEADER_PAGE）
     std::mutex root_latch_;
+    // std::vector<mutex_wrapper> node_latches_;
 
    public:
     IxIndexHandle(DiskManager* disk_manager,
                   BufferPoolManager* buffer_pool_manager, int fd);
+
+    ~IxIndexHandle() {
+        if (file_hdr_) {
+            delete file_hdr_;
+        }
+    }
 
     // for search
     bool get_value(const char* key, std::vector<Rid>* result,
@@ -219,6 +234,11 @@ class IxIndexHandle {
                                                   Operation operation,
                                                   Transaction* transaction,
                                                   bool find_first = false);
+
+    std::pair<IxNodeHandle*, bool> find_leaf_page_rw(const char* key,
+                                                     Operation operation,
+                                                     Transaction* transaction,
+                                                     bool find_first = false);
 
     // for insert
     std::pair<page_id_t, bool> insert_entry(const char* key, const Rid& value,
@@ -246,6 +266,8 @@ class IxIndexHandle {
                   IxNodeHandle** parent, int index, Transaction* transaction,
                   bool* root_is_latched);
 
+    bool is_safe(IxNodeHandle* node, Operation op);
+
     Iid lower_bound(const char* key);
 
     Iid upper_bound(const char* key);
@@ -254,7 +276,11 @@ class IxIndexHandle {
 
     Iid leaf_begin() const;
 
+    void unlatch_and_unpin(Operation op, Transaction* transaction);
+
     int get_fd() { return fd_; }
+
+    void unlatch_and_unpin(IxNodeHandle* node, Transaction* transaction);
 
    private:
     // 辅助函数
