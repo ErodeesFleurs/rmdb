@@ -236,6 +236,7 @@ void Analyze::set_clause(
         }
         cond.lhs = {.tab_name = tab_name, .col_name = expr->col_name};
         cond.rhs = convert_sv_value(expr->val);
+        // std::cerr << "?????????? COND -> " << expr->col_name << ' ' << expr->val << ' ' << expr->setOp << std::endl;
         conds.push_back(cond);
     }
 }

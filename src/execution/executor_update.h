@@ -170,6 +170,7 @@ class UpdateExecutor : public AbstractExecutor {
                         std::get<double>(value.val) += old_val;
                     } else if (i.op == SetOp::OP_SUB) {
                         std::get<double>(value.val) -= old_val;
+                        std::get<double>(value.val) *= -1;
                     }
                 } else if (col.type == TYPE_STRING) {
                     //do nothing
