@@ -202,7 +202,6 @@ class Portal {
                 return std::make_unique<SeqScanExecutor>(
                     sm_manager_, x->tab_name_, x->conds_, context);
             } else {
-                // std::cerr << "IndexScan" << std::endl;
                 return std::make_unique<IndexScanExecutor>(
                     sm_manager_, x->tab_name_, x->conds_, x->index_col_names_,
                     context);

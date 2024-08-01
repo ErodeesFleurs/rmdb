@@ -52,7 +52,8 @@ class Planner {
     std::shared_ptr<Plan> physical_optimization(std::shared_ptr<Query> query,
                                                 Context* context);
 
-    std::shared_ptr<Plan> make_one_rel(std::shared_ptr<Query> query);
+    std::shared_ptr<Plan> make_one_rel(std::shared_ptr<Query> query,
+                                       Context* context);
 
     std::shared_ptr<Plan> generate_aggregate_plan(std::shared_ptr<Query> query,
                                                   std::shared_ptr<Plan> plan);

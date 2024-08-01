@@ -14,6 +14,7 @@ See the Mulan PSL v2 for more details. */
 #include <unistd.h>
 
 #include <fstream>
+#include <future>
 
 #include "csv.h"
 
@@ -329,6 +330,21 @@ void SmManager::create_index(const std::string& tab_name,
     flush_meta();
 }
 
+void SmManager::rebuild_index(const std::string& tab_name, Context* context) {
+    if (!db_.is_table(tab_name)) {
+        throw TableNotFoundError(tab_name);
+    }
+    auto& tab = db_.get_table(tab_name);
+    for (auto& index : tab.indexes) {
+        std::vector<std::string> col_names;
+        for (auto& col : index.cols) {
+            col_names.push_back(col.name);
+        }
+        drop_index(tab_name, col_names, context);
+        create_index(tab_name, col_names, context);
+    }
+}
+
 /**
  * @description: 删除索引
  * @param {string&} tab_name 表名称
@@ -436,6 +452,11 @@ void SmManager::load_record(const std::string file_path,
     }
     auto file_handle = get_file_handle(tab_name);
     auto& tab_meta = db_.get_table(tab_name);
+
+    const std::streamsize buffer_size = 1024 * 1024;
+    char* buffer = new char[buffer_size];
+    infile.rdbuf()->pubsetbuf(buffer, buffer_size);
+
     std::string input{};
     std::getline(infile, input);
     std::vector<IxIndexHandle*> indexs;
@@ -466,16 +487,13 @@ void SmManager::load_record(const std::string file_path,
                            tab_meta.cols[idx].len);
             idx++;
         }
-        // context->lock_mgr_->lock_exclusive_on_table(context->txn_,
-        //                                             file_handle->GetFd());
+
         auto rid = file_handle->insert_record(record.data, context);
 
-        // auto logRecord = std::make_shared<InsertLogRecord>(
-        //     context->txn_->get_transaction_id(), record, rid, tab_name);
-        // logRecord->prev_lsn_ = context->txn_->get_prev_lsn();
-        // context->log_mgr_->add_log_to_buffer(logRecord.get());
-        // context->txn_->set_prev_lsn(logRecord->lsn_);
         // 更新索引
+        // auto future = std::async(
+        //     std::launch::async,
+        // //     [indexs, indexes = tab_meta.indexes, rid, record, context]() {
         // size_t pos = 0;
         // for (const auto& index : tab_meta.indexes) {
         //     auto index_handle = indexs[pos++];
@@ -488,12 +506,13 @@ void SmManager::load_record(const std::string file_path,
         //     index_handle->insert_entry(key, rid, context->txn_);
         //     delete[] key;
         // }
-        // auto write_record =
-        //     new WriteRecord(WType::INSERT_TUPLE, tab_name, rid, record);
-        // context->txn_->append_write_record(write_record);
+        //     });
+        // );
+        // th.detach();
     }
+    delete[] buffer;
     infile.close();
-    // std::cerr << "load record done" << std::endl;
+    // rebuild_index(tab_name, context);
 }
 
 bool SmManager::contains_table(const std::string& tab_name) const {
