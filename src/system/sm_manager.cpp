@@ -439,6 +439,8 @@ void SmManager::show_index(const std::string& tab_name, Context* context) {
     }
 }
 
+const std::streamsize buffer_size = 1024 * 1024;
+char* buffer = new char[buffer_size];
 void SmManager::load_record(const std::string file_path,
                             const std::string tab_name, Context* context) {
     // std::cerr << "load record" << std::endl;
@@ -453,8 +455,6 @@ void SmManager::load_record(const std::string file_path,
     auto file_handle = get_file_handle(tab_name);
     auto& tab_meta = db_.get_table(tab_name);
 
-    const std::streamsize buffer_size = 1024 * 1024;
-    char* buffer = new char[buffer_size];
     infile.rdbuf()->pubsetbuf(buffer, buffer_size);
 
     std::string input{};
@@ -469,24 +469,24 @@ void SmManager::load_record(const std::string file_path,
         std::istringstream ss(input);
         std::string value{};
         int idx = 0;
-        // while (std::getline(ss, value, ',')) {
-            // Value x;
-            // // std::cerr << "value: " << value << std::endl;
-            // if (tab_meta.cols[idx].type == ColType::TYPE_INT) {
-            //     x.set_int(std::stoi(value));
-            //     // x = std::stoi(value);
-            // } else if (tab_meta.cols[idx].type == ColType::TYPE_FLOAT) {
-            //     x.set_float(std::stod(value));
-            //     // x = std::stod(value);
-            // } else {
-            //     x.set_str(value);
-            //     // x = value;
-            // }
-            // x.init_raw(tab_meta.cols[idx].len);
-            // record.rewrite(x.raw->data, tab_meta.cols[idx].offset,
-            //                tab_meta.cols[idx].len);
-        //     idx++;
-        // }
+        while (std::getline(ss, value, ',')) {
+            Value x;
+            // std::cerr << "value: " << value << std::endl;
+            if (tab_meta.cols[idx].type == ColType::TYPE_INT) {
+                x.set_int(std::stoi(value));
+                // x = std::stoi(value);
+            } else if (tab_meta.cols[idx].type == ColType::TYPE_FLOAT) {
+                x.set_float(std::stod(value));
+                // x = std::stod(value);
+            } else {
+                x.set_str(value);
+                // x = value;
+            }
+            x.init_raw(tab_meta.cols[idx].len);
+            record.rewrite(x.raw->data, tab_meta.cols[idx].offset,
+                           tab_meta.cols[idx].len);
+            idx++;
+        }
 
         auto rid = file_handle->insert_record(record.data, context);
 
@@ -510,7 +510,7 @@ void SmManager::load_record(const std::string file_path,
         // );
         // th.detach();
     }
-    delete[] buffer;
+    // delete[] buffer;
     infile.close();
     // rebuild_index(tab_name, context);
 }
