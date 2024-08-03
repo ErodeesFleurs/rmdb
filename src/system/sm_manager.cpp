@@ -439,6 +439,9 @@ void SmManager::show_index(const std::string& tab_name, Context* context) {
     }
 }
 
+const std::streamsize buffer_size = 1024 * 1024;
+char* buffer = new char[buffer_size];
+
 void SmManager::load_record(const std::string file_path,
                             const std::string tab_name, Context* context) {
     // std::cerr << "load record" << std::endl;
@@ -453,9 +456,6 @@ void SmManager::load_record(const std::string file_path,
     auto file_handle = get_file_handle(tab_name);
     auto& tab_meta = db_.get_table(tab_name);
 
-    // const std::streamsize buffer_size = 1024 * 1024;
-    const std::streamsize buffer_size = 1024;
-    char* buffer = new char[buffer_size];
     infile.rdbuf()->pubsetbuf(buffer, buffer_size);
 
     std::string input{};
