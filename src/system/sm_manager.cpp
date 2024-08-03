@@ -453,7 +453,8 @@ void SmManager::load_record(const std::string file_path,
     auto file_handle = get_file_handle(tab_name);
     auto& tab_meta = db_.get_table(tab_name);
 
-    const std::streamsize buffer_size = 1024 * 1024;
+    // const std::streamsize buffer_size = 1024 * 1024;
+    const std::streamsize buffer_size = 1024;
     char* buffer = new char[buffer_size];
     infile.rdbuf()->pubsetbuf(buffer, buffer_size);
 
