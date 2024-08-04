@@ -337,21 +337,12 @@ void SmManager::rebuild_index(const std::string& tab_name, Context* context) {
     auto& tab = db_.get_table(tab_name);
     auto file_hdl = fhs_.at(tab_name).get();
     for (auto& index : tab.indexes) {
-        auto rm_scan = RmScan(file_hdl);
-        auto index_name = ix_manager_->get_index_name(tab_name, index.cols);
-        auto ix_hdl = ihs_.at(index_name).get();
-        for (; !rm_scan.is_end(); rm_scan.next()) {
-            auto rec = file_hdl->get_record(rm_scan.rid(), context);
-            char* key = new char[index.col_tot_len];
-            int offset = 0;
-            for (int i = 0; i < index.col_num; ++i) {
-                memcpy(key + offset, rec->data + index.cols[i].offset,
-                       index.cols[i].len);
-                offset += index.cols[i].len;
-            }
-            ix_hdl->insert_entry(key, rm_scan.rid(), context->txn_);
-            delete[] key;
+        std::vector<std::string> col_names;
+        for (const auto& name : index.cols) {
+            col_names.push_back(name.name);
         }
+        drop_index(tab_name, index.cols, context);
+        create_index(tab_name, col_names, context);
     }
 }
 
