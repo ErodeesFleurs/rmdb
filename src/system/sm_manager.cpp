@@ -341,7 +341,7 @@ void SmManager::rebuild_index(const std::string& tab_name, Context* context) {
         for (const auto& name : index.cols) {
             col_names.push_back(name.name);
         }
-        drop_index(tab_name, index.cols, context);
+        drop_index(tab_name, col_names, context);
         create_index(tab_name, col_names, context);
     }
 }
