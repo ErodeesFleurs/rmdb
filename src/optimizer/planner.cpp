@@ -210,7 +210,7 @@ std::shared_ptr<Plan> Planner::make_one_rel(std::shared_ptr<Query> query,
 
         if (load_threads.count(tables[i])) {
             load_threads[tables[i]].join();
-            sm_manager_->rebuild_index(tables[i], context);
+            // sm_manager_->rebuild_index(tables[i], context);
             load_threads.erase(tables[i]);
         }
 

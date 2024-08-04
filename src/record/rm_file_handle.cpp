@@ -86,6 +86,27 @@ void RmFileHandle::insert_record(const Rid& rid, char* buf) {
     }
 }
 
+void RmFileHandle::insert_records(std::vector<char*>& bufs, Context* context) {
+    auto page_handle = create_page_handle();
+    int slot_max = page_handle.file_hdr->num_records_per_page;
+    int slot_no = 0;
+    for (auto& buf : bufs) {
+        if (slot_no >= slot_max) {
+            page_handle.page_hdr->next_free_page_no =
+                file_hdr_.first_free_page_no;
+            file_hdr_.first_free_page_no =
+                page_handle.page->get_page_id().page_no;
+            page_handle = create_page_handle();
+            slot_no = 0;
+        }
+        memcpy(page_handle.get_slot(slot_no), buf,
+               page_handle.file_hdr->record_size);
+        Bitmap::set(page_handle.bitmap, slot_no);
+        page_handle.page_hdr->num_records++;
+        slot_no++;
+    }
+}
+
 /**
  * @description: 删除记录文件中记录号为rid的记录
  * @param {Rid&} rid 要删除的记录的记录号（位置）
