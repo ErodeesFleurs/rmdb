@@ -91,12 +91,12 @@ class BPlusTreeConcurrentTest : public ::testing::Test {
         assert(disk_manager_->is_dir(TEST_DB_NAME));
     };
 
-    void ToGraph(const IxIndexHandle* ih, IxNodeHandle* node,
-                 BufferPoolManager* bpm, std::ofstream& out) const {
+    void ToGraph(const IxIndexHandle* ih, auto node, BufferPoolManager* bpm,
+                 std::ofstream& out) const {
         std::string leaf_prefix("LEAF_");
         std::string internal_prefix("INT_");
         if (node->is_leaf_page()) {
-            IxNodeHandle* leaf = node;
+            auto leaf = node;
             // Print node name
             out << leaf_prefix << leaf->get_page_no();
             // Print node properties
@@ -135,7 +135,7 @@ class BPlusTreeConcurrentTest : public ::testing::Test {
                     << leaf->get_page_no() << ";\n";
             }
         } else {
-            IxNodeHandle* inner = node;
+            auto inner = node;
             // Print node name
             out << internal_prefix << inner->get_page_no();
             // Print node properties
@@ -171,11 +171,10 @@ class BPlusTreeConcurrentTest : public ::testing::Test {
             }
             // Print leaves
             for (int i = 0; i < inner->get_size(); i++) {
-                IxNodeHandle* child_node = ih->fetch_node(inner->value_at(i));
+                auto child_node = ih->fetch_node(inner->value_at(i));
                 ToGraph(ih, child_node, bpm, out);  // 继续递归
                 if (i > 0) {
-                    IxNodeHandle* sibling_node =
-                        ih->fetch_node(inner->value_at(i - 1));
+                    auto sibling_node = ih->fetch_node(inner->value_at(i - 1));
                     if (!sibling_node->is_leaf_page() &&
                         !child_node->is_leaf_page()) {
                         out << "{rank=same " << internal_prefix
@@ -200,7 +199,7 @@ class BPlusTreeConcurrentTest : public ::testing::Test {
         std::ofstream out(outf);
         out << "digraph G {" << std::endl;
 
-        IxNodeHandle* node = ih_->fetch_node(ih_->file_hdr_->root_page_);
+        auto node = ih_->fetch_node(ih_->file_hdr_->root_page_);
         ToGraph(ih_.get(), node, bpm, out);
         out << "}" << std::endl;
         out.close();
@@ -227,9 +226,9 @@ class BPlusTreeConcurrentTest : public ::testing::Test {
         // check leaf list
         page_id_t leaf_no = ih->file_hdr_->first_leaf_;
         while (leaf_no != IX_LEAF_HEADER_PAGE) {
-            IxNodeHandle* curr = ih->fetch_node(leaf_no);
-            IxNodeHandle* prev = ih->fetch_node(curr->get_prev_leaf());
-            IxNodeHandle* next = ih->fetch_node(curr->get_next_leaf());
+            auto curr = ih->fetch_node(leaf_no);
+            auto prev = ih->fetch_node(curr->get_prev_leaf());
+            auto next = ih->fetch_node(curr->get_next_leaf());
             // Ensure prev->next == curr && next->prev == curr
             ASSERT_EQ(prev->get_next_leaf(), leaf_no);
             ASSERT_EQ(next->get_prev_leaf(), leaf_no);
@@ -247,14 +246,13 @@ class BPlusTreeConcurrentTest : public ::testing::Test {
      * @param now_page_no 当前遍历到的结点
      */
     void check_tree(const IxIndexHandle* ih, int now_page_no) {
-        IxNodeHandle* node = ih->fetch_node(now_page_no);
+        auto node = ih->fetch_node(now_page_no);
         if (node->is_leaf_page()) {
             buffer_pool_manager_->unpin_page(node->get_page_id(), false);
             return;
         }
         for (int i = 0; i < node->get_size(); i++) {  // 遍历node的所有孩子
-            IxNodeHandle* child =
-                ih->fetch_node(node->value_at(i));  // 第i个孩子
+            auto child = ih->fetch_node(node->value_at(i));  // 第i个孩子
             // check parent
             assert(child->get_parent_page_no() == now_page_no);
             // check first key

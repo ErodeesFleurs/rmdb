@@ -442,8 +442,6 @@ void SmManager::show_index(const std::string& tab_name, Context* context) {
 
 void SmManager::load_record(const std::string file_path,
                             const std::string tab_name, Context* context) {
-    // std::cerr << "load record" << std::endl;
-    // std::cerr << "file_path: " << file_path << std::endl;
     std::fstream infile(file_path, std::ios::in);
     if (!infile.is_open()) {
         throw std::runtime_error("file not found: " + file_path);
@@ -472,48 +470,22 @@ void SmManager::load_record(const std::string file_path,
         int idx = 0;
         while (std::getline(ss, value, ',')) {
             Value x;
-            // std::cerr << "value: " << value << std::endl;
             if (tab_meta.cols[idx].type == ColType::TYPE_INT) {
                 x.set_int(std::stoi(value));
-                // x = std::stoi(value);
             } else if (tab_meta.cols[idx].type == ColType::TYPE_FLOAT) {
                 x.set_float(std::stod(value));
-                // x = std::stod(value);
             } else {
                 x.set_str(value);
-                // x = value;
             }
             x.init_raw(tab_meta.cols[idx].len);
             record.rewrite(x.raw->data, tab_meta.cols[idx].offset,
                            tab_meta.cols[idx].len);
             idx++;
         }
-
         auto rid = file_handle->insert_record(record.data, context);
-
-        // 更新索引
-        // auto future = std::async(
-        //     std::launch::async,
-        // //     [indexs, indexes = tab_meta.indexes, rid, record, context]() {
-        // size_t pos = 0;
-        // for (const auto& index : tab_meta.indexes) {
-        //     auto index_handle = indexs[pos++];
-        //     auto key = new char[index.col_tot_len];
-        //     int offset = 0;
-        //     for (const auto& col : index.cols) {
-        //         memcpy(key + offset, record.data + col.offset, col.len);
-        //         offset += col.len;
-        //     }
-        //     index_handle->insert_entry(key, rid, context->txn_);
-        //     delete[] key;
-        // }
-        //     });
-        // );
-        // th.detach();
     }
     delete[] buffer;
     infile.close();
-    // rebuild_index(tab_name, context);
 }
 
 bool SmManager::contains_table(const std::string& tab_name) const {
