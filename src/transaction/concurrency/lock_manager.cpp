@@ -20,8 +20,6 @@ See the Mulan PSL v2 for more details. */
 bool LockManager::lock_shared_on_record(Transaction* txn, const Rid& rid,
                                         int tab_fd) {
     txn->set_state(TransactionState::GROWING);
-    //    std::cout << txn->get_transaction_id() << "申请行级S锁" << rid.page_no << " " << rid.slot_no << " " << tab_fd
-    //              << '\n';
     std::unique_lock<std::mutex> lock(latch_);
     // 获取队列
     LockDataId lock_data_id_ = {tab_fd, rid, LockDataType::RECORD};
@@ -29,7 +27,8 @@ bool LockManager::lock_shared_on_record(Transaction* txn, const Rid& rid,
     bool ok = true;
     for (auto i : request_queue_.request_queue_) {
         if (i.txn_id_ == txn->get_transaction_id()) {
-            //            std::cout << i.txn_id_ << " " << i.lock_mode_ << " " << i.granted_ << "\n";
+            std::cout << i.txn_id_ << " " << i.lock_mode_ << " " << i.granted_
+                      << "\n";
             //已有锁
             if (i.granted_)
                 return true;
@@ -113,8 +112,6 @@ bool LockManager::lock_shared_on_record(Transaction* txn, const Rid& rid,
 bool LockManager::lock_exclusive_on_record(Transaction* txn, const Rid& rid,
                                            int tab_fd) {
     txn->set_state(TransactionState::GROWING);
-    //    std::cout << txn->get_transaction_id() << "申请行级X锁" << rid.page_no << " " << rid.slot_no << " " << tab_fd
-    //              << '\n';
     std::unique_lock<std::mutex> lock(latch_);
     // 获取队列
     LockDataId lock_data_id_ = {tab_fd, rid, LockDataType::RECORD};
@@ -217,7 +214,6 @@ bool LockManager::lock_exclusive_on_record(Transaction* txn, const Rid& rid,
  */
 bool LockManager::lock_shared_on_table(Transaction* txn, int tab_fd) {
     txn->set_state(TransactionState::GROWING);
-    //    std::cout << txn->get_transaction_id() << "申请表级S锁" << " " << tab_fd << '\n';
     std::unique_lock<std::mutex> lock(latch_);
     // 获取队列
     LockDataId lock_data_id_table_ = {tab_fd, LockDataType::TABLE};
@@ -302,7 +298,6 @@ bool LockManager::lock_shared_on_table(Transaction* txn, int tab_fd) {
  */
 bool LockManager::lock_exclusive_on_table(Transaction* txn, int tab_fd) {
     txn->set_state(TransactionState::GROWING);
-    //    std::cout << txn->get_transaction_id() << "申请表级X锁" << " " << tab_fd << '\n';
     std::unique_lock<std::mutex> lock(latch_);
     // 获取队列
     LockDataId lock_data_id_ = {tab_fd, LockDataType::TABLE};
@@ -385,8 +380,6 @@ bool LockManager::lock_exclusive_on_table(Transaction* txn, int tab_fd) {
  */
 bool LockManager::lock_IS_on_table(Transaction* txn, int tab_fd) {
     txn->set_state(TransactionState::GROWING);
-
-    //    std::cout << txn->get_transaction_id() << "申请表级IS锁" << " " << tab_fd << '\n';
     std::unique_lock<std::mutex> lock(latch_);
     // 获取队列
     LockDataId lock_data_id_table_ = {tab_fd, LockDataType::TABLE};
@@ -460,7 +453,6 @@ bool LockManager::lock_IS_on_table(Transaction* txn, int tab_fd) {
  */
 bool LockManager::lock_IX_on_table(Transaction* txn, int tab_fd) {
     txn->set_state(TransactionState::GROWING);
-    //    std::cout << txn->get_transaction_id() << "申请表级IX锁" << " " << tab_fd << '\n';
     std::unique_lock<std::mutex> lock(latch_);
     // 获取队列
     LockDataId lock_data_id_ = {tab_fd, LockDataType::TABLE};
@@ -521,7 +513,7 @@ bool LockManager::lock_IX_on_table(Transaction* txn, int tab_fd) {
                                     LockMode::INTENTION_EXCLUSIVE};
         for (auto& request : lock_request_queue.request_queue_) {
             if (request.txn_id_ == txn->get_transaction_id()) {
-                if (request.lock_mode_ != LockMode::EXCLUSIVE) {
+                if (request.lock_mode_ == LockMode::INTENTION_SHARED) {
                     request.lock_mode_ = LockMode::INTENTION_EXCLUSIVE;
                 }
                 request.granted_ = true;
@@ -585,63 +577,62 @@ bool LockManager::unlock(Transaction* txn, LockDataId lock_data_id) {
     return true;
 }
 
-// bool LockManager::check_loop(Transaction* txn) {
-//     //    std::cout << "start_check\n";
-//     int tot = 0;
-//     std::unordered_map<txn_id_t, int> mp;
-//     std::unordered_map<int, txn_id_t> rmp;
-//     for (auto& i : lock_table_) {
-//         for (auto j : i.second.request_queue_) {
-//             if (!mp.count(j.txn_id_)) {
-//                 mp[j.txn_id_] = tot;
-//                 rmp[tot++] = j.txn_id_;
-//             }
-//         }
-//     }
-//     std::vector<std::vector<int>> e(tot);
-//     std::vector<int> du(tot), que(tot);
-//     int front = 0, end = 0;
-//     for (auto& i : lock_table_) {
-//         std::vector<int> granted, un_granted;
-//         for (auto j : i.second.request_queue_) {
-//             if (j.granted_) {
-//                 granted.push_back(mp[j.txn_id_]);
-//             } else {
-//                 un_granted.push_back(mp[j.txn_id_]);
-//             }
-//         }
-//         for (auto u : un_granted) {
-//             for (auto v : granted) {
-//                 e[u].push_back(v);
-//                 //                std::cout << u << " -> " << v << "\n";
-//                 du[v]++;
-//             }
-//         }
-//     }
-//     for (int i = 0; i < tot; i++) {
-//         if (!du[i])
-//             que[end++] = i;
-//     }
-//     while (front < end) {
-//         int u = que[front++];
-//         for (auto v : e[u]) {
-//             du[v]--;
-//             if (!du[v])
-//                 que[end++] = v;
-//         }
-//     }
-//     txn_id_t mx = -1;
-//     for (int i = 0; i < tot; i++) {
-//         if (du[i]) {
-//             mx = std::max(mx, rmp[i]);
-//         }
-//     }
-//     if (mx != -1) {
-//         if (txn->get_transaction_id() == mx) {
-//             throw TransactionAbortException(mx,
-//                                             AbortReason::DEADLOCK_PREVENTION);
-//         }
-//         return false;
-//     }
-//     return true;
-// }
+bool LockManager::check_loop(Transaction* txn) {
+    int tot = 0;
+    std::unordered_map<txn_id_t, int> mp;
+    std::unordered_map<int, txn_id_t> rmp;
+    for (auto& i : lock_table_) {
+        for (auto j : i.second.request_queue_) {
+            if (!mp.count(j.txn_id_)) {
+                mp[j.txn_id_] = tot;
+                rmp[tot++] = j.txn_id_;
+            }
+        }
+    }
+    std::vector<std::vector<int>> e(tot);
+    std::vector<int> du(tot), que(tot);
+    int front = 0, end = 0;
+    for (auto& i : lock_table_) {
+        std::vector<int> granted, un_granted;
+        for (auto j : i.second.request_queue_) {
+            if (j.granted_) {
+                granted.push_back(mp[j.txn_id_]);
+            } else {
+                un_granted.push_back(mp[j.txn_id_]);
+            }
+        }
+        for (auto u : un_granted) {
+            for (auto v : granted) {
+                e[u].push_back(v);
+                std::cout << u << " -> " << v << "\n";
+                du[v]++;
+            }
+        }
+    }
+    for (int i = 0; i < tot; i++) {
+        if (!du[i])
+            que[end++] = i;
+    }
+    while (front < end) {
+        int u = que[front++];
+        for (auto v : e[u]) {
+            du[v]--;
+            if (!du[v])
+                que[end++] = v;
+        }
+    }
+    txn_id_t mx = -1;
+    for (int i = 0; i < tot; i++) {
+        if (du[i]) {
+            mx = std::max(mx, rmp[i]);
+        }
+    }
+    if (mx != -1) {
+        if (txn->get_transaction_id() == mx) {
+            throw TransactionAbortException(mx,
+                                            AbortReason::DEADLOCK_PREVENTION);
+        }
+        return false;
+    }
+    return true;
+}
