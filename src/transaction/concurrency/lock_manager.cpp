@@ -58,7 +58,7 @@ bool LockManager::lock_shared_on_record(Transaction* txn, const Rid& rid,
 
         // 表上有X锁不能申请
         for (auto& request : lock_request_queue.request_queue_) {
-            if (request.lock_mode_ == LockMode::EXLUCSIVE &&
+            if (request.lock_mode_ == LockMode::EXCLUSIVE &&
                 request.txn_id_ != txn->get_transaction_id() &&
                 request.granted_) {
                 flag = 1;
@@ -71,7 +71,7 @@ bool LockManager::lock_shared_on_record(Transaction* txn, const Rid& rid,
         auto& request_queue = lock_table_[lock_data_id];
 
         for (auto& request : request_queue.request_queue_) {
-            if (request.lock_mode_ == LockMode::EXLUCSIVE &&
+            if (request.lock_mode_ == LockMode::EXCLUSIVE &&
                 request.txn_id_ != txn->get_transaction_id() &&
                 request.granted_) {
                 flag = 1;
@@ -122,7 +122,7 @@ bool LockManager::lock_exclusive_on_record(Transaction* txn, const Rid& rid,
     bool ok = true;
     for (auto& i : request_queue_.request_queue_) {
         if (i.txn_id_ == txn->get_transaction_id()) {
-            if (i.granted_ && i.lock_mode_ == LockMode::EXLUCSIVE) {
+            if (i.granted_ && i.lock_mode_ == LockMode::EXCLUSIVE) {
                 return true;
             }
             i.granted_ = false;
@@ -133,7 +133,7 @@ bool LockManager::lock_exclusive_on_record(Transaction* txn, const Rid& rid,
     if (ok) {
         //需要加边(进入等待队列)
         LockRequest lock_request = {txn->get_transaction_id(),
-                                    LockMode::EXLUCSIVE};
+                                    LockMode::EXCLUSIVE};
         request_queue_.request_queue_.push_back(lock_request);
         txn->append_lock(lock_data_id_);
     }
@@ -152,7 +152,7 @@ bool LockManager::lock_exclusive_on_record(Transaction* txn, const Rid& rid,
             if (request.txn_id_ == txn->get_transaction_id())
                 continue;
             // 表上有X锁不能申请
-            if (request.lock_mode_ == LockMode::EXLUCSIVE && request.granted_) {
+            if (request.lock_mode_ == LockMode::EXCLUSIVE && request.granted_) {
                 flag = 1;
                 break;
             }
@@ -179,7 +179,7 @@ bool LockManager::lock_exclusive_on_record(Transaction* txn, const Rid& rid,
                 break;
             }
             // 行上有X锁不能申请
-            if (request.lock_mode_ == LockMode::EXLUCSIVE && request.granted_) {
+            if (request.lock_mode_ == LockMode::EXCLUSIVE && request.granted_) {
                 flag = 1;
                 break;
             }
@@ -193,11 +193,11 @@ bool LockManager::lock_exclusive_on_record(Transaction* txn, const Rid& rid,
         }
         // 行上加X锁
         LockRequest lock_request = {txn->get_transaction_id(),
-                                    LockMode::EXLUCSIVE};
+                                    LockMode::EXCLUSIVE};
         request_queue.group_lock_mode_ = GroupLockMode::X;
         for (auto& request : request_queue.request_queue_) {
             if (request.txn_id_ == txn->get_transaction_id()) {
-                request.lock_mode_ = LockMode::EXLUCSIVE;
+                request.lock_mode_ = LockMode::EXCLUSIVE;
                 request.granted_ = true;
                 return true;
             }
@@ -261,7 +261,7 @@ bool LockManager::lock_shared_on_table(Transaction* txn, int tab_fd) {
                 break;
             }
             // 表上有X锁不能申请
-            if (request.lock_mode_ == LockMode::EXLUCSIVE && request.granted_) {
+            if (request.lock_mode_ == LockMode::EXCLUSIVE && request.granted_) {
                 flag = 1;
                 break;
             }
@@ -310,7 +310,7 @@ bool LockManager::lock_exclusive_on_table(Transaction* txn, int tab_fd) {
     bool ok = true;
     for (auto i : request_queue_.request_queue_) {
         if (i.txn_id_ == txn->get_transaction_id()) {
-            if (i.granted_ && i.lock_mode_ == LockMode::EXLUCSIVE) {
+            if (i.granted_ && i.lock_mode_ == LockMode::EXCLUSIVE) {
                 return true;
             }
             i.granted_ = false;
@@ -321,7 +321,7 @@ bool LockManager::lock_exclusive_on_table(Transaction* txn, int tab_fd) {
     if (ok) {
         //需要加边(进入等待队列)
         LockRequest lock_request = {txn->get_transaction_id(),
-                                    LockMode::EXLUCSIVE};
+                                    LockMode::EXCLUSIVE};
         request_queue_.request_queue_.push_back(lock_request);
         txn->append_lock(lock_data_id_);
     }
@@ -338,7 +338,7 @@ bool LockManager::lock_exclusive_on_table(Transaction* txn, int tab_fd) {
         for (auto& request : request_queue.request_queue_) {
             if (request.txn_id_ != txn->get_transaction_id()) {
                 //有人持有锁
-                if (request.lock_mode_ == LockMode::EXLUCSIVE &&
+                if (request.lock_mode_ == LockMode::EXCLUSIVE &&
                     request.granted_)
                     flag = 1;
                 if (request.lock_mode_ == LockMode::INTENTION_EXCLUSIVE &&
@@ -361,11 +361,11 @@ bool LockManager::lock_exclusive_on_table(Transaction* txn, int tab_fd) {
         }
         // 表上加X锁
         LockRequest lock_request = {txn->get_transaction_id(),
-                                    LockMode::EXLUCSIVE};
+                                    LockMode::EXCLUSIVE};
         request_queue.group_lock_mode_ = GroupLockMode::X;
         for (auto& request : request_queue.request_queue_) {
             if (request.txn_id_ == txn->get_transaction_id()) {
-                request.lock_mode_ = LockMode::EXLUCSIVE;
+                request.lock_mode_ = LockMode::EXCLUSIVE;
                 request.granted_ = true;
                 return true;
             }
@@ -422,7 +422,7 @@ bool LockManager::lock_IS_on_table(Transaction* txn, int tab_fd) {
 
         for (auto& request : lock_request_queue.request_queue_) {
             // 表上有X锁不能申请
-            if (request.lock_mode_ == LockMode::EXLUCSIVE &&
+            if (request.lock_mode_ == LockMode::EXCLUSIVE &&
                 request.txn_id_ != txn->get_transaction_id() &&
                 request.granted_) {
                 flag = 1;
@@ -470,7 +470,7 @@ bool LockManager::lock_IX_on_table(Transaction* txn, int tab_fd) {
         if (i.txn_id_ == txn->get_transaction_id()) {
             if (i.granted_) {
                 if (i.lock_mode_ == LockMode::INTENTION_EXCLUSIVE ||
-                    i.lock_mode_ == LockMode::EXLUCSIVE)
+                    i.lock_mode_ == LockMode::EXCLUSIVE)
                     return true;
             }
             i.granted_ = false;
@@ -500,7 +500,7 @@ bool LockManager::lock_IX_on_table(Transaction* txn, int tab_fd) {
             if (request.txn_id_ == txn->get_transaction_id())
                 continue;
             // 表上有X锁不能申请
-            if (request.lock_mode_ == LockMode::EXLUCSIVE && request.granted_) {
+            if (request.lock_mode_ == LockMode::EXCLUSIVE && request.granted_) {
                 flag = 1;
                 break;
             }
@@ -521,7 +521,7 @@ bool LockManager::lock_IX_on_table(Transaction* txn, int tab_fd) {
                                     LockMode::INTENTION_EXCLUSIVE};
         for (auto& request : lock_request_queue.request_queue_) {
             if (request.txn_id_ == txn->get_transaction_id()) {
-                if (request.lock_mode_ != LockMode::EXLUCSIVE) {
+                if (request.lock_mode_ != LockMode::EXCLUSIVE) {
                     request.lock_mode_ = LockMode::INTENTION_EXCLUSIVE;
                 }
                 request.granted_ = true;
@@ -568,7 +568,7 @@ bool LockManager::unlock(Transaction* txn, LockDataId lock_data_id) {
                 request_queue.group_lock_mode_ = GroupLockMode::IX;
             else if (lock_request->lock_mode_ == LockMode::INTENTION_SHARED)
                 request_queue.group_lock_mode_ = GroupLockMode::IS;
-            else if (lock_request->lock_mode_ == LockMode::EXLUCSIVE) {
+            else if (lock_request->lock_mode_ == LockMode::EXCLUSIVE) {
                 request_queue.group_lock_mode_ = GroupLockMode::X;
                 break;
             } else if (lock_request->lock_mode_ == LockMode::S_IX) {
@@ -585,63 +585,63 @@ bool LockManager::unlock(Transaction* txn, LockDataId lock_data_id) {
     return true;
 }
 
-bool LockManager::check_loop(Transaction* txn) {
-    //    std::cout << "start_check\n";
-    int tot = 0;
-    std::unordered_map<txn_id_t, int> mp;
-    std::unordered_map<int, txn_id_t> rmp;
-    for (auto& i : lock_table_) {
-        for (auto j : i.second.request_queue_) {
-            if (!mp.count(j.txn_id_)) {
-                mp[j.txn_id_] = tot;
-                rmp[tot++] = j.txn_id_;
-            }
-        }
-    }
-    std::vector<std::vector<int>> e(tot);
-    std::vector<int> du(tot), que(tot);
-    int front = 0, end = 0;
-    for (auto& i : lock_table_) {
-        std::vector<int> granted, un_granted;
-        for (auto j : i.second.request_queue_) {
-            if (j.granted_) {
-                granted.push_back(mp[j.txn_id_]);
-            } else {
-                un_granted.push_back(mp[j.txn_id_]);
-            }
-        }
-        for (auto u : un_granted) {
-            for (auto v : granted) {
-                e[u].push_back(v);
-                //                std::cout << u << " -> " << v << "\n";
-                du[v]++;
-            }
-        }
-    }
-    for (int i = 0; i < tot; i++) {
-        if (!du[i])
-            que[end++] = i;
-    }
-    while (front < end) {
-        int u = que[front++];
-        for (auto v : e[u]) {
-            du[v]--;
-            if (!du[v])
-                que[end++] = v;
-        }
-    }
-    txn_id_t mx = -1;
-    for (int i = 0; i < tot; i++) {
-        if (du[i]) {
-            mx = std::max(mx, rmp[i]);
-        }
-    }
-    if (mx != -1) {
-        if (txn->get_transaction_id() == mx) {
-            throw TransactionAbortException(mx,
-                                            AbortReason::DEADLOCK_PREVENTION);
-        }
-        return false;
-    }
-    return true;
-}
+// bool LockManager::check_loop(Transaction* txn) {
+//     //    std::cout << "start_check\n";
+//     int tot = 0;
+//     std::unordered_map<txn_id_t, int> mp;
+//     std::unordered_map<int, txn_id_t> rmp;
+//     for (auto& i : lock_table_) {
+//         for (auto j : i.second.request_queue_) {
+//             if (!mp.count(j.txn_id_)) {
+//                 mp[j.txn_id_] = tot;
+//                 rmp[tot++] = j.txn_id_;
+//             }
+//         }
+//     }
+//     std::vector<std::vector<int>> e(tot);
+//     std::vector<int> du(tot), que(tot);
+//     int front = 0, end = 0;
+//     for (auto& i : lock_table_) {
+//         std::vector<int> granted, un_granted;
+//         for (auto j : i.second.request_queue_) {
+//             if (j.granted_) {
+//                 granted.push_back(mp[j.txn_id_]);
+//             } else {
+//                 un_granted.push_back(mp[j.txn_id_]);
+//             }
+//         }
+//         for (auto u : un_granted) {
+//             for (auto v : granted) {
+//                 e[u].push_back(v);
+//                 //                std::cout << u << " -> " << v << "\n";
+//                 du[v]++;
+//             }
+//         }
+//     }
+//     for (int i = 0; i < tot; i++) {
+//         if (!du[i])
+//             que[end++] = i;
+//     }
+//     while (front < end) {
+//         int u = que[front++];
+//         for (auto v : e[u]) {
+//             du[v]--;
+//             if (!du[v])
+//                 que[end++] = v;
+//         }
+//     }
+//     txn_id_t mx = -1;
+//     for (int i = 0; i < tot; i++) {
+//         if (du[i]) {
+//             mx = std::max(mx, rmp[i]);
+//         }
+//     }
+//     if (mx != -1) {
+//         if (txn->get_transaction_id() == mx) {
+//             throw TransactionAbortException(mx,
+//                                             AbortReason::DEADLOCK_PREVENTION);
+//         }
+//         return false;
+//     }
+//     return true;
+// }

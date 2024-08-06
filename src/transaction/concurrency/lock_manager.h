@@ -21,7 +21,7 @@ class LockManager {
     /* 加锁类型，包括共享锁、排他锁、意向共享锁、意向排他锁、SIX（意向排他锁+共享锁） */
     enum class LockMode {
         SHARED,
-        EXLUCSIVE,
+        EXCLUSIVE,
         INTENTION_SHARED,
         INTENTION_EXCLUSIVE,
         S_IX
@@ -63,22 +63,6 @@ class LockManager {
 
     ~LockManager() {}
 
-    bool CompareLockMode(LockMode mode1, LockMode mode2);
-
-    bool CompareGroupLockWithLock(GroupLockMode group_mode, LockMode mode);
-
-    LockManager::GroupLockMode GetGroupLockMode(LockMode mode);
-
-    LockManager::LockMode GetLockMode(GroupLockMode mode);
-
-    bool CompareGroupLock(GroupLockMode mode1, GroupLockMode mode2);
-
-    bool CheckAndGrantNormalLock(Transaction* txn, LockDataId& lock_data_id,
-                                 LockMode lock_mode);
-
-    bool CheckAndGrantIntentLock(Transaction* txn, LockDataId& lock_data_id,
-                                 LockMode lock_mode);
-
     bool lock_shared_on_record(Transaction* txn, const Rid& rid, int tab_fd);
 
     bool lock_exclusive_on_record(Transaction* txn, const Rid& rid, int tab_fd);
@@ -92,8 +76,6 @@ class LockManager {
     bool lock_IX_on_table(Transaction* txn, int tab_fd);
 
     bool unlock(Transaction* txn, LockDataId lock_data_id);
-
-    bool check_loop(Transaction* txn);
 
    private:
     std::mutex latch_;  // 用于锁表的并发
