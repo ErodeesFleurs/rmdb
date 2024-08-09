@@ -59,12 +59,12 @@ class UpdateExecutor : public AbstractExecutor {
                 offset += index.cols[j].len;
             }
             //更新日志
-            auto logRecord = new IndexDeleteLogRecord(
-                context_->txn_->get_transaction_id(), key.get(), rid_, ix_name,
-                index.col_tot_len);
-            logRecord->prev_lsn_ = context_->txn_->get_prev_lsn();
-            context_->log_mgr_->add_log_to_buffer(logRecord);
-            context_->txn_->set_prev_lsn(logRecord->lsn_);
+            // auto logRecord = new IndexDeleteLogRecord(
+            //     context_->txn_->get_transaction_id(), key.get(), rid_, ix_name,
+            //     index.col_tot_len);
+            // logRecord->prev_lsn_ = context_->txn_->get_prev_lsn();
+            // context_->log_mgr_->add_log_to_buffer(logRecord);
+            // context_->txn_->set_prev_lsn(logRecord->lsn_);
             //删除索引
             ih->delete_entry(key.get(), context_->txn_);
         }
@@ -86,12 +86,12 @@ class UpdateExecutor : public AbstractExecutor {
                 offset += index.cols[j].len;
             }
             //更新日志
-            auto logRecord = new IndexInsertLogRecord(
-                context_->txn_->get_transaction_id(), key.get(), rid_, ix_name,
-                index.col_tot_len);
-            logRecord->prev_lsn_ = context_->txn_->get_prev_lsn();
-            context_->log_mgr_->add_log_to_buffer(logRecord);
-            context_->txn_->set_prev_lsn(logRecord->lsn_);
+            // auto logRecord = new IndexInsertLogRecord(
+            //     context_->txn_->get_transaction_id(), key.get(), rid_, ix_name,
+            //     index.col_tot_len);
+            // logRecord->prev_lsn_ = context_->txn_->get_prev_lsn();
+            // context_->log_mgr_->add_log_to_buffer(logRecord);
+            // context_->txn_->set_prev_lsn(logRecord->lsn_);
             //插入索引
             auto result = ih->insert_entry(key.get(), rid_, context_->txn_);
             if (result.second == false) {
@@ -115,12 +115,12 @@ class UpdateExecutor : public AbstractExecutor {
                     offset += index.cols[j].len;
                 }
                 //更新日志
-                auto* logRecord = new IndexDeleteLogRecord(
-                    context_->txn_->get_transaction_id(), key.get(), rid_,
-                    ix_name, index.col_tot_len);
-                logRecord->prev_lsn_ = context_->txn_->get_prev_lsn();
-                context_->log_mgr_->add_log_to_buffer(logRecord);
-                context_->txn_->set_prev_lsn(logRecord->lsn_);
+                // auto* logRecord = new IndexDeleteLogRecord(
+                //     context_->txn_->get_transaction_id(), key.get(), rid_,
+                //     ix_name, index.col_tot_len);
+                // logRecord->prev_lsn_ = context_->txn_->get_prev_lsn();
+                // context_->log_mgr_->add_log_to_buffer(logRecord);
+                // context_->txn_->set_prev_lsn(logRecord->lsn_);
                 //删除索引
                 ih->delete_entry(key.get(), context_->txn_);
             }
@@ -185,12 +185,12 @@ class UpdateExecutor : public AbstractExecutor {
                 break;
             }
             //更新日志
-            auto logRecord =
-                new UpdateLogRecord(context_->txn_->get_transaction_id(),
-                                    *old_rec, *rec, rid, tab_name_);
-            logRecord->prev_lsn_ = context_->txn_->get_prev_lsn();
-            context_->log_mgr_->add_log_to_buffer(logRecord);
-            context_->txn_->set_prev_lsn(logRecord->lsn_);
+            // auto logRecord =
+            //     new UpdateLogRecord(context_->txn_->get_transaction_id(),
+            //                         *old_rec, *rec, rid, tab_name_);
+            // logRecord->prev_lsn_ = context_->txn_->get_prev_lsn();
+            // context_->log_mgr_->add_log_to_buffer(logRecord);
+            // context_->txn_->set_prev_lsn(logRecord->lsn_);
             //更新记录
             fh_->update_record(rid, rec->data, context_);
             //更新事务
@@ -212,12 +212,12 @@ class UpdateExecutor : public AbstractExecutor {
                 delete_index(now_rec.get(), rid_);
                 insert_index(&rec_, rid_);
                 //更新日志
-                auto logRecord =
-                    new UpdateLogRecord(context_->txn_->get_transaction_id(),
-                                        *now_rec, rec_, rid_, tab_name_);
-                logRecord->prev_lsn_ = context_->txn_->get_prev_lsn();
-                context_->log_mgr_->add_log_to_buffer(logRecord);
-                context_->txn_->set_prev_lsn(logRecord->lsn_);
+                // auto logRecord =
+                //     new UpdateLogRecord(context_->txn_->get_transaction_id(),
+                //                         *now_rec, rec_, rid_, tab_name_);
+                // logRecord->prev_lsn_ = context_->txn_->get_prev_lsn();
+                // context_->log_mgr_->add_log_to_buffer(logRecord);
+                // context_->txn_->set_prev_lsn(logRecord->lsn_);
                 //更新记录
                 fh_->update_record(rid_, rec_.data, context_);
                 context_->txn_->delete_write_record();

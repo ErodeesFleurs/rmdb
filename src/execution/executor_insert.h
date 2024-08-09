@@ -69,11 +69,11 @@ class InsertExecutor : public AbstractExecutor {
         // 插入记录, 获取rid
         rid_ = fh_->insert_record(rec.data, context_);
         // 更新日志
-        auto logRecord = new InsertLogRecord(
-            context_->txn_->get_transaction_id(), rec, rid_, tab_name_);
-        logRecord->prev_lsn_ = context_->txn_->get_prev_lsn();
-        context_->log_mgr_->add_log_to_buffer(logRecord);
-        context_->txn_->set_prev_lsn(logRecord->lsn_);
+        // auto logRecord = new InsertLogRecord(
+        //     context_->txn_->get_transaction_id(), rec, rid_, tab_name_);
+        // logRecord->prev_lsn_ = context_->txn_->get_prev_lsn();
+        // context_->log_mgr_->add_log_to_buffer(logRecord);
+        // context_->txn_->set_prev_lsn(logRecord->lsn_);
         // 更新索引
         for (int i = 0; i < (int)tab_.indexes.size(); i++) {
             auto& index = tab_.indexes[i];
@@ -88,12 +88,12 @@ class InsertExecutor : public AbstractExecutor {
                 offset += index.cols[j].len;
             }
             //更新日志
-            auto indexLogRecord = new IndexInsertLogRecord(
-                context_->txn_->get_transaction_id(), key.get(), rid_, ix_name,
-                index.col_tot_len);
-            indexLogRecord->prev_lsn_ = context_->txn_->get_prev_lsn();
-            context_->log_mgr_->add_log_to_buffer(indexLogRecord);
-            context_->txn_->set_prev_lsn(indexLogRecord->lsn_);
+            // auto indexLogRecord = new IndexInsertLogRecord(
+            //     context_->txn_->get_transaction_id(), key.get(), rid_, ix_name,
+            //     index.col_tot_len);
+            // indexLogRecord->prev_lsn_ = context_->txn_->get_prev_lsn();
+            // context_->log_mgr_->add_log_to_buffer(indexLogRecord);
+            // context_->txn_->set_prev_lsn(indexLogRecord->lsn_);
             //更新索引
             auto result = ih->insert_entry(key.get(), rid_, context_->txn_);
             if (result.second == false) {
@@ -118,12 +118,12 @@ class InsertExecutor : public AbstractExecutor {
                     offset += index.cols[j].len;
                 }
                 //更新日志
-                auto indexLogRecord = new IndexDeleteLogRecord(
-                    context_->txn_->get_transaction_id(), key.get(), rid_,
-                    ix_name, index.col_tot_len);
-                indexLogRecord->prev_lsn_ = context_->txn_->get_prev_lsn();
-                context_->log_mgr_->add_log_to_buffer(indexLogRecord);
-                context_->txn_->set_prev_lsn(indexLogRecord->lsn_);
+                // auto indexLogRecord = new IndexDeleteLogRecord(
+                //     context_->txn_->get_transaction_id(), key.get(), rid_,
+                //     ix_name, index.col_tot_len);
+                // indexLogRecord->prev_lsn_ = context_->txn_->get_prev_lsn();
+                // context_->log_mgr_->add_log_to_buffer(indexLogRecord);
+                // context_->txn_->set_prev_lsn(indexLogRecord->lsn_);
                 //删除索引
                 ih->delete_entry(key.get(), context_->txn_);
             }

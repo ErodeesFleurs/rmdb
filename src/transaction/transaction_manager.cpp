@@ -33,10 +33,10 @@ Transaction* TransactionManager::begin(Transaction* txn,
     }
     txn_map.emplace(txn->get_transaction_id(), txn);
     //添加日志
-    auto log = new BeginLogRecord(txn->get_transaction_id());
-    log->prev_lsn_ = txn->get_prev_lsn();
-    log_manager->add_log_to_buffer(log);
-    txn->set_prev_lsn(log->lsn_);
+    // auto log = new BeginLogRecord(txn->get_transaction_id());
+    // log->prev_lsn_ = txn->get_prev_lsn();
+    // log_manager->add_log_to_buffer(log);
+    // txn->set_prev_lsn(log->lsn_);
 
     txn->set_state(TransactionState::DEFAULT);
 
@@ -62,10 +62,10 @@ void TransactionManager::commit(Transaction* txn, LogManager* log_manager) {
     }
     txn->clear();
     //添加日志
-    auto log = new CommitLogRecord(txn->get_transaction_id());
-    log->prev_lsn_ = txn->get_prev_lsn();
-    log_manager->add_log_to_buffer(log);
-    txn->set_prev_lsn(log->lsn_);
+    // auto log = new CommitLogRecord(txn->get_transaction_id());
+    // log->prev_lsn_ = txn->get_prev_lsn();
+    // log_manager->add_log_to_buffer(log);
+    // txn->set_prev_lsn(log->lsn_);
 
     txn->set_state(TransactionState::COMMITTED);
 }
@@ -100,11 +100,11 @@ void TransactionManager::abort(Context* context, LogManager* log_manager) {
         switch (write_type) {
             case WType::INSERT_TUPLE: {
                 //更新日志
-                auto log_record = std::make_unique<DeleteLogRecord>(
-                    txn->get_transaction_id(), record, rid, table_name);
-                log_record->prev_lsn_ = txn->get_prev_lsn();
-                log_manager->add_log_to_buffer(log_record.get());
-                txn->set_prev_lsn(log_record->lsn_);
+                // auto log_record = std::make_unique<DeleteLogRecord>(
+                //     txn->get_transaction_id(), record, rid, table_name);
+                // log_record->prev_lsn_ = txn->get_prev_lsn();
+                // log_manager->add_log_to_buffer(log_record.get());
+                // txn->set_prev_lsn(log_record->lsn_);
 
                 // context->lock_mgr_->lock_exclusive_on_record(
                 //     txn, rid, file_handle->GetFd());
@@ -115,12 +115,12 @@ void TransactionManager::abort(Context* context, LogManager* log_manager) {
             case WType::UPDATE_TUPLE: {
                 auto old_record = file_handle->get_record(rid, context);
                 //更新日志
-                auto log_record =
-                    new UpdateLogRecord(txn->get_transaction_id(), *old_record,
-                                        record, rid, table_name);
-                log_record->prev_lsn_ = txn->get_prev_lsn();
-                log_manager->add_log_to_buffer(log_record);
-                txn->set_prev_lsn(log_record->lsn_);
+                // auto log_record =
+                //     new UpdateLogRecord(txn->get_transaction_id(), *old_record,
+                //                         record, rid, table_name);
+                // log_record->prev_lsn_ = txn->get_prev_lsn();
+                // log_manager->add_log_to_buffer(log_record);
+                // txn->set_prev_lsn(log_record->lsn_);
 
                 // context->lock_mgr_->lock_exclusive_on_record(
                 //     txn, rid, file_handle->GetFd());
@@ -132,11 +132,11 @@ void TransactionManager::abort(Context* context, LogManager* log_manager) {
             }
             case WType::DELETE_TUPLE: {
                 //更新日志
-                auto log_record = std::make_unique<InsertLogRecord>(
-                    txn->get_transaction_id(), record, rid, table_name);
-                log_record->prev_lsn_ = txn->get_prev_lsn();
-                log_manager->add_log_to_buffer(log_record.get());
-                txn->set_prev_lsn(log_record->lsn_);
+                // auto log_record = std::make_unique<InsertLogRecord>(
+                //     txn->get_transaction_id(), record, rid, table_name);
+                // log_record->prev_lsn_ = txn->get_prev_lsn();
+                // log_manager->add_log_to_buffer(log_record.get());
+                // txn->set_prev_lsn(log_record->lsn_);
 
                 // context->lock_mgr_->lock_exclusive_on_table(
                 //     txn, file_handle->GetFd());
@@ -154,10 +154,10 @@ void TransactionManager::abort(Context* context, LogManager* log_manager) {
     }
     txn->clear();
 
-    auto log = std::make_unique<AbortLogRecord>(txn->get_transaction_id());
-    log->prev_lsn_ = txn->get_prev_lsn();
-    log_manager->add_log_to_buffer(log.get());
-    txn->set_prev_lsn(log->lsn_);
+    // auto log = std::make_unique<AbortLogRecord>(txn->get_transaction_id());
+    // log->prev_lsn_ = txn->get_prev_lsn();
+    // log_manager->add_log_to_buffer(log.get());
+    // txn->set_prev_lsn(log->lsn_);
     txn->set_state(TransactionState::ABORTED);
 }
 
@@ -184,12 +184,12 @@ void TransactionManager::delete_record_in_index(Context* context,
         }
 
         //更新日志
-        auto log = new IndexDeleteLogRecord(context->txn_->get_transaction_id(),
-                                            key.get(), rid_, index_name,
-                                            index.col_tot_len);
-        log->prev_lsn_ = context->txn_->get_prev_lsn();
-        context->log_mgr_->add_log_to_buffer(log);
-        context->txn_->set_prev_lsn(log->lsn_);
+        // auto log = new IndexDeleteLogRecord(context->txn_->get_transaction_id(),
+        //                                     key.get(), rid_, index_name,
+        //                                     index.col_tot_len);
+        // log->prev_lsn_ = context->txn_->get_prev_lsn();
+        // context->log_mgr_->add_log_to_buffer(log);
+        // context->txn_->set_prev_lsn(log->lsn_);
 
         index_handle->delete_entry(key.get(), context->txn_);
     }
@@ -217,12 +217,12 @@ void TransactionManager::insert_record_in_index(Context* context,
             offset += index.cols[j].len;
         }
         //更新索引插入日志
-        auto* index_log = new IndexInsertLogRecord(
-            context->txn_->get_transaction_id(), key.get(), rid_, index_name,
-            index.col_tot_len);
-        index_log->prev_lsn_ = context->txn_->get_prev_lsn();
-        context->log_mgr_->add_log_to_buffer(index_log);
-        context->txn_->set_prev_lsn(index_log->lsn_);
+        // auto* index_log = new IndexInsertLogRecord(
+        //     context->txn_->get_transaction_id(), key.get(), rid_, index_name,
+        //     index.col_tot_len);
+        // index_log->prev_lsn_ = context->txn_->get_prev_lsn();
+        // context->log_mgr_->add_log_to_buffer(index_log);
+        // context->txn_->set_prev_lsn(index_log->lsn_);
 
         index_handle->insert_entry(key.get(), rid_, context->txn_);
     }
