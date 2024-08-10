@@ -35,6 +35,12 @@ class SeqScanExecutor : public AbstractExecutor {
    public:
     SeqScanExecutor(SmManager* sm_manager, std::string tab_name,
                     std::vector<Condition> conds, Context* context) {
+        std::cerr << "SeqScanExecutor" << std::endl;
+        // std::cerr << "size-> " << conds.size() << std::endl;
+        for (auto& cond : conds) {
+            std::cerr << cond.lhs_col.col_name << " " << cond.rhs_col.col_name << " CN" << std::endl;
+            std::cerr << cond.lhs_col.tab_name << " " << cond.rhs_col.tab_name << " TB" << std::endl;
+        }
         sm_manager_ = sm_manager;
         tab_name_ = std::move(tab_name);
         conds_ = std::move(conds);

@@ -87,6 +87,7 @@ class IndexScanExecutor : public AbstractExecutor {
     }
 
     void beginTuple() override {
+        std::cerr << "index BeginTuple" << std::endl;
         std::string ix_name = sm_manager_->get_ix_manager()->get_index_name(
             tab_name_, index_col_names_);
         RmRecord lower_record(index_meta_.col_tot_len),
@@ -174,11 +175,13 @@ class IndexScanExecutor : public AbstractExecutor {
             rid_ = scan_->rid();
             auto rec = fh_->get_record(rid_, context_);
             if (fed_conds_.empty() ||
+                eval_index_conds(cols_, fed_conds_, rec.get()) ||
                 eval_conds(cols_, fed_conds_, rec.get())) {
                 break;
             }
             scan_->next();
         }
+        std::cerr << "index Begin End" << std::endl;
     }
 
     void nextTuple() override {
@@ -190,7 +193,8 @@ class IndexScanExecutor : public AbstractExecutor {
             rid_ = scan_->rid();
             try {
                 auto record = fh_->get_record(rid_, context_);
-                if (fed_conds_.empty() ||
+                if (fed_conds_.empty() || 
+                    eval_index_conds(cols_, fed_conds_, record.get()) || 
                     eval_conds(cols_, fed_conds_, record.get())) {
                     break;
                 }
@@ -211,9 +215,15 @@ class IndexScanExecutor : public AbstractExecutor {
         return false;
     }
 
+    virtual int gettype() override {
+        return len_ + 1;
+    }
+
     const std::vector<ColMeta>& cols() const override { return cols_; }
 
     Rid& rid() override { return rid_; }
+
+    size_t tupleLen() const override { return len_; }
 
     ExecutorType getType() const override { return ExecutorType::INDEX_SCAN; }
 
