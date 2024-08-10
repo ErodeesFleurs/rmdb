@@ -85,7 +85,7 @@ class AbstractExecutor {
                 break;
             }
             case TYPE_FLOAT: {
-                double fa = *(double*)a;
+                float fa = *(float*)a;
                 res.set_float(fa);
                 break;
             }
@@ -120,8 +120,8 @@ class AbstractExecutor {
         convert(pa, pb);
         switch (pa.type) {
             case TYPE_FLOAT: {
-                double va = std::get<double>(pa.val);
-                double vb = std::get<double>(pb.val);
+                float va = std::get<float>(pa.val);
+                float vb = std::get<float>(pb.val);
                 return (va < vb) ? -1 : ((va > vb) ? 1 : 0);
             }
             case TYPE_INT: {
@@ -274,7 +274,7 @@ class AbstractExecutor {
                         val.set_int(*(int*)(rec[0]->data + col_meta.offset));
                     } else if (col_meta.type == TYPE_FLOAT) {
                         val.set_float(
-                            *(double*)(rec[0]->data + col_meta.offset));
+                            *(float*)(rec[0]->data + col_meta.offset));
                     } else {
                         val.set_str(std::string(rec[0]->data + col_meta.offset,
                                                 col_meta.len));
@@ -292,9 +292,9 @@ class AbstractExecutor {
                 }
                 val.set_int(sum);
             } else if (col_meta.type == TYPE_FLOAT) {
-                double sum = 0;
+                float sum = 0;
                 for (const auto& record : rec) {
-                    sum += *(double*)(record->data + col_meta.offset);
+                    sum += *(float*)(record->data + col_meta.offset);
                 }
                 val.set_float(sum);
             }
@@ -307,10 +307,10 @@ class AbstractExecutor {
                 }
                 val.set_int(max);
             } else if (col_meta.type == TYPE_FLOAT) {
-                double max = std::numeric_limits<double>::min();
+                float max = std::numeric_limits<float>::min();
                 for (const auto& record : rec) {
                     max = std::max(max,
-                                   *(double*)(record->data + col_meta.offset));
+                                   *(float*)(record->data + col_meta.offset));
                 }
                 val.set_float(max);
             } else if (col_meta.type == TYPE_STRING) {
@@ -331,10 +331,10 @@ class AbstractExecutor {
                 }
                 val.set_int(min);
             } else if (col_meta.type == TYPE_FLOAT) {
-                double min = std::numeric_limits<double>::max();
+                float min = std::numeric_limits<float>::max();
                 for (const auto& record : rec) {
                     min = std::min(min,
-                                   *(double*)(record->data + col_meta.offset));
+                                   *(float*)(record->data + col_meta.offset));
                 }
                 val.set_float(min);
             } else if (col_meta.type == TYPE_STRING) {

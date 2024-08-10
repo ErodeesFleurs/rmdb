@@ -67,7 +67,7 @@
 
 
 /* First part of user prologue.  */
-#line 1 "/home/fleurs/Repositories/rmdb/src/parser/yacc.y"
+#line 1 "/home/fleurs/Github/rmdb/src/parser/yacc.y"
 
 #include "ast.h"
 #include "yacc.tab.h"
@@ -82,7 +82,7 @@ void yyerror(YYLTYPE *locp, const char* s) {
 
 using namespace ast;
 
-#line 86 "/home/fleurs/Repositories/rmdb/src/parser/yacc.tab.cpp"
+#line 86 "/home/fleurs/Github/rmdb/src/parser/yacc.tab.cpp"
 
 # ifndef YY_CAST
 #  ifdef __cplusplus
@@ -1726,850 +1726,850 @@ yyreduce:
   switch (yyn)
     {
   case 2: /* start: stmt ';'  */
-#line 63 "/home/fleurs/Repositories/rmdb/src/parser/yacc.y"
+#line 63 "/home/fleurs/Github/rmdb/src/parser/yacc.y"
     {
         parse_tree = (yyvsp[-1].sv_node);
         YYACCEPT;
     }
-#line 1735 "/home/fleurs/Repositories/rmdb/src/parser/yacc.tab.cpp"
+#line 1735 "/home/fleurs/Github/rmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 3: /* start: HELP  */
-#line 68 "/home/fleurs/Repositories/rmdb/src/parser/yacc.y"
+#line 68 "/home/fleurs/Github/rmdb/src/parser/yacc.y"
     {
         parse_tree = std::make_shared<Help>();
         YYACCEPT;
     }
-#line 1744 "/home/fleurs/Repositories/rmdb/src/parser/yacc.tab.cpp"
+#line 1744 "/home/fleurs/Github/rmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 4: /* start: EXIT  */
-#line 73 "/home/fleurs/Repositories/rmdb/src/parser/yacc.y"
+#line 73 "/home/fleurs/Github/rmdb/src/parser/yacc.y"
     {
         parse_tree = nullptr;
         YYACCEPT;
     }
-#line 1753 "/home/fleurs/Repositories/rmdb/src/parser/yacc.tab.cpp"
+#line 1753 "/home/fleurs/Github/rmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 5: /* start: T_EOF  */
-#line 78 "/home/fleurs/Repositories/rmdb/src/parser/yacc.y"
+#line 78 "/home/fleurs/Github/rmdb/src/parser/yacc.y"
     {
         parse_tree = nullptr;
         YYACCEPT;
     }
-#line 1762 "/home/fleurs/Repositories/rmdb/src/parser/yacc.tab.cpp"
+#line 1762 "/home/fleurs/Github/rmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 6: /* start: SET_OUTPUT_FILE_OFF  */
-#line 83 "/home/fleurs/Repositories/rmdb/src/parser/yacc.y"
+#line 83 "/home/fleurs/Github/rmdb/src/parser/yacc.y"
     {
         parse_tree = std::make_shared<SetOutputFileOff>();
         YYACCEPT;
     }
-#line 1771 "/home/fleurs/Repositories/rmdb/src/parser/yacc.tab.cpp"
+#line 1771 "/home/fleurs/Github/rmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 12: /* txnStmt: TXN_BEGIN  */
-#line 99 "/home/fleurs/Repositories/rmdb/src/parser/yacc.y"
+#line 99 "/home/fleurs/Github/rmdb/src/parser/yacc.y"
     {
         (yyval.sv_node) = std::make_shared<TxnBegin>();
     }
-#line 1779 "/home/fleurs/Repositories/rmdb/src/parser/yacc.tab.cpp"
+#line 1779 "/home/fleurs/Github/rmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 13: /* txnStmt: TXN_COMMIT  */
-#line 103 "/home/fleurs/Repositories/rmdb/src/parser/yacc.y"
+#line 103 "/home/fleurs/Github/rmdb/src/parser/yacc.y"
     {
         (yyval.sv_node) = std::make_shared<TxnCommit>();
     }
-#line 1787 "/home/fleurs/Repositories/rmdb/src/parser/yacc.tab.cpp"
+#line 1787 "/home/fleurs/Github/rmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 14: /* txnStmt: TXN_ABORT  */
-#line 107 "/home/fleurs/Repositories/rmdb/src/parser/yacc.y"
+#line 107 "/home/fleurs/Github/rmdb/src/parser/yacc.y"
     {
         (yyval.sv_node) = std::make_shared<TxnAbort>();
     }
-#line 1795 "/home/fleurs/Repositories/rmdb/src/parser/yacc.tab.cpp"
+#line 1795 "/home/fleurs/Github/rmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 15: /* txnStmt: TXN_ROLLBACK  */
-#line 111 "/home/fleurs/Repositories/rmdb/src/parser/yacc.y"
+#line 111 "/home/fleurs/Github/rmdb/src/parser/yacc.y"
     {
         (yyval.sv_node) = std::make_shared<TxnRollback>();
     }
-#line 1803 "/home/fleurs/Repositories/rmdb/src/parser/yacc.tab.cpp"
+#line 1803 "/home/fleurs/Github/rmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 16: /* dbStmt: SHOW TABLES  */
-#line 118 "/home/fleurs/Repositories/rmdb/src/parser/yacc.y"
+#line 118 "/home/fleurs/Github/rmdb/src/parser/yacc.y"
     {
         (yyval.sv_node) = std::make_shared<ShowTables>();
     }
-#line 1811 "/home/fleurs/Repositories/rmdb/src/parser/yacc.tab.cpp"
+#line 1811 "/home/fleurs/Github/rmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 17: /* setStmt: SET set_knob_type '=' VALUE_BOOL  */
-#line 125 "/home/fleurs/Repositories/rmdb/src/parser/yacc.y"
+#line 125 "/home/fleurs/Github/rmdb/src/parser/yacc.y"
     {
         (yyval.sv_node) = std::make_shared<SetStmt>((yyvsp[-2].sv_setKnobType), (yyvsp[0].sv_bool));
     }
-#line 1819 "/home/fleurs/Repositories/rmdb/src/parser/yacc.tab.cpp"
+#line 1819 "/home/fleurs/Github/rmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 18: /* ddl: CREATE TABLE tbName '(' fieldList ')'  */
-#line 132 "/home/fleurs/Repositories/rmdb/src/parser/yacc.y"
+#line 132 "/home/fleurs/Github/rmdb/src/parser/yacc.y"
     {
         (yyval.sv_node) = std::make_shared<CreateTable>((yyvsp[-3].sv_str), (yyvsp[-1].sv_fields));
     }
-#line 1827 "/home/fleurs/Repositories/rmdb/src/parser/yacc.tab.cpp"
+#line 1827 "/home/fleurs/Github/rmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 19: /* ddl: DROP TABLE tbName  */
-#line 136 "/home/fleurs/Repositories/rmdb/src/parser/yacc.y"
+#line 136 "/home/fleurs/Github/rmdb/src/parser/yacc.y"
     {
         (yyval.sv_node) = std::make_shared<DropTable>((yyvsp[0].sv_str));
     }
-#line 1835 "/home/fleurs/Repositories/rmdb/src/parser/yacc.tab.cpp"
+#line 1835 "/home/fleurs/Github/rmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 20: /* ddl: DESC tbName  */
-#line 140 "/home/fleurs/Repositories/rmdb/src/parser/yacc.y"
+#line 140 "/home/fleurs/Github/rmdb/src/parser/yacc.y"
     {
         (yyval.sv_node) = std::make_shared<DescTable>((yyvsp[0].sv_str));
     }
-#line 1843 "/home/fleurs/Repositories/rmdb/src/parser/yacc.tab.cpp"
+#line 1843 "/home/fleurs/Github/rmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 21: /* ddl: CREATE INDEX tbName '(' colNameList ')'  */
-#line 144 "/home/fleurs/Repositories/rmdb/src/parser/yacc.y"
+#line 144 "/home/fleurs/Github/rmdb/src/parser/yacc.y"
     {
         (yyval.sv_node) = std::make_shared<CreateIndex>((yyvsp[-3].sv_str), (yyvsp[-1].sv_strs));
     }
-#line 1851 "/home/fleurs/Repositories/rmdb/src/parser/yacc.tab.cpp"
+#line 1851 "/home/fleurs/Github/rmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 22: /* ddl: DROP INDEX tbName '(' colNameList ')'  */
-#line 148 "/home/fleurs/Repositories/rmdb/src/parser/yacc.y"
+#line 148 "/home/fleurs/Github/rmdb/src/parser/yacc.y"
     {
         (yyval.sv_node) = std::make_shared<DropIndex>((yyvsp[-3].sv_str), (yyvsp[-1].sv_strs));
     }
-#line 1859 "/home/fleurs/Repositories/rmdb/src/parser/yacc.tab.cpp"
+#line 1859 "/home/fleurs/Github/rmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 23: /* ddl: SHOW INDEX FROM tbName  */
-#line 152 "/home/fleurs/Repositories/rmdb/src/parser/yacc.y"
+#line 152 "/home/fleurs/Github/rmdb/src/parser/yacc.y"
     {
         (yyval.sv_node) = std::make_shared<ShowIndex>((yyvsp[0].sv_str));
     }
-#line 1867 "/home/fleurs/Repositories/rmdb/src/parser/yacc.tab.cpp"
+#line 1867 "/home/fleurs/Github/rmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 24: /* ddl: LOAD filePath INTO tbName  */
-#line 156 "/home/fleurs/Repositories/rmdb/src/parser/yacc.y"
+#line 156 "/home/fleurs/Github/rmdb/src/parser/yacc.y"
     {
         (yyval.sv_node) = std::make_shared<LoadData>((yyvsp[-2].sv_str), (yyvsp[0].sv_str));
     }
-#line 1875 "/home/fleurs/Repositories/rmdb/src/parser/yacc.tab.cpp"
+#line 1875 "/home/fleurs/Github/rmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 25: /* dml: INSERT INTO tbName VALUES '(' valueList ')'  */
-#line 163 "/home/fleurs/Repositories/rmdb/src/parser/yacc.y"
+#line 163 "/home/fleurs/Github/rmdb/src/parser/yacc.y"
     {
         (yyval.sv_node) = std::make_shared<InsertStmt>((yyvsp[-4].sv_str), (yyvsp[-1].sv_vals));
     }
-#line 1883 "/home/fleurs/Repositories/rmdb/src/parser/yacc.tab.cpp"
+#line 1883 "/home/fleurs/Github/rmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 26: /* dml: DELETE FROM tbName optWhereClause  */
-#line 167 "/home/fleurs/Repositories/rmdb/src/parser/yacc.y"
+#line 167 "/home/fleurs/Github/rmdb/src/parser/yacc.y"
     {
         (yyval.sv_node) = std::make_shared<DeleteStmt>((yyvsp[-1].sv_str), (yyvsp[0].sv_conds));
     }
-#line 1891 "/home/fleurs/Repositories/rmdb/src/parser/yacc.tab.cpp"
+#line 1891 "/home/fleurs/Github/rmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 27: /* dml: UPDATE tbName SET setClauses optWhereClause  */
-#line 171 "/home/fleurs/Repositories/rmdb/src/parser/yacc.y"
+#line 171 "/home/fleurs/Github/rmdb/src/parser/yacc.y"
     {
         (yyval.sv_node) = std::make_shared<UpdateStmt>((yyvsp[-3].sv_str), (yyvsp[-1].sv_set_clauses), (yyvsp[0].sv_conds));
     }
-#line 1899 "/home/fleurs/Repositories/rmdb/src/parser/yacc.tab.cpp"
+#line 1899 "/home/fleurs/Github/rmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 28: /* dml: SELECT selector FROM tableList optWhereClause opt_group_clause opt_having_conds  */
-#line 175 "/home/fleurs/Repositories/rmdb/src/parser/yacc.y"
+#line 175 "/home/fleurs/Github/rmdb/src/parser/yacc.y"
     {
         (yyval.sv_node) = std::make_shared<SelectStmt>((yyvsp[-5].sv_cols), (yyvsp[-3].sv_strs), (yyvsp[-2].sv_conds), (yyvsp[-1].sv_groupbys), (yyvsp[0].sv_conds));
     }
-#line 1907 "/home/fleurs/Repositories/rmdb/src/parser/yacc.tab.cpp"
+#line 1907 "/home/fleurs/Github/rmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 29: /* dml: SELECT selector FROM tableList optWhereClause opt_group_clause opt_having_conds opt_order_clause  */
-#line 179 "/home/fleurs/Repositories/rmdb/src/parser/yacc.y"
+#line 179 "/home/fleurs/Github/rmdb/src/parser/yacc.y"
     {
         (yyval.sv_node) = std::make_shared<SelectStmt>((yyvsp[-6].sv_cols), (yyvsp[-4].sv_strs), (yyvsp[-3].sv_conds), (yyvsp[-2].sv_groupbys), (yyvsp[-1].sv_conds), (yyvsp[0].sv_orderbys));
     }
-#line 1915 "/home/fleurs/Repositories/rmdb/src/parser/yacc.tab.cpp"
+#line 1915 "/home/fleurs/Github/rmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 30: /* fieldList: field  */
-#line 186 "/home/fleurs/Repositories/rmdb/src/parser/yacc.y"
+#line 186 "/home/fleurs/Github/rmdb/src/parser/yacc.y"
     {
         (yyval.sv_fields) = std::vector<std::shared_ptr<Field>>{(yyvsp[0].sv_field)};
     }
-#line 1923 "/home/fleurs/Repositories/rmdb/src/parser/yacc.tab.cpp"
+#line 1923 "/home/fleurs/Github/rmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 31: /* fieldList: fieldList ',' field  */
-#line 190 "/home/fleurs/Repositories/rmdb/src/parser/yacc.y"
+#line 190 "/home/fleurs/Github/rmdb/src/parser/yacc.y"
     {
         (yyval.sv_fields).push_back((yyvsp[0].sv_field));
     }
-#line 1931 "/home/fleurs/Repositories/rmdb/src/parser/yacc.tab.cpp"
+#line 1931 "/home/fleurs/Github/rmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 32: /* colNameList: colName  */
-#line 197 "/home/fleurs/Repositories/rmdb/src/parser/yacc.y"
+#line 197 "/home/fleurs/Github/rmdb/src/parser/yacc.y"
     {
         (yyval.sv_strs) = std::vector<std::string>{(yyvsp[0].sv_str)};
     }
-#line 1939 "/home/fleurs/Repositories/rmdb/src/parser/yacc.tab.cpp"
+#line 1939 "/home/fleurs/Github/rmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 33: /* colNameList: colNameList ',' colName  */
-#line 201 "/home/fleurs/Repositories/rmdb/src/parser/yacc.y"
+#line 201 "/home/fleurs/Github/rmdb/src/parser/yacc.y"
     {
         (yyval.sv_strs).push_back((yyvsp[0].sv_str));
     }
-#line 1947 "/home/fleurs/Repositories/rmdb/src/parser/yacc.tab.cpp"
+#line 1947 "/home/fleurs/Github/rmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 34: /* field: colName type  */
-#line 208 "/home/fleurs/Repositories/rmdb/src/parser/yacc.y"
+#line 208 "/home/fleurs/Github/rmdb/src/parser/yacc.y"
     {
         (yyval.sv_field) = std::make_shared<ColDef>((yyvsp[-1].sv_str), (yyvsp[0].sv_type_len));
     }
-#line 1955 "/home/fleurs/Repositories/rmdb/src/parser/yacc.tab.cpp"
+#line 1955 "/home/fleurs/Github/rmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 35: /* type: INT  */
-#line 215 "/home/fleurs/Repositories/rmdb/src/parser/yacc.y"
+#line 215 "/home/fleurs/Github/rmdb/src/parser/yacc.y"
     {
         (yyval.sv_type_len) = std::make_shared<TypeLen>(SV_TYPE_INT, sizeof(int));
     }
-#line 1963 "/home/fleurs/Repositories/rmdb/src/parser/yacc.tab.cpp"
+#line 1963 "/home/fleurs/Github/rmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 36: /* type: CHAR '(' VALUE_INT ')'  */
-#line 219 "/home/fleurs/Repositories/rmdb/src/parser/yacc.y"
+#line 219 "/home/fleurs/Github/rmdb/src/parser/yacc.y"
     {
         (yyval.sv_type_len) = std::make_shared<TypeLen>(SV_TYPE_STRING, (yyvsp[-1].sv_int));
     }
-#line 1971 "/home/fleurs/Repositories/rmdb/src/parser/yacc.tab.cpp"
+#line 1971 "/home/fleurs/Github/rmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 37: /* type: FLOAT  */
-#line 223 "/home/fleurs/Repositories/rmdb/src/parser/yacc.y"
+#line 223 "/home/fleurs/Github/rmdb/src/parser/yacc.y"
     {
-        (yyval.sv_type_len) = std::make_shared<TypeLen>(SV_TYPE_FLOAT, sizeof(double));
+        (yyval.sv_type_len) = std::make_shared<TypeLen>(SV_TYPE_FLOAT, sizeof(float));
     }
-#line 1979 "/home/fleurs/Repositories/rmdb/src/parser/yacc.tab.cpp"
+#line 1979 "/home/fleurs/Github/rmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 38: /* type: DATETIME  */
-#line 227 "/home/fleurs/Repositories/rmdb/src/parser/yacc.y"
+#line 227 "/home/fleurs/Github/rmdb/src/parser/yacc.y"
     {
         (yyval.sv_type_len) = std::make_shared<TypeLen>(SV_TYPE_STRING, 25);
     }
-#line 1987 "/home/fleurs/Repositories/rmdb/src/parser/yacc.tab.cpp"
+#line 1987 "/home/fleurs/Github/rmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 39: /* valueList: value  */
-#line 234 "/home/fleurs/Repositories/rmdb/src/parser/yacc.y"
+#line 234 "/home/fleurs/Github/rmdb/src/parser/yacc.y"
     {
         (yyval.sv_vals) = std::vector<std::shared_ptr<Value>>{(yyvsp[0].sv_val)};
     }
-#line 1995 "/home/fleurs/Repositories/rmdb/src/parser/yacc.tab.cpp"
+#line 1995 "/home/fleurs/Github/rmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 40: /* valueList: valueList ',' value  */
-#line 238 "/home/fleurs/Repositories/rmdb/src/parser/yacc.y"
+#line 238 "/home/fleurs/Github/rmdb/src/parser/yacc.y"
     {
         (yyval.sv_vals).push_back((yyvsp[0].sv_val));
     }
-#line 2003 "/home/fleurs/Repositories/rmdb/src/parser/yacc.tab.cpp"
+#line 2003 "/home/fleurs/Github/rmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 41: /* value: VALUE_INT  */
-#line 245 "/home/fleurs/Repositories/rmdb/src/parser/yacc.y"
+#line 245 "/home/fleurs/Github/rmdb/src/parser/yacc.y"
     {
         (yyval.sv_val) = std::make_shared<IntLit>((yyvsp[0].sv_int));
     }
-#line 2011 "/home/fleurs/Repositories/rmdb/src/parser/yacc.tab.cpp"
+#line 2011 "/home/fleurs/Github/rmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 42: /* value: VALUE_FLOAT  */
-#line 249 "/home/fleurs/Repositories/rmdb/src/parser/yacc.y"
+#line 249 "/home/fleurs/Github/rmdb/src/parser/yacc.y"
     {
         (yyval.sv_val) = std::make_shared<FloatLit>((yyvsp[0].sv_float));
     }
-#line 2019 "/home/fleurs/Repositories/rmdb/src/parser/yacc.tab.cpp"
+#line 2019 "/home/fleurs/Github/rmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 43: /* value: VALUE_STRING  */
-#line 253 "/home/fleurs/Repositories/rmdb/src/parser/yacc.y"
+#line 253 "/home/fleurs/Github/rmdb/src/parser/yacc.y"
     {
         (yyval.sv_val) = std::make_shared<StringLit>((yyvsp[0].sv_str));
     }
-#line 2027 "/home/fleurs/Repositories/rmdb/src/parser/yacc.tab.cpp"
+#line 2027 "/home/fleurs/Github/rmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 44: /* value: VALUE_BOOL  */
-#line 257 "/home/fleurs/Repositories/rmdb/src/parser/yacc.y"
+#line 257 "/home/fleurs/Github/rmdb/src/parser/yacc.y"
     {
         (yyval.sv_val) = std::make_shared<BoolLit>((yyvsp[0].sv_bool));
     }
-#line 2035 "/home/fleurs/Repositories/rmdb/src/parser/yacc.tab.cpp"
+#line 2035 "/home/fleurs/Github/rmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 45: /* condition: col op expr  */
-#line 264 "/home/fleurs/Repositories/rmdb/src/parser/yacc.y"
+#line 264 "/home/fleurs/Github/rmdb/src/parser/yacc.y"
     {
         (yyval.sv_cond) = std::make_shared<BinaryExpr>((yyvsp[-2].sv_col), (yyvsp[-1].sv_comp_op), (yyvsp[0].sv_expr));
     }
-#line 2043 "/home/fleurs/Repositories/rmdb/src/parser/yacc.tab.cpp"
+#line 2043 "/home/fleurs/Github/rmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 46: /* condition: col op '(' dml ')'  */
-#line 268 "/home/fleurs/Repositories/rmdb/src/parser/yacc.y"
+#line 268 "/home/fleurs/Github/rmdb/src/parser/yacc.y"
     {
         (yyval.sv_cond) = std::make_shared<BinaryExpr>((yyvsp[-4].sv_col), (yyvsp[-3].sv_comp_op), (yyvsp[-1].sv_node));
     }
-#line 2051 "/home/fleurs/Repositories/rmdb/src/parser/yacc.tab.cpp"
+#line 2051 "/home/fleurs/Github/rmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 47: /* condition: col op '(' valueList ')'  */
-#line 272 "/home/fleurs/Repositories/rmdb/src/parser/yacc.y"
+#line 272 "/home/fleurs/Github/rmdb/src/parser/yacc.y"
     {
         (yyval.sv_cond) = std::make_shared<BinaryExpr>((yyvsp[-4].sv_col), (yyvsp[-3].sv_comp_op), (yyvsp[-1].sv_vals));
     }
-#line 2059 "/home/fleurs/Repositories/rmdb/src/parser/yacc.tab.cpp"
+#line 2059 "/home/fleurs/Github/rmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 48: /* optWhereClause: %empty  */
-#line 278 "/home/fleurs/Repositories/rmdb/src/parser/yacc.y"
+#line 278 "/home/fleurs/Github/rmdb/src/parser/yacc.y"
                       { /* ignore*/ }
-#line 2065 "/home/fleurs/Repositories/rmdb/src/parser/yacc.tab.cpp"
+#line 2065 "/home/fleurs/Github/rmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 49: /* optWhereClause: WHERE whereClause  */
-#line 280 "/home/fleurs/Repositories/rmdb/src/parser/yacc.y"
+#line 280 "/home/fleurs/Github/rmdb/src/parser/yacc.y"
     {
         (yyval.sv_conds) = (yyvsp[0].sv_conds);
     }
-#line 2073 "/home/fleurs/Repositories/rmdb/src/parser/yacc.tab.cpp"
+#line 2073 "/home/fleurs/Github/rmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 50: /* whereClause: condition  */
-#line 287 "/home/fleurs/Repositories/rmdb/src/parser/yacc.y"
+#line 287 "/home/fleurs/Github/rmdb/src/parser/yacc.y"
     {
         (yyval.sv_conds) = std::vector<std::shared_ptr<BinaryExpr>>{(yyvsp[0].sv_cond)};
     }
-#line 2081 "/home/fleurs/Repositories/rmdb/src/parser/yacc.tab.cpp"
+#line 2081 "/home/fleurs/Github/rmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 51: /* whereClause: whereClause AND condition  */
-#line 291 "/home/fleurs/Repositories/rmdb/src/parser/yacc.y"
+#line 291 "/home/fleurs/Github/rmdb/src/parser/yacc.y"
     {
         (yyval.sv_conds).push_back((yyvsp[0].sv_cond));
     }
-#line 2089 "/home/fleurs/Repositories/rmdb/src/parser/yacc.tab.cpp"
+#line 2089 "/home/fleurs/Github/rmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 52: /* col: tbName '.' colName AS colName  */
-#line 298 "/home/fleurs/Repositories/rmdb/src/parser/yacc.y"
+#line 298 "/home/fleurs/Github/rmdb/src/parser/yacc.y"
     {
         (yyval.sv_col) = std::make_shared<Col>((yyvsp[-4].sv_str), (yyvsp[-2].sv_str), (yyvsp[0].sv_str));
     }
-#line 2097 "/home/fleurs/Repositories/rmdb/src/parser/yacc.tab.cpp"
+#line 2097 "/home/fleurs/Github/rmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 53: /* col: colName AS colName  */
-#line 302 "/home/fleurs/Repositories/rmdb/src/parser/yacc.y"
+#line 302 "/home/fleurs/Github/rmdb/src/parser/yacc.y"
     {
         (yyval.sv_col) = std::make_shared<Col>("", (yyvsp[-2].sv_str), (yyvsp[0].sv_str));
     }
-#line 2105 "/home/fleurs/Repositories/rmdb/src/parser/yacc.tab.cpp"
+#line 2105 "/home/fleurs/Github/rmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 54: /* col: tbName '.' colName  */
-#line 306 "/home/fleurs/Repositories/rmdb/src/parser/yacc.y"
+#line 306 "/home/fleurs/Github/rmdb/src/parser/yacc.y"
     {
         (yyval.sv_col) = std::make_shared<Col>((yyvsp[-2].sv_str), (yyvsp[0].sv_str));
     }
-#line 2113 "/home/fleurs/Repositories/rmdb/src/parser/yacc.tab.cpp"
+#line 2113 "/home/fleurs/Github/rmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 55: /* col: colName  */
-#line 310 "/home/fleurs/Repositories/rmdb/src/parser/yacc.y"
+#line 310 "/home/fleurs/Github/rmdb/src/parser/yacc.y"
     {
         (yyval.sv_col) = std::make_shared<Col>("", (yyvsp[0].sv_str));
     }
-#line 2121 "/home/fleurs/Repositories/rmdb/src/parser/yacc.tab.cpp"
+#line 2121 "/home/fleurs/Github/rmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 56: /* col: COUNT '(' '*' ')' AS colName  */
-#line 314 "/home/fleurs/Repositories/rmdb/src/parser/yacc.y"
+#line 314 "/home/fleurs/Github/rmdb/src/parser/yacc.y"
     {
         (yyval.sv_col) = std::make_shared<Col>("", "*", (yyvsp[0].sv_str), "COUNT");
     }
-#line 2129 "/home/fleurs/Repositories/rmdb/src/parser/yacc.tab.cpp"
+#line 2129 "/home/fleurs/Github/rmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 57: /* col: COUNT '(' '*' ')'  */
-#line 318 "/home/fleurs/Repositories/rmdb/src/parser/yacc.y"
+#line 318 "/home/fleurs/Github/rmdb/src/parser/yacc.y"
     {
         (yyval.sv_col) = std::make_shared<Col>("", "*", "count_row", "COUNT");
     }
-#line 2137 "/home/fleurs/Repositories/rmdb/src/parser/yacc.tab.cpp"
+#line 2137 "/home/fleurs/Github/rmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 58: /* col: SUM '(' tbName '.' colName ')' AS colName  */
-#line 322 "/home/fleurs/Repositories/rmdb/src/parser/yacc.y"
+#line 322 "/home/fleurs/Github/rmdb/src/parser/yacc.y"
     {
         (yyval.sv_col) = std::make_shared<Col>((yyvsp[-5].sv_str), (yyvsp[-3].sv_str), (yyvsp[0].sv_str), "SUM");
     }
-#line 2145 "/home/fleurs/Repositories/rmdb/src/parser/yacc.tab.cpp"
+#line 2145 "/home/fleurs/Github/rmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 59: /* col: SUM '(' tbName '.' colName ')'  */
-#line 326 "/home/fleurs/Repositories/rmdb/src/parser/yacc.y"
+#line 326 "/home/fleurs/Github/rmdb/src/parser/yacc.y"
     {
         (yyval.sv_col) = std::make_shared<Col>((yyvsp[-3].sv_str), (yyvsp[-1].sv_str), "sum_" + (yyvsp[-1].sv_str), "SUM");
     }
-#line 2153 "/home/fleurs/Repositories/rmdb/src/parser/yacc.tab.cpp"
+#line 2153 "/home/fleurs/Github/rmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 60: /* col: MAX '(' tbName '.' colName ')' AS colName  */
-#line 330 "/home/fleurs/Repositories/rmdb/src/parser/yacc.y"
+#line 330 "/home/fleurs/Github/rmdb/src/parser/yacc.y"
     {
         (yyval.sv_col) = std::make_shared<Col>((yyvsp[-5].sv_str), (yyvsp[-3].sv_str), (yyvsp[0].sv_str), "MAX");
     }
-#line 2161 "/home/fleurs/Repositories/rmdb/src/parser/yacc.tab.cpp"
+#line 2161 "/home/fleurs/Github/rmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 61: /* col: MAX '(' tbName '.' colName ')'  */
-#line 334 "/home/fleurs/Repositories/rmdb/src/parser/yacc.y"
+#line 334 "/home/fleurs/Github/rmdb/src/parser/yacc.y"
     {
         (yyval.sv_col) = std::make_shared<Col>((yyvsp[-3].sv_str), (yyvsp[-1].sv_str), "max_" + (yyvsp[-1].sv_str), "MAX");
     }
-#line 2169 "/home/fleurs/Repositories/rmdb/src/parser/yacc.tab.cpp"
+#line 2169 "/home/fleurs/Github/rmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 62: /* col: MIN '(' tbName '.' colName ')' AS colName  */
-#line 338 "/home/fleurs/Repositories/rmdb/src/parser/yacc.y"
+#line 338 "/home/fleurs/Github/rmdb/src/parser/yacc.y"
     {
         (yyval.sv_col) = std::make_shared<Col>((yyvsp[-5].sv_str), (yyvsp[-3].sv_str), (yyvsp[0].sv_str), "MIN");
     }
-#line 2177 "/home/fleurs/Repositories/rmdb/src/parser/yacc.tab.cpp"
+#line 2177 "/home/fleurs/Github/rmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 63: /* col: MIN '(' tbName '.' colName ')'  */
-#line 342 "/home/fleurs/Repositories/rmdb/src/parser/yacc.y"
+#line 342 "/home/fleurs/Github/rmdb/src/parser/yacc.y"
     {
         (yyval.sv_col) = std::make_shared<Col>((yyvsp[-3].sv_str), (yyvsp[-1].sv_str), "min_" + (yyvsp[-1].sv_str), "MIN");
     }
-#line 2185 "/home/fleurs/Repositories/rmdb/src/parser/yacc.tab.cpp"
+#line 2185 "/home/fleurs/Github/rmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 64: /* col: COUNT '(' tbName '.' colName ')' AS colName  */
-#line 346 "/home/fleurs/Repositories/rmdb/src/parser/yacc.y"
+#line 346 "/home/fleurs/Github/rmdb/src/parser/yacc.y"
     {
         (yyval.sv_col) = std::make_shared<Col>((yyvsp[-5].sv_str), (yyvsp[-3].sv_str), (yyvsp[0].sv_str), "COUNT");
     }
-#line 2193 "/home/fleurs/Repositories/rmdb/src/parser/yacc.tab.cpp"
+#line 2193 "/home/fleurs/Github/rmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 65: /* col: COUNT '(' tbName '.' colName ')'  */
-#line 350 "/home/fleurs/Repositories/rmdb/src/parser/yacc.y"
+#line 350 "/home/fleurs/Github/rmdb/src/parser/yacc.y"
     {
         (yyval.sv_col) = std::make_shared<Col>((yyvsp[-3].sv_str), (yyvsp[-1].sv_str), "count_" + (yyvsp[-1].sv_str), "COUNT");
     }
-#line 2201 "/home/fleurs/Repositories/rmdb/src/parser/yacc.tab.cpp"
+#line 2201 "/home/fleurs/Github/rmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 66: /* col: SUM '(' colName ')' AS colName  */
-#line 354 "/home/fleurs/Repositories/rmdb/src/parser/yacc.y"
+#line 354 "/home/fleurs/Github/rmdb/src/parser/yacc.y"
     {
         (yyval.sv_col) = std::make_shared<Col>("", (yyvsp[-3].sv_str), (yyvsp[0].sv_str), "SUM");
     }
-#line 2209 "/home/fleurs/Repositories/rmdb/src/parser/yacc.tab.cpp"
+#line 2209 "/home/fleurs/Github/rmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 67: /* col: SUM '(' colName ')'  */
-#line 358 "/home/fleurs/Repositories/rmdb/src/parser/yacc.y"
+#line 358 "/home/fleurs/Github/rmdb/src/parser/yacc.y"
     {
         (yyval.sv_col) = std::make_shared<Col>("", (yyvsp[-1].sv_str), "sum_" + (yyvsp[-1].sv_str), "SUM");
     }
-#line 2217 "/home/fleurs/Repositories/rmdb/src/parser/yacc.tab.cpp"
+#line 2217 "/home/fleurs/Github/rmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 68: /* col: MAX '(' colName ')' AS colName  */
-#line 362 "/home/fleurs/Repositories/rmdb/src/parser/yacc.y"
+#line 362 "/home/fleurs/Github/rmdb/src/parser/yacc.y"
     {
         (yyval.sv_col) = std::make_shared<Col>("", (yyvsp[-3].sv_str), (yyvsp[0].sv_str), "MAX");
     }
-#line 2225 "/home/fleurs/Repositories/rmdb/src/parser/yacc.tab.cpp"
+#line 2225 "/home/fleurs/Github/rmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 69: /* col: MAX '(' colName ')'  */
-#line 366 "/home/fleurs/Repositories/rmdb/src/parser/yacc.y"
+#line 366 "/home/fleurs/Github/rmdb/src/parser/yacc.y"
     {
         (yyval.sv_col) = std::make_shared<Col>("", (yyvsp[-1].sv_str), "max_" + (yyvsp[-1].sv_str), "MAX");
     }
-#line 2233 "/home/fleurs/Repositories/rmdb/src/parser/yacc.tab.cpp"
+#line 2233 "/home/fleurs/Github/rmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 70: /* col: MIN '(' colName ')' AS colName  */
-#line 370 "/home/fleurs/Repositories/rmdb/src/parser/yacc.y"
+#line 370 "/home/fleurs/Github/rmdb/src/parser/yacc.y"
     {
         (yyval.sv_col) = std::make_shared<Col>("", (yyvsp[-3].sv_str), (yyvsp[0].sv_str), "MIN");
     }
-#line 2241 "/home/fleurs/Repositories/rmdb/src/parser/yacc.tab.cpp"
+#line 2241 "/home/fleurs/Github/rmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 71: /* col: MIN '(' colName ')'  */
-#line 374 "/home/fleurs/Repositories/rmdb/src/parser/yacc.y"
+#line 374 "/home/fleurs/Github/rmdb/src/parser/yacc.y"
     {
         (yyval.sv_col) = std::make_shared<Col>("", (yyvsp[-1].sv_str), "min_" + (yyvsp[-1].sv_str), "MIN");
     }
-#line 2249 "/home/fleurs/Repositories/rmdb/src/parser/yacc.tab.cpp"
+#line 2249 "/home/fleurs/Github/rmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 72: /* col: COUNT '(' colName ')' AS colName  */
-#line 378 "/home/fleurs/Repositories/rmdb/src/parser/yacc.y"
+#line 378 "/home/fleurs/Github/rmdb/src/parser/yacc.y"
     {
         (yyval.sv_col) = std::make_shared<Col>("", (yyvsp[-3].sv_str), (yyvsp[0].sv_str), "COUNT");
     }
-#line 2257 "/home/fleurs/Repositories/rmdb/src/parser/yacc.tab.cpp"
+#line 2257 "/home/fleurs/Github/rmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 73: /* col: COUNT '(' colName ')'  */
-#line 382 "/home/fleurs/Repositories/rmdb/src/parser/yacc.y"
+#line 382 "/home/fleurs/Github/rmdb/src/parser/yacc.y"
     {
         (yyval.sv_col) = std::make_shared<Col>("", (yyvsp[-1].sv_str), "count" + (yyvsp[-1].sv_str), "COUNT");
     }
-#line 2265 "/home/fleurs/Repositories/rmdb/src/parser/yacc.tab.cpp"
+#line 2265 "/home/fleurs/Github/rmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 74: /* colList: col  */
-#line 389 "/home/fleurs/Repositories/rmdb/src/parser/yacc.y"
+#line 389 "/home/fleurs/Github/rmdb/src/parser/yacc.y"
     {
         (yyval.sv_cols) = std::vector<std::shared_ptr<Col>>{(yyvsp[0].sv_col)};
     }
-#line 2273 "/home/fleurs/Repositories/rmdb/src/parser/yacc.tab.cpp"
+#line 2273 "/home/fleurs/Github/rmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 75: /* colList: colList ',' col  */
-#line 393 "/home/fleurs/Repositories/rmdb/src/parser/yacc.y"
+#line 393 "/home/fleurs/Github/rmdb/src/parser/yacc.y"
     {
         (yyval.sv_cols).push_back((yyvsp[0].sv_col));
     }
-#line 2281 "/home/fleurs/Repositories/rmdb/src/parser/yacc.tab.cpp"
+#line 2281 "/home/fleurs/Github/rmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 76: /* op: '='  */
-#line 400 "/home/fleurs/Repositories/rmdb/src/parser/yacc.y"
+#line 400 "/home/fleurs/Github/rmdb/src/parser/yacc.y"
     {
         (yyval.sv_comp_op) = SV_OP_EQ;
     }
-#line 2289 "/home/fleurs/Repositories/rmdb/src/parser/yacc.tab.cpp"
+#line 2289 "/home/fleurs/Github/rmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 77: /* op: '<'  */
-#line 404 "/home/fleurs/Repositories/rmdb/src/parser/yacc.y"
+#line 404 "/home/fleurs/Github/rmdb/src/parser/yacc.y"
     {
         (yyval.sv_comp_op) = SV_OP_LT;
     }
-#line 2297 "/home/fleurs/Repositories/rmdb/src/parser/yacc.tab.cpp"
+#line 2297 "/home/fleurs/Github/rmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 78: /* op: '>'  */
-#line 408 "/home/fleurs/Repositories/rmdb/src/parser/yacc.y"
+#line 408 "/home/fleurs/Github/rmdb/src/parser/yacc.y"
     {
         (yyval.sv_comp_op) = SV_OP_GT;
     }
-#line 2305 "/home/fleurs/Repositories/rmdb/src/parser/yacc.tab.cpp"
+#line 2305 "/home/fleurs/Github/rmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 79: /* op: NEQ  */
-#line 412 "/home/fleurs/Repositories/rmdb/src/parser/yacc.y"
+#line 412 "/home/fleurs/Github/rmdb/src/parser/yacc.y"
     {
         (yyval.sv_comp_op) = SV_OP_NE;
     }
-#line 2313 "/home/fleurs/Repositories/rmdb/src/parser/yacc.tab.cpp"
+#line 2313 "/home/fleurs/Github/rmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 80: /* op: LEQ  */
-#line 416 "/home/fleurs/Repositories/rmdb/src/parser/yacc.y"
+#line 416 "/home/fleurs/Github/rmdb/src/parser/yacc.y"
     {
         (yyval.sv_comp_op) = SV_OP_LE;
     }
-#line 2321 "/home/fleurs/Repositories/rmdb/src/parser/yacc.tab.cpp"
+#line 2321 "/home/fleurs/Github/rmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 81: /* op: GEQ  */
-#line 420 "/home/fleurs/Repositories/rmdb/src/parser/yacc.y"
+#line 420 "/home/fleurs/Github/rmdb/src/parser/yacc.y"
     {
         (yyval.sv_comp_op) = SV_OP_GE;
     }
-#line 2329 "/home/fleurs/Repositories/rmdb/src/parser/yacc.tab.cpp"
+#line 2329 "/home/fleurs/Github/rmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 82: /* op: IN  */
-#line 424 "/home/fleurs/Repositories/rmdb/src/parser/yacc.y"
+#line 424 "/home/fleurs/Github/rmdb/src/parser/yacc.y"
     {
         (yyval.sv_comp_op) = SV_OP_IN;
     }
-#line 2337 "/home/fleurs/Repositories/rmdb/src/parser/yacc.tab.cpp"
+#line 2337 "/home/fleurs/Github/rmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 83: /* expr: value  */
-#line 431 "/home/fleurs/Repositories/rmdb/src/parser/yacc.y"
+#line 431 "/home/fleurs/Github/rmdb/src/parser/yacc.y"
     {
         (yyval.sv_expr) = std::static_pointer_cast<Expr>((yyvsp[0].sv_val));
     }
-#line 2345 "/home/fleurs/Repositories/rmdb/src/parser/yacc.tab.cpp"
+#line 2345 "/home/fleurs/Github/rmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 84: /* expr: col  */
-#line 435 "/home/fleurs/Repositories/rmdb/src/parser/yacc.y"
+#line 435 "/home/fleurs/Github/rmdb/src/parser/yacc.y"
     {
         (yyval.sv_expr) = std::static_pointer_cast<Expr>((yyvsp[0].sv_col));
     }
-#line 2353 "/home/fleurs/Repositories/rmdb/src/parser/yacc.tab.cpp"
+#line 2353 "/home/fleurs/Github/rmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 85: /* setClauses: setClause  */
-#line 442 "/home/fleurs/Repositories/rmdb/src/parser/yacc.y"
+#line 442 "/home/fleurs/Github/rmdb/src/parser/yacc.y"
     {
         (yyval.sv_set_clauses) = std::vector<std::shared_ptr<SetClause>>{(yyvsp[0].sv_set_clause)};
     }
-#line 2361 "/home/fleurs/Repositories/rmdb/src/parser/yacc.tab.cpp"
+#line 2361 "/home/fleurs/Github/rmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 86: /* setClauses: setClauses ',' setClause  */
-#line 446 "/home/fleurs/Repositories/rmdb/src/parser/yacc.y"
+#line 446 "/home/fleurs/Github/rmdb/src/parser/yacc.y"
     {
         (yyval.sv_set_clauses).push_back((yyvsp[0].sv_set_clause));
     }
-#line 2369 "/home/fleurs/Repositories/rmdb/src/parser/yacc.tab.cpp"
+#line 2369 "/home/fleurs/Github/rmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 87: /* setClause: colName '=' colName '+' value  */
-#line 453 "/home/fleurs/Repositories/rmdb/src/parser/yacc.y"
+#line 453 "/home/fleurs/Github/rmdb/src/parser/yacc.y"
     {
         (yyval.sv_set_clause) = std::make_shared<SetClause>((yyvsp[-4].sv_str), (yyvsp[0].sv_val), SV_OP_ADD);
     }
-#line 2377 "/home/fleurs/Repositories/rmdb/src/parser/yacc.tab.cpp"
+#line 2377 "/home/fleurs/Github/rmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 88: /* setClause: colName '=' colName '-' value  */
-#line 457 "/home/fleurs/Repositories/rmdb/src/parser/yacc.y"
+#line 457 "/home/fleurs/Github/rmdb/src/parser/yacc.y"
     {
         (yyval.sv_set_clause) = std::make_shared<SetClause>((yyvsp[-4].sv_str), (yyvsp[0].sv_val), SV_OP_SUB);
     }
-#line 2385 "/home/fleurs/Repositories/rmdb/src/parser/yacc.tab.cpp"
+#line 2385 "/home/fleurs/Github/rmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 89: /* setClause: colName '=' colName value  */
-#line 461 "/home/fleurs/Repositories/rmdb/src/parser/yacc.y"
+#line 461 "/home/fleurs/Github/rmdb/src/parser/yacc.y"
     {
         (yyval.sv_set_clause) = std::make_shared<SetClause>((yyvsp[-3].sv_str), (yyvsp[0].sv_val), SV_OP_ADD);
     }
-#line 2393 "/home/fleurs/Repositories/rmdb/src/parser/yacc.tab.cpp"
+#line 2393 "/home/fleurs/Github/rmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 90: /* setClause: colName '=' value  */
-#line 465 "/home/fleurs/Repositories/rmdb/src/parser/yacc.y"
+#line 465 "/home/fleurs/Github/rmdb/src/parser/yacc.y"
     {
         (yyval.sv_set_clause) = std::make_shared<SetClause>((yyvsp[-2].sv_str), (yyvsp[0].sv_val));
     }
-#line 2401 "/home/fleurs/Repositories/rmdb/src/parser/yacc.tab.cpp"
+#line 2401 "/home/fleurs/Github/rmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 91: /* selector: '*'  */
-#line 472 "/home/fleurs/Repositories/rmdb/src/parser/yacc.y"
+#line 472 "/home/fleurs/Github/rmdb/src/parser/yacc.y"
     {
         (yyval.sv_cols) = {};
     }
-#line 2409 "/home/fleurs/Repositories/rmdb/src/parser/yacc.tab.cpp"
+#line 2409 "/home/fleurs/Github/rmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 93: /* tableList: tbName  */
-#line 480 "/home/fleurs/Repositories/rmdb/src/parser/yacc.y"
+#line 480 "/home/fleurs/Github/rmdb/src/parser/yacc.y"
     {
         (yyval.sv_strs) = std::vector<std::string>{(yyvsp[0].sv_str)};
     }
-#line 2417 "/home/fleurs/Repositories/rmdb/src/parser/yacc.tab.cpp"
+#line 2417 "/home/fleurs/Github/rmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 94: /* tableList: tableList ',' tbName  */
-#line 484 "/home/fleurs/Repositories/rmdb/src/parser/yacc.y"
+#line 484 "/home/fleurs/Github/rmdb/src/parser/yacc.y"
     {
         (yyval.sv_strs).push_back((yyvsp[0].sv_str));
     }
-#line 2425 "/home/fleurs/Repositories/rmdb/src/parser/yacc.tab.cpp"
+#line 2425 "/home/fleurs/Github/rmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 95: /* tableList: tableList JOIN tbName  */
-#line 488 "/home/fleurs/Repositories/rmdb/src/parser/yacc.y"
+#line 488 "/home/fleurs/Github/rmdb/src/parser/yacc.y"
     {
         (yyval.sv_strs).push_back((yyvsp[0].sv_str));
     }
-#line 2433 "/home/fleurs/Repositories/rmdb/src/parser/yacc.tab.cpp"
+#line 2433 "/home/fleurs/Github/rmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 96: /* opt_order_clause: ORDER BY order_clauses  */
-#line 495 "/home/fleurs/Repositories/rmdb/src/parser/yacc.y"
+#line 495 "/home/fleurs/Github/rmdb/src/parser/yacc.y"
     { 
         (yyval.sv_orderbys) = (yyvsp[0].sv_orderbys); 
     }
-#line 2441 "/home/fleurs/Repositories/rmdb/src/parser/yacc.tab.cpp"
+#line 2441 "/home/fleurs/Github/rmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 97: /* opt_order_clause: %empty  */
-#line 498 "/home/fleurs/Repositories/rmdb/src/parser/yacc.y"
+#line 498 "/home/fleurs/Github/rmdb/src/parser/yacc.y"
                       { /* ignore*/ }
-#line 2447 "/home/fleurs/Repositories/rmdb/src/parser/yacc.tab.cpp"
+#line 2447 "/home/fleurs/Github/rmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 98: /* order_clause: col opt_asc_desc  */
-#line 503 "/home/fleurs/Repositories/rmdb/src/parser/yacc.y"
+#line 503 "/home/fleurs/Github/rmdb/src/parser/yacc.y"
     { 
         (yyval.sv_orderby) = std::make_shared<OrderBy>((yyvsp[-1].sv_col), (yyvsp[0].sv_orderby_dir));
     }
-#line 2455 "/home/fleurs/Repositories/rmdb/src/parser/yacc.tab.cpp"
+#line 2455 "/home/fleurs/Github/rmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 99: /* order_clauses: order_clause  */
-#line 509 "/home/fleurs/Repositories/rmdb/src/parser/yacc.y"
+#line 509 "/home/fleurs/Github/rmdb/src/parser/yacc.y"
     {
         (yyval.sv_orderbys) = std::vector<std::shared_ptr<OrderBy>>{(yyvsp[0].sv_orderby)};
     }
-#line 2463 "/home/fleurs/Repositories/rmdb/src/parser/yacc.tab.cpp"
+#line 2463 "/home/fleurs/Github/rmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 100: /* order_clauses: order_clauses ',' order_clause  */
-#line 513 "/home/fleurs/Repositories/rmdb/src/parser/yacc.y"
+#line 513 "/home/fleurs/Github/rmdb/src/parser/yacc.y"
     {
     	(yyval.sv_orderbys).push_back((yyvsp[0].sv_orderby));
     }
-#line 2471 "/home/fleurs/Repositories/rmdb/src/parser/yacc.tab.cpp"
+#line 2471 "/home/fleurs/Github/rmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 101: /* opt_asc_desc: ASC  */
-#line 519 "/home/fleurs/Repositories/rmdb/src/parser/yacc.y"
+#line 519 "/home/fleurs/Github/rmdb/src/parser/yacc.y"
                  { (yyval.sv_orderby_dir) = OrderBy_ASC;     }
-#line 2477 "/home/fleurs/Repositories/rmdb/src/parser/yacc.tab.cpp"
+#line 2477 "/home/fleurs/Github/rmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 102: /* opt_asc_desc: DESC  */
-#line 520 "/home/fleurs/Repositories/rmdb/src/parser/yacc.y"
+#line 520 "/home/fleurs/Github/rmdb/src/parser/yacc.y"
                  { (yyval.sv_orderby_dir) = OrderBy_DESC;    }
-#line 2483 "/home/fleurs/Repositories/rmdb/src/parser/yacc.tab.cpp"
+#line 2483 "/home/fleurs/Github/rmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 103: /* opt_asc_desc: %empty  */
-#line 521 "/home/fleurs/Repositories/rmdb/src/parser/yacc.y"
+#line 521 "/home/fleurs/Github/rmdb/src/parser/yacc.y"
             { (yyval.sv_orderby_dir) = OrderBy_DEFAULT; }
-#line 2489 "/home/fleurs/Repositories/rmdb/src/parser/yacc.tab.cpp"
+#line 2489 "/home/fleurs/Github/rmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 104: /* opt_group_clause: GROUP BY group_clauses  */
-#line 526 "/home/fleurs/Repositories/rmdb/src/parser/yacc.y"
+#line 526 "/home/fleurs/Github/rmdb/src/parser/yacc.y"
     {
         (yyval.sv_groupbys) = (yyvsp[0].sv_groupbys);
     }
-#line 2497 "/home/fleurs/Repositories/rmdb/src/parser/yacc.tab.cpp"
+#line 2497 "/home/fleurs/Github/rmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 105: /* opt_group_clause: %empty  */
-#line 529 "/home/fleurs/Repositories/rmdb/src/parser/yacc.y"
+#line 529 "/home/fleurs/Github/rmdb/src/parser/yacc.y"
                       { /* ignore*/ }
-#line 2503 "/home/fleurs/Repositories/rmdb/src/parser/yacc.tab.cpp"
+#line 2503 "/home/fleurs/Github/rmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 106: /* group_clause: col  */
-#line 533 "/home/fleurs/Repositories/rmdb/src/parser/yacc.y"
+#line 533 "/home/fleurs/Github/rmdb/src/parser/yacc.y"
     {
         (yyval.sv_groupby) = std::make_shared<GroupBy>((yyvsp[0].sv_col));
     }
-#line 2511 "/home/fleurs/Repositories/rmdb/src/parser/yacc.tab.cpp"
+#line 2511 "/home/fleurs/Github/rmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 107: /* group_clauses: group_clause  */
-#line 538 "/home/fleurs/Repositories/rmdb/src/parser/yacc.y"
+#line 538 "/home/fleurs/Github/rmdb/src/parser/yacc.y"
     {
         (yyval.sv_groupbys) = std::vector<std::shared_ptr<GroupBy>>{(yyvsp[0].sv_groupby)};
     }
-#line 2519 "/home/fleurs/Repositories/rmdb/src/parser/yacc.tab.cpp"
+#line 2519 "/home/fleurs/Github/rmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 108: /* group_clauses: group_clauses ',' group_clause  */
-#line 542 "/home/fleurs/Repositories/rmdb/src/parser/yacc.y"
+#line 542 "/home/fleurs/Github/rmdb/src/parser/yacc.y"
     {
         (yyval.sv_groupbys).push_back((yyvsp[0].sv_groupby));
     }
-#line 2527 "/home/fleurs/Repositories/rmdb/src/parser/yacc.tab.cpp"
+#line 2527 "/home/fleurs/Github/rmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 109: /* opt_having_conds: %empty  */
-#line 547 "/home/fleurs/Repositories/rmdb/src/parser/yacc.y"
+#line 547 "/home/fleurs/Github/rmdb/src/parser/yacc.y"
                      { /* ignore*/ }
-#line 2533 "/home/fleurs/Repositories/rmdb/src/parser/yacc.tab.cpp"
+#line 2533 "/home/fleurs/Github/rmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 110: /* opt_having_conds: HAVING having_conds  */
-#line 549 "/home/fleurs/Repositories/rmdb/src/parser/yacc.y"
+#line 549 "/home/fleurs/Github/rmdb/src/parser/yacc.y"
     {
         (yyval.sv_conds) = (yyvsp[0].sv_conds);
     }
-#line 2541 "/home/fleurs/Repositories/rmdb/src/parser/yacc.tab.cpp"
+#line 2541 "/home/fleurs/Github/rmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 111: /* having_conds: condition  */
-#line 555 "/home/fleurs/Repositories/rmdb/src/parser/yacc.y"
+#line 555 "/home/fleurs/Github/rmdb/src/parser/yacc.y"
     {
         (yyval.sv_conds) = std::vector<std::shared_ptr<BinaryExpr>>{(yyvsp[0].sv_cond)};
     }
-#line 2549 "/home/fleurs/Repositories/rmdb/src/parser/yacc.tab.cpp"
+#line 2549 "/home/fleurs/Github/rmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 112: /* having_conds: having_conds AND condition  */
-#line 559 "/home/fleurs/Repositories/rmdb/src/parser/yacc.y"
+#line 559 "/home/fleurs/Github/rmdb/src/parser/yacc.y"
     {
         (yyval.sv_conds).push_back((yyvsp[0].sv_cond));
     }
-#line 2557 "/home/fleurs/Repositories/rmdb/src/parser/yacc.tab.cpp"
+#line 2557 "/home/fleurs/Github/rmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 113: /* set_knob_type: ENABLE_NESTLOOP  */
-#line 565 "/home/fleurs/Repositories/rmdb/src/parser/yacc.y"
+#line 565 "/home/fleurs/Github/rmdb/src/parser/yacc.y"
                     { (yyval.sv_setKnobType) = EnableNestLoop; }
-#line 2563 "/home/fleurs/Repositories/rmdb/src/parser/yacc.tab.cpp"
+#line 2563 "/home/fleurs/Github/rmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 114: /* set_knob_type: ENABLE_SORTMERGE  */
-#line 566 "/home/fleurs/Repositories/rmdb/src/parser/yacc.y"
+#line 566 "/home/fleurs/Github/rmdb/src/parser/yacc.y"
                          { (yyval.sv_setKnobType) = EnableSortMerge; }
-#line 2569 "/home/fleurs/Repositories/rmdb/src/parser/yacc.tab.cpp"
+#line 2569 "/home/fleurs/Github/rmdb/src/parser/yacc.tab.cpp"
     break;
 
 
-#line 2573 "/home/fleurs/Repositories/rmdb/src/parser/yacc.tab.cpp"
+#line 2573 "/home/fleurs/Github/rmdb/src/parser/yacc.tab.cpp"
 
       default: break;
     }
@@ -2798,5 +2798,5 @@ yyreturnlab:
   return yyresult;
 }
 
-#line 574 "/home/fleurs/Repositories/rmdb/src/parser/yacc.y"
+#line 574 "/home/fleurs/Github/rmdb/src/parser/yacc.y"
 

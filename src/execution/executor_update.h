@@ -165,11 +165,11 @@ class UpdateExecutor : public AbstractExecutor {
                         std::get<int>(value.val) -= old_val;
                     }
                 } else if (col.type == TYPE_FLOAT) {
-                    auto old_val = *(double*)rec_buf;
+                    auto old_val = *(float*)rec_buf;
                     if (i.op == SetOp::OP_ADD) {
-                        std::get<double>(value.val) += old_val;
+                        std::get<float>(value.val) += old_val;
                     } else if (i.op == SetOp::OP_SUB) {
-                        std::get<double>(value.val) -= old_val;
+                        std::get<float>(value.val) -= old_val;
                     }
                 } else if (col.type == TYPE_STRING) {
                     //do nothing

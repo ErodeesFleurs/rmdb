@@ -125,9 +125,9 @@ struct IntLit : public Value {
 };
 
 struct FloatLit : public Value {
-    double val;
+    float val;
 
-    FloatLit(double val_) : val(val_) {}
+    FloatLit(float val_) : val(val_) {}
 };
 
 struct StringLit : public Value {
@@ -323,7 +323,7 @@ struct SetOutputFileOff : public TreeNode {
 // Semantic value
 struct SemValue {
     int sv_int;
-    double sv_float;
+    float sv_float;
     std::string sv_str;
     bool sv_bool;
     OrderByDir sv_orderby_dir;

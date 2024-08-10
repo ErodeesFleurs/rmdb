@@ -140,7 +140,7 @@ class IndexScanExecutor : public AbstractExecutor {
                 } else if (min_value.type == TYPE_INT) {
                     min_value.init_raw(sizeof(int));
                 } else if (min_value.type == TYPE_FLOAT) {
-                    min_value.init_raw(sizeof(double));
+                    min_value.init_raw(sizeof(float));
                 }
             }
             if (max_value.raw == nullptr) {
@@ -149,7 +149,7 @@ class IndexScanExecutor : public AbstractExecutor {
                 } else if (max_value.type == TYPE_INT) {
                     max_value.init_raw(sizeof(int));
                 } else if (max_value.type == TYPE_FLOAT) {
-                    max_value.init_raw(sizeof(double));
+                    max_value.init_raw(sizeof(float));
                 }
             }
             memcpy(upper_record.data + offset, max_value.raw->data, col.len);

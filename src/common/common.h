@@ -46,7 +46,7 @@ struct TabCol {
 struct Value {
     ColType type;  // type of value
 
-    std::variant<int, double, std::string> val;
+    std::variant<int, float, std::string> val;
 
     std::shared_ptr<RmRecord> raw;  // raw record buffer
 
@@ -54,7 +54,7 @@ struct Value {
     Value& operator=(T&& val) {
         if constexpr (std::is_same_v<T, int>) {
             set_int(val);
-        } else if constexpr (std::is_same_v<T, double>) {
+        } else if constexpr (std::is_same_v<T, float>) {
             set_float(val);
         } else if constexpr (std::is_same_v<T, std::string>) {
             set_str(val);
@@ -70,7 +70,7 @@ struct Value {
         val = int_val_;
     }
 
-    void set_float(double float_val_) {
+    void set_float(float float_val_) {
         type = TYPE_FLOAT;
         val = float_val_;
     }
@@ -82,7 +82,7 @@ struct Value {
 
     bool to_floor() {
         if (type == TYPE_FLOAT) {
-            val = std::floor(std::get<double>(val));
+            val = std::floor(std::get<float>(val));
             return true;
         }
         return false;
@@ -90,7 +90,7 @@ struct Value {
 
     bool to_cell() {
         if (type == TYPE_FLOAT) {
-            val = std::ceil(std::get<double>(val));
+            val = std::ceil(std::get<float>(val));
             return true;
         }
         return false;
@@ -98,7 +98,7 @@ struct Value {
 
     bool to_int() {
         if (type == TYPE_FLOAT) {
-            val = (int)std::get<double>(val);
+            val = (int)std::get<float>(val);
             type = TYPE_INT;
             return true;
         }
@@ -107,7 +107,7 @@ struct Value {
 
     bool to_float() {
         if (type == TYPE_INT) {
-            val = (double)std::get<int>(val);
+            val = (float)std::get<int>(val);
             type = TYPE_FLOAT;
             return true;
         }
@@ -121,8 +121,8 @@ struct Value {
             assert(len == sizeof(int));
             *(int*)(raw->data) = std::get<int>(val);
         } else if (type == TYPE_FLOAT) {
-            assert(len == sizeof(double));
-            *(double*)(raw->data) = std::get<double>(val);
+            assert(len == sizeof(float));
+            *(float*)(raw->data) = std::get<float>(val);
         } else if (type == TYPE_STRING) {
             auto str = std::get<std::string>(val);
             if (len < (int)str.size()) {
@@ -139,8 +139,8 @@ struct Value {
             raw = std::make_shared<RmRecord>(sizeof(int));
             *(int*)(raw->data) = std::get<int>(val);
         } else if (type == TYPE_FLOAT) {
-            raw = std::make_shared<RmRecord>(sizeof(double));
-            *(double*)(raw->data) = std::get<double>(val);
+            raw = std::make_shared<RmRecord>(sizeof(float));
+            *(float*)(raw->data) = std::get<float>(val);
         } else if (type == TYPE_STRING) {
             auto str_val = std::get<std::string>(val);
             raw = std::make_shared<RmRecord>(str_val.size());
@@ -154,7 +154,7 @@ struct Value {
                 os << std::get<int>(val.val);
                 break;
             case TYPE_FLOAT:
-                os << std::get<double>(val.val);
+                os << std::get<float>(val.val);
                 break;
             case TYPE_STRING:
                 os << std::get<std::string>(val.val);
@@ -172,7 +172,7 @@ struct Value {
             case TYPE_INT:
                 return std::get<int>(x.val) == std::get<int>(y.val);
             case TYPE_FLOAT:
-                return std::get<double>(x.val) == std::get<double>(y.val);
+                return std::get<float>(x.val) == std::get<float>(y.val);
             case TYPE_STRING:
                 return std::get<std::string>(x.val) ==
                        std::get<std::string>(y.val);
@@ -190,7 +190,7 @@ struct Value {
             case TYPE_INT:
                 return std::get<int>(x.val) < std::get<int>(y.val);
             case TYPE_FLOAT:
-                return std::get<double>(x.val) < std::get<double>(y.val);
+                return std::get<float>(x.val) < std::get<float>(y.val);
             case TYPE_STRING:
                 return std::get<std::string>(x.val) <
                        std::get<std::string>(y.val);
@@ -210,7 +210,7 @@ struct Value {
         if (x.type == TYPE_INT && y.type == TYPE_INT) {
             res.set_int(std::get<int>(x.val) + std::get<int>(y.val));
         } else if (x.type == TYPE_FLOAT && y.type == TYPE_FLOAT) {
-            res.set_float(std::get<double>(x.val) + std::get<double>(y.val));
+            res.set_float(std::get<float>(x.val) + std::get<float>(y.val));
         } else {
             throw std::runtime_error("Invalid operation");
         }
