@@ -104,7 +104,9 @@ class IndexScanExecutor : public AbstractExecutor {
                 max_value.set_str(std::string(col.len, 255));
                 min_value.set_str(std::string(col.len, 0));
             }
+            // std::cerr << "???????->SIZE ? " << fed_conds_.size() << std::endl;
             for (const auto& cond : fed_conds_) {
+                // std::cerr << "cond: " << col.name << " " << cond.rhs_val << std::endl;
                 if (cond.lhs_col.col_name != col.name || !cond.is_rhs_val)
                     continue;
                 if (cond.op == OP_EQ) {
@@ -128,6 +130,12 @@ class IndexScanExecutor : public AbstractExecutor {
                     min_value = cond.rhs_val;
                 } else if (cond.op == OP_NE) {
                     // do nothing
+                }
+            }
+            if (index_meta_.col_num == 1) {
+                if (context_ != nullptr) {
+                    context_->lock_mgr_->lock_shared_on_gap(context_->txn_, std::pair<Value, Value>(min_value, max_value), fh_->GetFd());
+                    std::cerr << "GO LOCK SHARED ON GAP -> " << min_value << ' ' << max_value << std::endl;
                 }
             }
             min_value.raw = nullptr;
