@@ -26,8 +26,8 @@ bool LockManager::CheckAndGrantNormalLock(Transaction* txn,
     // 检查当前加锁队列中的锁模式
     for (auto& lock_request : lock_request_queue.request_queue_) {
         if (lock_request.granted_ &&
-            (lock_mode == LockMode::EXLUCSIVE || 
-             lock_request.lock_mode_ == LockMode::EXLUCSIVE ||
+            (lock_mode == LockMode::EXCLUSIVE || 
+             lock_request.lock_mode_ == LockMode::EXCLUSIVE ||
              lock_request.lock_mode_ == LockMode::GAP_EXCLUSIVE)) {
             if (txn->get_transaction_id() > lock_request.txn_id_) {
                 // 当前事务优先级更低，则中止持有锁的事务
@@ -52,7 +52,7 @@ bool LockManager::CheckAndGrantNormalLock(Transaction* txn,
                                                    lock_mode);
     lock_request_queue.request_queue_.back().granted_ = true;
     lock_request_queue.group_lock_mode_ =
-        lock_mode == LockMode::EXLUCSIVE ? GroupLockMode::X : GroupLockMode::S;
+        lock_mode == LockMode::EXCLUSIVE ? GroupLockMode::X : GroupLockMode::S;
     txn->append_lock(lock_data_id);
     std::cerr << txn->get_transaction_id() << "lock success: " << time(NULL)
               << std::endl;
@@ -80,7 +80,7 @@ bool LockManager::CheckAndGrantGapLock(Transaction* txn,
     for (auto& lock_request : lock_request_queue.request_queue_) {
         // std::cerr << "LOCKGRNAD?? -> " << lock_request.granted_ << ' ' << lock_request.lock_mode_ << ' ' << lock_request.gap_rg_.first << ' ' << lock_request.gap_rg_.second << ' ' << rg.first << ' ' << rg.second << ' ' << std::endl;
         if (lock_request.granted_ &&
-            (lock_request.lock_mode_ == LockMode::EXLUCSIVE ||
+            (lock_request.lock_mode_ == LockMode::EXCLUSIVE ||
              lock_request.lock_mode_ == LockMode::GAP_EXCLUSIVE && in_range(lock_request.gap_rg_, rg) || 
              lock_mode == LockMode::GAP_EXCLUSIVE && (lock_request.lock_mode_ == LockMode::SHARED || lock_request.lock_mode_ == LockMode::GAP_SHARED && in_range(lock_request.gap_rg_, rg)))) {
             if (txn->get_transaction_id() > lock_request.txn_id_) {
@@ -106,7 +106,7 @@ bool LockManager::CheckAndGrantGapLock(Transaction* txn,
                                                    rg);
     lock_request_queue.request_queue_.back().granted_ = true;
     lock_request_queue.group_lock_mode_ =
-        lock_mode == LockMode::EXLUCSIVE ? GroupLockMode::X : GroupLockMode::S;     // no use;
+        lock_mode == LockMode::EXCLUSIVE ? GroupLockMode::X : GroupLockMode::S;     // no use;
     txn->append_lock(lock_data_id);
     std::cerr << txn->get_transaction_id() << "lock success: " << time(NULL)
               << std::endl;
