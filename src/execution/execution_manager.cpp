@@ -79,13 +79,13 @@ void QlManager::run_mutli_query(std::shared_ptr<Plan> plan, Context* context) {
                 break;
             }
             case T_LoadData: {
-                std::thread sth([this, file_apth = x->file_path_,
-                                 tab_name = x->tab_name_,
-                                 context]() {  // 拷贝捕获
-                    sm_manager_->load_record(file_apth, tab_name, context);
-                    sm_manager_->rebuild_index(tab_name, context);
-                });
-                load_threads[x->tab_name_] = std::move(sth);
+                // std::thread sth([this, file_apth = x->file_path_,
+                //                  tab_name = x->tab_name_,
+                //                  context]() {  // 拷贝捕获
+                sm_manager_->load_record(x->file_path_, x->tab_name_, context);
+                sm_manager_->rebuild_index(x->tab_name_, context);
+                // });
+                // load_threads[x->tab_name_] = std::move(sth);
                 break;
             }
             default:

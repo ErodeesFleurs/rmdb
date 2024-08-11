@@ -208,10 +208,10 @@ std::shared_ptr<Plan> Planner::make_one_rel(std::shared_ptr<Query> query,
         bool index_exist =
             get_index_cols(tables[i], curr_conds, index_col_names);
 
-        if (load_threads.count(tables[i])) {
-            load_threads[tables[i]].join();
-            load_threads.erase(tables[i]);
-        }
+        // if (load_threads.count(tables[i])) {
+        //     load_threads[tables[i]].join();
+        //     load_threads.erase(tables[i]);
+        // }
 
         if (index_exist == false) {  // 该表没有索引
             index_col_names.clear();
