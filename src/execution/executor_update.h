@@ -130,6 +130,7 @@ class UpdateExecutor : public AbstractExecutor {
     }
 
     std::unique_ptr<RmRecord> Next() override {
+        exit(0);
         std::map<TabCol, ColMeta> mp;
         for (const auto& i : set_clauses_) {
             ColMeta col = *get_col(tab_.cols, i.lhs);
