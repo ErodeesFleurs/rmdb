@@ -4,13 +4,13 @@ let mcc-env = (callPackage "/home/fleurs/Github/mini_compile_commands/" {}).wrap
 
 in (mkShell.override {stdenv = mcc-env;}) {
     buildInputs = [
+        cmake
         gcc14
         gtest
         gnumake
         bison
         flex
         readline
-        cmake
         python3
         bintools
         gdb
