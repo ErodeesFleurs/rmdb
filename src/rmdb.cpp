@@ -282,10 +282,10 @@ void start_server() {
     }
 
     // 20min exit program
-    auto exit_thread = std::thread([]() {
-        std::this_thread::sleep_for(std::chrono::minutes(20));
-        exit(0);
-    });
+    // auto exit_thread = std::thread([]() {
+    //     std::this_thread::sleep_for(std::chrono::minutes(20));
+    //     exit(0);
+    // });
 
     while (!should_exit) {
         std::cout << "Waiting for new connection..." << std::endl;
