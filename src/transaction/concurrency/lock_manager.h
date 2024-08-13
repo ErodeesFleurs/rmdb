@@ -63,6 +63,20 @@ class LockManager {
 
     ~LockManager() {}
 
+    bool CompareLockMode(LockMode mode1, LockMode mode2);
+
+    bool CompareGroupLockWithLock(GroupLockMode group_mode, LockMode mode);
+
+    LockManager::GroupLockMode GetGroupLockMode(LockMode mode);
+
+    LockManager::LockMode GetLockMode(GroupLockMode mode);
+
+    bool CheckAndGrantNormalLock(Transaction* txn, LockDataId& lock_data_id,
+                                 LockMode lock_mode);
+
+    bool CheckAndGrantIntentLock(Transaction* txn, LockDataId& lock_data_id,
+                                 LockMode lock_mode);
+
     bool lock_shared_on_record(Transaction* txn, const Rid& rid, int tab_fd);
 
     bool lock_exclusive_on_record(Transaction* txn, const Rid& rid, int tab_fd);
