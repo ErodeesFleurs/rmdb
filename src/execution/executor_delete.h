@@ -35,10 +35,10 @@ class DeleteExecutor : public AbstractExecutor {
         conds_ = conds;
         rids_ = rids;
         context_ = context;
-        // if (context_->txn_ != nullptr) {
-        //     context_->lock_mgr_->lock_IX_on_table(
-        //         context->txn_, sm_manager_->fhs_[tab_name_]->GetFd());
-        // }
+        if (context_->txn_ != nullptr) {
+            context_->lock_mgr_->lock_IX_on_table(
+                context->txn_, sm_manager_->fhs_[tab_name_]->GetFd());
+        }
     }
 
     void delete_index(RmRecord* rec, Rid rid_) {
@@ -69,9 +69,9 @@ class DeleteExecutor : public AbstractExecutor {
     std::unique_ptr<RmRecord> Next() override {
         for (auto rid : rids_) {
             auto rec = fh_->get_record(rid, context_);
-            // if (context_->txn_ != nullptr)
-            //     context_->lock_mgr_->lock_exclusive_on_record(
-            //         context_->txn_, rid, fh_->GetFd());
+            if (context_->txn_ != nullptr)
+                context_->lock_mgr_->lock_exclusive_on_record(
+                    context_->txn_, rid, fh_->GetFd());
             //更新日志
             auto logRecord = new DeleteLogRecord(
                 context_->txn_->get_transaction_id(), *rec, rid, tab_name_);
