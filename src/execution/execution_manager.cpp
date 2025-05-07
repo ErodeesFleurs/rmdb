@@ -197,11 +197,11 @@ void QlManager::select_from(std::unique_ptr<AbstractExecutor> executorTreeRoot,
 
     // 执行query_plan
 
-    auto formatFloat = [](float f) {
-        std::ostringstream oss;
-        oss << std::fixed << std::setprecision(6) << f;
-        return oss.str();
-    };
+    // auto formatFloat = [](float f) {
+    //     std::ostringstream oss;
+    //     oss << std::fixed << std::setprecision(6) << f;
+    //     return oss.str();
+    // };
 
     for (executorTreeRoot->beginTuple(); !executorTreeRoot->is_end();
          executorTreeRoot->nextTuple()) {

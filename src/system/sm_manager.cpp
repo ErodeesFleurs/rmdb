@@ -335,7 +335,7 @@ void SmManager::rebuild_index(const std::string& tab_name, Context* context) {
         throw TableNotFoundError(tab_name);
     }
     auto& tab = db_.get_table(tab_name);
-    auto file_hdl = fhs_.at(tab_name).get();
+    auto _ = fhs_.at(tab_name).get();
     for (auto& index : tab.indexes) {
         std::vector<std::string> col_names;
         for (const auto& name : index.cols) {
@@ -482,7 +482,7 @@ void SmManager::load_record(const std::string file_path,
                            tab_meta.cols[idx].len);
             idx++;
         }
-        auto rid = file_handle->insert_record(record.data, context);
+        auto _ = file_handle->insert_record(record.data, context);
     }
     delete[] buffer;
     infile.close();
